@@ -40,9 +40,9 @@ Desktop.ini
 .antigravity/
 .Trae/
 
-# Environment Files (Per user request: DO NOT exclude .env)
-# .env
-# .env.local
-# .env.development
-# .env.test
-# .env.production
+# Environment Files (secrets - MUST be ignored)
+.env
+.env.local
+.env.development
+.env.test
+.env.production

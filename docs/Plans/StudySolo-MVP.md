@@ -63,6 +63,7 @@ Day 13（03-09 ~ 03-10）：Phase 4 — 联调 + 收尾 + 部署
   - Shadcn/UI 初始化 + 常用组件安装
   - `@xyflow/react`, `framer-motion`, `zustand`, `@tanstack/react-query`
   - `localforage`, `@supabase/ssr`, `@supabase/supabase-js`
+  - **Markdown 渲染全家桶**（AI 节点输出渲染）：`react-markdown`, `remark-gfm`, `remark-math`, `rehype-katex`, `rehype-raw`, `shiki`, `streamdown`, `katex`
 
 - [ ] **T0-3** 迁移设计令牌
   - 将 `docs/Source/学长分享-核心规范/globals.css` 覆盖到 `frontend/src/app/globals.css`
@@ -71,7 +72,7 @@ Day 13（03-09 ~ 03-10）：Phase 4 — 联调 + 收尾 + 部署
 - [ ] **T0-4** 初始化后端 FastAPI 项目
   - 创建 `backend/` 目录结构（`app/main.py`, `app/api/`, `app/services/`, `app/models/`, `app/core/`, `app/middleware/`）
   - 创建虚拟环境：`python -m venv venv`
-  - 安装依赖：`pip install fastapi uvicorn gunicorn pydantic supabase openai sse-starlette slowapi pydantic-settings`
+  - 安装依赖：`pip install fastapi uvicorn gunicorn pydantic supabase openai sse-starlette slowapi pydantic-settings pyyaml`
   - 验证：`uvicorn app.main:app --reload --port 2038` → `http://localhost:2038/docs`
 
 - [ ] **T0-5** 创建 `.env.example` 和 `.env` 文件
@@ -190,12 +191,16 @@ Day 13（03-09 ~ 03-10）：Phase 4 — 联调 + 收尾 + 部署
 
 ### 任务清单
 
-- [ ] **T3-1** 后端：AI 双模型路由服务
+- [ ] **T3-1** 后端：AI 双模型路由服务（YAML 配置驱动）
+  - 创建 `config.yaml`（项目根目录）：集中管理模型配置、节点配置、执行引擎参数、容灾策略
+  - 创建 `backend/app/core/config_loader.py`（约 40 行）：YAML 加载器 + 环境变量自动解析
   - `backend/app/services/ai_router.py`：
+    - 从 config.yaml 读取模型配置，代码零硬编码
     - 简单任务（意图识别、节点拆解） → 火山引擎 doubao-2.0-pro（免费池）
     - 复杂任务（大纲生成、知识总结） → 阿里云百炼 qwen3-turbo
-    - 容灾降级：任一侧超时自动切换
+    - 容灾降级：任一侧超时自动切换（由 YAML fallback 配置驱动）
   - 使用 `openai` Python SDK 统一调用（两家均兼容 OpenAI 格式）
+  - 📌 详细方案见 `daily_plan/core/02-yaml-config-and-markdown-rendering.md`
 
 - [ ] **T3-2** 后端：自然语言→工作流生成接口（`/api/ai/generate-workflow`）
   - 接收用户输入的学习目标（自然语言）
@@ -226,11 +231,15 @@ Day 13（03-09 ~ 03-10）：Phase 4 — 联调 + 收尾 + 部署
     - 用 `EventSource` 接收 SSE 流
     - 逐 token 更新对应节点的 `data.output`（Zustand + React Flow 实时重绘）
 
-- [ ] **T3-7** 前端：工作流节点自定义 UI
+- [ ] **T3-7** 前端：工作流节点自定义 UI（Markdown 渲染增强）
+  - `components/business/workflow/nodes/NodeMarkdownOutput.tsx`：Markdown 渲染组件
+    - 集成：react-markdown + remark-gfm + remark-math + rehype-katex + rehype-raw
+    - 支持：标题层级、表格、代码高亮（shiki）、数学公式（KaTeX）、流式光标
   - `components/business/workflow/nodes/AIStepNode.tsx`：自定义节点组件
-    - 显示：节点标题、执行状态（Pending/Running/Done/Error）、AI 输出内容
-    - 执行中：流式文字逐字出现动画
+    - 显示：节点标题、执行状态（Pending/Running/Done/Error）、**Markdown 格式 AI 输出**
+    - 执行中：增量 Markdown 渲染 + 闪烁光标动画（streamdown 驱动，无闪烁）
     - 完成：输出内容可复制
+  - 📌 详细方案见 `daily_plan/core/02-yaml-config-and-markdown-rendering.md`
 
 - [ ] **T3-8** 前端：执行控制
   - "▶ 运行全部" 按钮 → 触发整个工作流顺序执行

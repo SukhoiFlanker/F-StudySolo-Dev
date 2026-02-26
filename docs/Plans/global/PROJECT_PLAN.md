@@ -98,6 +98,7 @@
 | **动画** | Framer Motion | `12.x` | 流畅交互 |
 | **工作流画布** | @xyflow/react | `12.10.0` | React 19 + Tailwind v4 专项支持 |
 | **状态管理** | Zustand | `5.x` | 轻量全局状态 |
+| **Markdown 渲染** | react-markdown + remark-gfm + shiki + streamdown | Latest | AI 节点输出渲染 · SSE 增量解析 · 代码高亮 · 数学公式 |
 
 #### 后端
 
@@ -109,6 +110,7 @@
 | **进程守护** | Gunicorn | `23+` | 多 worker · 替代 PM2（Python 侧） |
 | **数据验证** | Pydantic | `2.10+` | 自动请求/响应验证 |
 | **包管理** | pip / uv | Latest | 后端专用 |
+| **配置管理** | PyYAML + pydantic-settings | Latest | config.yaml 集中配置 · 环境变量自动解析 |
 
 #### 数据库 & 服务
 
