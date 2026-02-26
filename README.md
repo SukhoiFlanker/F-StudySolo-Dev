@@ -3,7 +3,7 @@
 # StudySolo
 
 > **基于自然语言的 AI 学习赋能工作流平台**  
-> 🌐 [study.1037solo.com](https://study.1037solo.com) · 🏗️ 阿里云 ECS + 宝塔面板 · 📅 2026-02-24
+> 🌐 [studyflow.1037solo.com](https://studyflow.1037solo.com) · 🏗️ 阿里云 ECS + 宝塔面板 · 📅 2026-02-24
 
 ---
 
@@ -66,7 +66,7 @@ StudySolo 是一个 AI 驱动的学习工作流平台。用户通过自然语言
 用户浏览器
     │
     ▼
-阿里云域名 (study.1037solo.com)
+阿里云域名 (studyflow.1037solo.com)
     │ DNS → ECS 公网 IP
     ▼
 阿里云 ECS【2核4G · Alibaba Cloud Linux 3 · 宝塔面板】
@@ -259,11 +259,11 @@ max_requests_jitter = 50
 ```nginx
 server {
     listen 443 ssl http2;
-    server_name study.1037solo.com;
+    server_name studyflow.1037solo.com;
 
     # SSL（宝塔一键 Let's Encrypt）
-    ssl_certificate     /www/server/panel/vhost/cert/study.1037solo.com/fullchain.pem;
-    ssl_certificate_key /www/server/panel/vhost/cert/study.1037solo.com/privkey.pem;
+    ssl_certificate     /www/server/panel/vhost/cert/studyflow.1037solo.com/fullchain.pem;
+    ssl_certificate_key /www/server/panel/vhost/cert/studyflow.1037solo.com/privkey.pem;
 
     # 前端 Next.js
     location / {
@@ -300,7 +300,7 @@ server {
 # HTTP 强制跳转 HTTPS
 server {
     listen 80;
-    server_name study.1037solo.com;
+    server_name studyflow.1037solo.com;
     return 301 https://$host$request_uri;
 }
 ```

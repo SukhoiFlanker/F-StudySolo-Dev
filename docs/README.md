@@ -9,10 +9,14 @@
 ```
 docs/
 ├── README.md             ← 本文件：文档目录总览
-├── updates/              ← 更新日志（按日期·对标 1037solo 规范）
+├── Updates/              ← 更新日志（按日期·对标 1037solo 规范）
 ├── Plans/
-│   ├── daily_plan/       ← 每日计划
-│   └── accumulate_plan/  ← 长期积累性规划
+│   ├── PROJECT_PLAN.md   ← 项目整体规划方案 v3
+│   ├── StudySolo-MVP.md  ← MVP 任务规划（13天冲刺）
+│   ├── global/           ← 🌐 全局规划（项目深度功能规划 · 全景视图）
+│   ├── daily_plan/       ← 每日计划（按功能模块分子目录）
+│   └── accumulate_plan/  ← 长期积累性规划与创意池
 ├── Vibe Coding/          ← AI 编程总结（按功能分类）
-└── Source/               ← 规范来源文件暂存
+├── Source/               ← 规范来源文件暂存（学长分享的核心规范）
+└── 详细指南/              ← 操作手册（宝塔部署等）
 ```

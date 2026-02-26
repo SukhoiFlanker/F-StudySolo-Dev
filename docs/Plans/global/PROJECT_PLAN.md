@@ -2,7 +2,7 @@
 
 > 📅 规划日期：2026-02-23
 > 🎯 项目：StudySolo — 基于自然语言的 AI 学习赋能工作流平台
-> 🌐 目标域名：Study.1037Solo.com
+> 🌐 目标域名：studyflow.1037solo.com
 > 🏗️ 部署方案：阿里云 ECS + 宝塔面板
 
 ---
@@ -27,7 +27,7 @@
 | 服务 | 用途 | 状态 |
 |------|------|------|
 | 阿里云 ECS | 应用服务器 | ✅ 已有 |
-| 阿里云域名 | Study.1037Solo.com | ✅ 已有 |
+| 阿里云域名 | studyflow.1037solo.com | ✅ 已有 |
 | 阿里云邮件推送 (DirectMail) | 用户注册/通知邮件 | 待配置 |
 | 宝塔面板 | 服务器管理 | ✅ 已部署 |
 | Supabase | 云数据库 + Auth | 待接入 |
@@ -42,7 +42,7 @@
 用户浏览器
     │
     ▼
-阿里云域名 (StudyFlow.1037Solo.com)
+阿里云域名 (studyflow.1037solo.com)
     │
     ▼ DNS 解析
 阿里云 ECS (2核4G, 宝塔面板)
@@ -51,19 +51,19 @@
     │     ├── 反向代理前端 → localhost:2037
     │     └── 反向代理后端 → localhost:2038
     │
-    ├── 【宝塔 Node 项目 #1 - 前端】
-    │     └── Next.js SSR/SSG 应用 (port 2037)
+    ├── 【宝塔 PM2 项目 - 前端】
+    │     └── Next.js 16.1 应用 (port 2037)
     │           ├── App Router (页面渲染)
     │           ├── Server Components (服务端组件)
     │           └── 静态资源 (自动优化)
     │
-    ├── 【宝塔 Node 项目 #2 - 后端】
-    │     └── Node.js API 服务 (port 2038)
+    ├── 【宝塔 Python 项目 - 后端】
+    │     └── FastAPI + Gunicorn (port 2038)
     │           ├── /api/workflow/*   工作流引擎
-    │           ├── /api/ai/*         AI API 代理
-    │           ├── /api/auth/*       认证相关
+    │           ├── /api/ai/*         AI API 代理 + SSE 流式
+    │           ├── /api/auth/*       JWT + Supabase Auth
     │           ├── /api/prompts/*    提示词管理
-    │           └── /api/email/*      邮件推送
+    │           └── /api/email/*      DirectMail 邮件推送
     │
     └── 外部服务
           ├── Supabase (数据库 + Auth + 实时)
@@ -235,15 +235,15 @@ StudySolo/
 ### 4.1 Nginx 反向代理配置
 
 ```nginx
-# Study.1037Solo.com 站点配置
+# studyflow.1037solo.com 站点配置
 server {
     listen 80;
     listen 443 ssl http2;
-    server_name study.1037solo.com;
+    server_name studyflow.1037solo.com;
 
     # SSL 证书 (宝塔一键申请 Let's Encrypt)
-    ssl_certificate    /www/server/panel/vhost/cert/study.1037solo.com/fullchain.pem;
-    ssl_certificate_key /www/server/panel/vhost/cert/study.1037solo.com/privkey.pem;
+    ssl_certificate    /www/server/panel/vhost/cert/studyflow.1037solo.com/fullchain.pem;
+    ssl_certificate_key /www/server/panel/vhost/cert/studyflow.1037solo.com/privkey.pem;
 
     # 强制 HTTPS
     if ($server_port !~ 443) {
@@ -313,16 +313,17 @@ server {
 | **PM2 管理** | ✅ 开启 |
 | **开机启动** | ✅ 开启 |
 
-#### 后端项目（Node.js API）
+#### 后端项目（Python FastAPI）
 
 | 配置项 | 值 |
 |--------|-----|
 | **项目名称** | StudySolo-Backend |
 | **项目目录** | /www/wwwroot/studysolo/backend |
-| **启动命令** | `node dist/app.js` (编译后) |
+| **启动方式** | `ASGI（FastAPI/Starlette）` |
+| **启动命令** | `gunicorn app.main:app -c gunicorn.conf.py` |
 | **端口** | 2038 |
-| **Node 版本** | 20.18.0 LTS |
-| **PM2 管理** | ✅ 开启 |
+| **Python 版本** | `3.11+` |
+| **虚拟环境** | `venv-studysolo`（在 Python 管理器内创建） |
 | **开机启动** | ✅ 开启 |
 
 ### 4.3 部署流程
@@ -440,10 +441,10 @@ email_service = EmailService()
   └── IP 黑名单
   └── 安全响应头
 
-第4层：应用层
-  └── JWT 认证
-  └── API 频率限制 (express-rate-limit)
-  └── 输入验证 (zod)
+第4层：应用层（FastAPI 中间件）
+  └── JWT 认证 (Supabase Auth)
+  └── API 频率限制 (slowapi)
+  └── 输入验证 (Pydantic V2)
   └── CORS 白名单
   └── 提示词注入防护
 ```
@@ -491,8 +492,8 @@ location /api/auth/login {
 
 ```env
 # 应用配置
-NEXT_PUBLIC_APP_URL=https://study.1037solo.com
-NEXT_PUBLIC_API_URL=https://study.1037solo.com/api
+NEXT_PUBLIC_APP_URL=https://studyflow.1037solo.com
+NEXT_PUBLIC_API_URL=https://studyflow.1037solo.com/api
 
 # Supabase (仅公开密钥)
 NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
@@ -530,7 +531,7 @@ JWT_SECRET=xxx
 JWT_EXPIRES_HOURS=168    # 7 天
 
 # 安全
-CORS_ORIGIN=https://study.1037solo.com
+CORS_ORIGIN=https://studyflow.1037solo.com
 RATE_LIMIT_PER_MINUTE=100
 ```
 
@@ -613,7 +614,7 @@ Node.js 后端 (PM2)   ~300 MB - 500 MB
 ### 9.2 SSL 证书
 
 ```
-宝塔面板 → 网站 → Study.1037Solo.com → SSL
+宝塔面板 → 网站 → studyflow.1037solo.com → SSL
   └── 选择 "Let's Encrypt" 免费证书
   └── 勾选 "强制HTTPS"
   └── 自动续期 ✅
@@ -627,12 +628,12 @@ Node.js 后端 (PM2)   ~300 MB - 500 MB
 
 | 模块 | 技术实现 | 复杂度 |
 |------|---------|--------|
-| 项目脚手架搭建 | pnpm monorepo + Next.js + Express | ⭐⭐ |
+| 项目脚手架搭建 | Next.js 前端 + FastAPI 后端（各自独立） | ⭐⭐ |
 | 身份验证系统 | Supabase Auth + DirectMail 验证码 | ⭐⭐⭐ |
-| 工作流画布 | React Flow / XYFlow | ⭐⭐⭐⭐⭐ |
-| AI 分析拆解引擎 | Express Route + AI API 双路由 | ⭐⭐⭐⭐ |
-| 工作流执行引擎 | Server-side 链式调用 + 流式输出 | ⭐⭐⭐⭐ |
-| 安全防护体系 | Nginx + 中间件 + 安全组 | ⭐⭐⭐ |
+| 工作流画布 | @xyflow/react 12.x | ⭐⭐⭐⭐⭐ |
+| AI 自然语言拆解引擎 | FastAPI /api/ai/* + 双模型路由 | ⭐⭐⭐⭐ |
+| 工作流执行引擎 | FastAPI 链式调用 + SSE 流式输出 | ⭐⭐⭐⭐ |
+| 安全防护体系（基础版） | Nginx 限流 + Pydantic + CORS | ⭐⭐⭐ |
 
 ### P1 - 重要功能（第5-8周）
 
@@ -783,10 +784,11 @@ cd frontend
 pnpm install
 pnpm build
 
-# 5. 安装后端依赖并构建
+# 5. 安装后端依赖（Python FastAPI，无需编译）
 cd ../backend
-pnpm install
-pnpm build
+python3 -m venv venv-studysolo
+source venv-studysolo/bin/activate
+pip install -r requirements.txt
 
 # 6. 设置 Swap（4G 内存建议设 2G swap）
 if [ ! -f /swapfile ]; then
@@ -920,4 +922,4 @@ Week 11-12: 上线准备
 
 ---
 
-> ⚡ **下一步行动**：初始化 monorepo 项目结构，创建前端 Next.js 和后端 Express.js 脚手架代码。
+> ⚡ **下一步行动**：按照 `StudySolo-MVP.md` 任务计划，初始化前端 Next.js 脚手架与后端 FastAPI 脚手架（各自独立管理，非 monorepo），优先完成 MVP 核心工作流功能。
