@@ -98,3 +98,35 @@
 | 执行 | `execute` / `run` | `start`（仅用于 Hook 方法名） |
 | 用户输入 | `userInput` | `prompt`, `query`, `message` |
 | AI 输出 | `output` | `result`, `response`, `content` |
+
+## 数据库表命名规范（共享 Supabase）
+
+> **📌 重要**：本项目与 1037Solo Platform 共享同一个 Supabase Project（`hofcaclztjazoytmckup`）。  
+> 详见 [共享 Supabase 数据库规范](Plans/daily_plan/user_auth/07-shared-supabase-database-convention.md)
+
+### 表名前缀规则
+
+| 前缀 | 归属 | 示例 |
+|:---|:---|:---|
+| **无前缀** | 两个项目共享的表 | `user_profiles`, `subscriptions`, `verification_codes_v2` |
+| **`ss_`** | StudySolo 专属表 | `ss_workflows`, `ss_workflow_runs`, `ss_usage_daily` |
+| **`pt_`** | 1037Solo Platform 专属表 | `pt_conversations`, `pt_messages`, `pt_ai_models` |
+
+### 数据库字段命名
+
+| 场景 | 规则 | 正例 | 反例（禁止） |
+|------|------|------|-------------|
+| 表名 | snake_case + 前缀 | `ss_workflows`, `user_profiles` | `SsWorkflows`, `userProfiles` |
+| 列名 | snake_case | `user_id`, `created_at` | `userId`, `CreatedAt` |
+| 主键 | `id` (UUID 类型) | `id UUID PK REFERENCES auth.users(id)` | `user_id` 作为主键名 |
+| 外键 | `{关联表}_id` | `user_id`, `workflow_id` | `uid`, `wf_id` |
+| 布尔值 | `is_` / `has_` 前缀 | `is_student_verified`, `is_active` | `student_verified`, `active` |
+| 时间戳 | `{动作}_at` | `created_at`, `updated_at`, `expires_at` | `create_time`, `updateDate` |
+
+### 禁止事项
+
+1. ❌ 不要创建没有前缀的 StudySolo 专属表（必须用 `ss_` 前缀）
+2. ❌ 不要创建与 Platform 同名的表（避免冲突）
+3. ❌ 不要在代码中硬编码 Supabase Project ID
+4. ❌ 不要跳过 RLS 策略（所有表必须启用）
+

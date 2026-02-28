@@ -207,7 +207,10 @@ access_token 过期 → 前端 middleware.ts 检测
 
 - 所有 API 端点（除 `/api/auth/register` 和 `/api/auth/login`）需要认证
 - 认证通过 `get_current_user` 依赖注入实现
-- Supabase RLS 确保用户只能访问自己的数据（`user_id` 隔离）
+- **共享 Supabase RLS** 确保用户只能访问自己的数据（`user_id` 隔离）
+  - 共享表（`user_profiles` 等）：`auth.uid() = id`
+  - StudySolo 专属表（`ss_workflows` 等）：`auth.uid() = user_id`
+  - 详见 [共享 Supabase 数据库规范](Plans/daily_plan/user_auth/07-shared-supabase-database-convention.md)
 - AI 输入经过 `sanitize_user_input` 防注入处理
 - 请求体大小限制：Nginx `client_max_body_size 10m`
 - API 限流：通用 10r/s，AI 2r/s，登录 5r/m

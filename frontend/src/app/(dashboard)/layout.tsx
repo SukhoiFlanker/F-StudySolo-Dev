@@ -1,19 +1,37 @@
 import Sidebar from '@/components/layout/Sidebar';
+import type { WorkflowMeta } from '@/components/layout/Sidebar';
 import DashboardShell from '@/components/layout/DashboardShell';
 import RightPanel from '@/components/layout/RightPanel';
-import { createClient } from '@/utils/supabase/server';
+import { cookies } from 'next/headers';
 
-// Server Component — fetches workflow list for SSR
+async function fetchSidebarWorkflows(): Promise<WorkflowMeta[]> {
+  const apiBase = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:2038';
+  const cookieStore = await cookies();
+  const token = cookieStore.get('access_token')?.value;
+
+  try {
+    const res = await fetch(`${apiBase}/api/workflow`, {
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        'Content-Type': 'application/json',
+      },
+      next: { revalidate: 30 },
+    });
+    if (!res.ok) return [];
+    const data: WorkflowMeta[] = await res.json();
+    return data.map(({ id, name, updated_at }) => ({ id, name, updated_at }));
+  } catch {
+    return [];
+  }
+}
+
+// Server Component — fetches workflow list for SSR via backend API
 export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createClient();
-  const { data: workflows } = await supabase
-    .from('workflows')
-    .select('id, name, updated_at')
-    .order('updated_at', { ascending: false });
+  const workflows = await fetchSidebarWorkflows();
 
   return (
     <div className="flex flex-col h-screen overflow-hidden">
@@ -23,7 +41,7 @@ export default async function DashboardLayout({
         <div className="flex flex-1 overflow-hidden">
           {/* Left sidebar — hidden on mobile */}
           <div className="hidden md:flex h-full">
-            <Sidebar workflows={workflows ?? []} />
+            <Sidebar workflows={workflows} />
           </div>
 
           {/* Center canvas area */}

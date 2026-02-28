@@ -138,7 +138,7 @@ async def me(
 ):
     """Return the current authenticated user's info."""
     try:
-        result = await db.from_("users").select("*").eq("id", current_user["id"]).single().execute()
+        result = await db.from_("user_profiles").select("*").eq("id", current_user["id"]).single().execute()
         row = result.data or {}
     except Exception:
         row = {}
@@ -146,7 +146,7 @@ async def me(
     return UserInfo(
         id=current_user["id"],
         email=current_user.get("email") or row.get("email", ""),
-        name=row.get("name"),
+        name=row.get("nickname"),
         avatar_url=row.get("avatar_url"),
-        role=row.get("role", current_user.get("role", "user")),
+        role=row.get("tier", current_user.get("role", "user")),
     )

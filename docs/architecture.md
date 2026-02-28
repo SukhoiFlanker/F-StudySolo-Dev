@@ -15,7 +15,7 @@
 | 状态管理 | Zustand | 5.x | 轻量，单 Store 管理工作流状态 |
 | 后端框架 | FastAPI | 0.115+ | ASGI 异步，自动 OpenAPI 文档，端口 2038 |
 | 数据验证 | Pydantic V2 | 2.10+ | 请求/响应自动验证 |
-| 数据库 | Supabase Pro (PostgreSQL) | - | Auth + RLS + Realtime |
+| 数据库 | **共享 Supabase** Pro (PostgreSQL) | - | Auth + RLS + Realtime · 与 Platform 共用 Project `hofcaclztjazoytmckup` |
 | AI SDK | openai Python SDK | 1.60+ | 统一调用所有 AI 平台 |
 | 流式输出 | sse-starlette | 2.2+ | SSE 协议推送 AI token |
 | 本地缓存 | localforage (IndexedDB) | 1.10 | 三层防抖同步的中间层 |
@@ -132,11 +132,32 @@ StudySolo/
 
 ## 核心数据库表
 
+> **📌 共享 Supabase 规范**：本项目与 1037Solo Platform 共享同一个 Supabase Project。  
+> StudySolo 专属表使用 `ss_` 前缀，共享表无前缀。详见 [07-shared-supabase-database-convention.md](Plans/daily_plan/user_auth/07-shared-supabase-database-convention.md)
+
+### 共享表（无前缀，与 Platform 共用）
+
 | 表名 | 用途 | RLS |
 |------|------|-----|
-| users | 用户信息 | ✅ 只能读写自己 |
-| workflows | 工作流（含 nodes_json/edges_json JSONB） | ✅ user_id 隔离 |
-| workflow_runs | 执行记录 | ✅ user_id 隔离 |
+| `user_profiles` | 用户业务信息（昵称、头像、会员等级） | ✅ 只能读写自己 |
+| `subscriptions` | 会员订阅记录 | ✅ user_id 隔离 |
+| `verification_codes_v2` | 邮件验证码（新版） | ✅ 限制访问 |
+
+### StudySolo 专属表（`ss_` 前缀）
+
+| 表名 | 用途 | RLS |
+|------|------|-----|
+| `ss_workflows` | 工作流（含 nodes_json/edges_json JSONB） | ✅ user_id 隔离 |
+| `ss_workflow_runs` | 执行记录 | ✅ user_id 隔离 |
+| `ss_usage_daily` | StudySolo 每日用量统计 | ✅ user_id 隔离 |
+
+### 数据库表名前缀规则
+
+| 前缀 | 归属 | 示例 |
+|:---|:---|:---|
+| **无前缀** | 两个项目共享的表 | `user_profiles`, `subscriptions` |
+| **`ss_`** | StudySolo 专属表 | `ss_workflows`, `ss_workflow_runs` |
+| **`pt_`** | 1037Solo Platform 专属表 | `pt_conversations`, `pt_messages` |
 
 ## 端口约定
 

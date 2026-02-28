@@ -22,7 +22,7 @@ async def list_workflows(
 ):
     """Return metadata list for the current user's workflows."""
     result = (
-        await db.from_("workflows")
+        await db.from_("ss_workflows")
         .select(_META_COLS)
         .eq("user_id", current_user["id"])
         .order("updated_at", desc=True)
@@ -41,15 +41,6 @@ async def create_workflow(
     """Create a new workflow for the current user."""
     user_id = current_user["id"]
 
-    # Ensure user exists in public.users (FK target for workflows.user_id)
-    try:
-        await db.from_("users").upsert(
-            {"id": user_id, "email": current_user.get("email", "")},
-            on_conflict="id",
-        ).execute()
-    except Exception:
-        pass  # Best-effort; if users table doesn't exist yet, skip
-
     payload = {
         "user_id": user_id,
         "name": body.name,
@@ -60,7 +51,7 @@ async def create_workflow(
     }
     # Insert the workflow
     try:
-        insert_result = await db.from_("workflows").insert(payload).execute()
+        insert_result = await db.from_("ss_workflows").insert(payload).execute()
     except Exception as e:
         import traceback
         traceback.print_exc()
@@ -81,7 +72,7 @@ async def get_workflow_content(
 ):
     """Return full nodes/edges JSON for a workflow."""
     result = (
-        await db.from_("workflows")
+        await db.from_("ss_workflows")
         .select(_CONTENT_COLS)
         .eq("id", workflow_id)
         .eq("user_id", current_user["id"])
@@ -106,7 +97,7 @@ async def update_workflow(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="无更新内容")
 
     result = (
-        await db.from_("workflows")
+        await db.from_("ss_workflows")
         .update(updates)
         .eq("id", workflow_id)
         .eq("user_id", current_user["id"])
@@ -127,7 +118,7 @@ async def delete_workflow(
 ):
     """Delete a workflow owned by the current user."""
     result = (
-        await db.from_("workflows")
+        await db.from_("ss_workflows")
         .delete()
         .eq("id", workflow_id)
         .eq("user_id", current_user["id"])
@@ -151,7 +142,7 @@ async def execute_workflow_sse(
     """
     # Fetch workflow content (verifies ownership via user_id)
     result = (
-        await db.from_("workflows")
+        await db.from_("ss_workflows")
         .select("id,nodes_json,edges_json")
         .eq("id", workflow_id)
         .eq("user_id", current_user["id"])
@@ -166,7 +157,7 @@ async def execute_workflow_sse(
     edges = workflow.get("edges_json") or []
 
     async def _save_results(wf_id: str, updated_nodes: list[dict]) -> None:
-        await db.from_("workflows").update({"nodes_json": updated_nodes}).eq("id", wf_id).eq("user_id", current_user["id"]).execute()
+        await db.from_("ss_workflows").update({"nodes_json": updated_nodes}).eq("id", wf_id).eq("user_id", current_user["id"]).execute()
 
     async def event_generator():
         async for event in execute_workflow(workflow_id, nodes, edges, save_callback=_save_results):
