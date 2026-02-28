@@ -1,4 +1,4 @@
-<# 
+﻿<# 
   sync-and-push.ps1
   
   功能：一键完成 "Monorepo → 独立仓库 → 提交推送" 全流程  

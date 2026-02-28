@@ -1,4 +1,4 @@
-<# 
+﻿<# 
   sync-from-independent.ps1
   
   功能：将独立仓库中的 StudySolo 代码同步回 Monorepo
