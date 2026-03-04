@@ -1,0 +1,44 @@
+# CODEOWNERS — 定义代码审查责任人
+# 当 PR 修改了这些路径下的文件时，GitHub 会自动请求对应的人来 Review
+#
+# 格式：<路径模式> <@用户名或@团队名>
+# 文档：https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# ============================================
+# 全局兜底 — 所有文件默认由项目负责人 Review
+# ============================================
+*                           @AIMFllys
+
+# ============================================
+# 后端
+# ============================================
+/backend/                   @AIMFllys
+/backend/app/engine/        @AIMFllys
+/backend/app/nodes/         @AIMFllys
+/backend/app/api/           @AIMFllys
+
+# ============================================
+# 前端
+# ============================================
+/frontend/                  @AIMFllys
+/frontend/src/components/   @AIMFllys
+/frontend/src/stores/       @AIMFllys
+
+# ============================================
+# 数据库 Migrations — 非常敏感，需要谨慎 Review
+# ============================================
+/supabase/                  @AIMFllys
+/frontend/supabase/         @AIMFllys
+
+# ============================================
+# 项目配置与基础设施
+# ============================================
+/.github/                   @AIMFllys
+/scripts/                   @AIMFllys
+/backend/config.yaml        @AIMFllys
+
+# ============================================
+# 文档
+# ============================================
+/docs/                      @AIMFllys
+*.md                        @AIMFllys

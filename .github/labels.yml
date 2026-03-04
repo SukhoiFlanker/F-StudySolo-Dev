@@ -1,0 +1,56 @@
+# StudySolo Labels 配置
+#
+# 使用 GitHub CLI 批量创建标签：
+#   gh label create "bug" --color "d73a4a" --description "代码缺陷或异常行为"
+#
+# 或使用以下脚本一键创建所有标签（需要安装 GitHub CLI）：
+#   powershell -ExecutionPolicy Bypass -File ".github/scripts/setup-labels.ps1"
+
+# ============================================
+# 类型标签 (Type)
+# ============================================
+# bug           | #d73a4a | 代码缺陷或异常行为
+# feature       | #0e8a16 | 新功能需求
+# enhancement   | #a2eeef | 改进现有功能
+# refactor      | #d876e3 | 代码重构
+# task          | #1d76db | 开发任务
+# docs          | #0075ca | 文档相关
+# test          | #bfd4f2 | 测试相关
+# discussion    | #d4c5f9 | 需要讨论
+
+# ============================================
+# 优先级标签 (Priority)
+# ============================================
+# P0-critical   | #b60205 | 紧急：线上故障，立即修复
+# P1-important  | #d93f0b | 重要：本周必须完成
+# P2-normal     | #fbca04 | 正常：按排期完成
+# P3-low        | #c5def5 | 低优：有空再做
+
+# ============================================
+# 模块标签 (Scope)
+# ============================================
+# scope:frontend    | #7057ff | 前端相关
+# scope:backend     | #e36209 | 后端相关
+# scope:engine      | #0052cc | 工作流引擎
+# scope:admin       | #f9d0c4 | 管理后台
+# scope:auth        | #fef2c0 | 认证/权限
+# scope:database    | #d4c5f9 | 数据库
+# scope:infra       | #c2e0c6 | 基础设施/DevOps
+
+# ============================================
+# 状态标签 (Status)
+# ============================================
+# status:todo         | #ededed | 待开始
+# status:in-progress  | #0e8a16 | 进行中
+# status:blocked      | #b60205 | 被阻塞
+# status:needs-review | #fbca04 | 等待审查
+# status:wontfix      | #ffffff | 不予修复
+# status:duplicate    | #cfd3d7 | 重复 Issue
+
+# ============================================
+# 特殊标签
+# ============================================
+# good first issue    | #7057ff | 适合新手参与
+# help wanted         | #008672 | 需要帮助
+# breaking change     | #b60205 | 包含破坏性变更
+# dependencies        | #0366d6 | 依赖更新
