@@ -1,6 +1,5 @@
 ﻿import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import Script from "next/script";
 import ThemeProvider from "@/components/layout/ThemeProvider";
 import NextTopLoader from "nextjs-toploader";
 import { Toaster } from "sonner";
@@ -29,12 +28,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="zh-CN" className="dark" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <Script
-          id="material-symbols-font"
-          strategy="beforeInteractive"
-          src="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap"
+      <head>
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap"
         />
+      </head>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <NextTopLoader
           color="#6366F1"
           initialPosition={0.08}
@@ -66,3 +66,4 @@ export default function RootLayout({
     </html>
   );
 }
+
