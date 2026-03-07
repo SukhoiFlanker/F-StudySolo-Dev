@@ -32,11 +32,13 @@ export type NodeStatus = 'pending' | 'running' | 'done' | 'error' | 'paused';
 /** AI 步骤节点数据（存储在 WorkflowNode.data 中） */
 export interface AIStepNodeData {
   label: string;
-  type: NodeType;
+  type?: NodeType;
   system_prompt: string;
   model_route: string;
   status: NodeStatus;
   output: string;
+  error?: string;
+  output_format?: string;
 }
 
 /** 工作流节点（存储在 nodes_json JSONB 中） */

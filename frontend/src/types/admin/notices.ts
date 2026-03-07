@@ -18,5 +18,5 @@ export interface PaginatedNoticeList {
   total_pages: number;
 }
 
-export type NoticeTypeFilter = 'all' | 'system' | 'feature' | 'maintenance' | 'promotion';
+export type NoticeTypeFilter = 'all' | 'system' | 'feature' | 'promotion' | 'education' | 'changelog' | 'maintenance';
 export type NoticeStatusFilter = 'all' | 'draft' | 'published' | 'archived';

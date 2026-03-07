@@ -5,7 +5,7 @@ from typing import Literal
 
 from pydantic import BaseModel, field_validator
 
-NoticeType = Literal["system", "feature", "maintenance", "promotion"]
+NoticeType = Literal["system", "feature", "promotion", "education", "changelog", "maintenance"]
 NoticeStatus = Literal["draft", "published", "archived"]
 
 

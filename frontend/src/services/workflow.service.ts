@@ -1,11 +1,24 @@
-﻿import type { WorkflowContent, WorkflowMeta } from '@/types/workflow';
+import type { WorkflowContent, WorkflowMeta } from '@/types/workflow';
+
+function normalizeBaseUrl(baseUrl: string) {
+  return baseUrl.replace(/\/+$/, '');
+}
 
 function getApiBaseUrl() {
-  return (
-    process.env.NEXT_PUBLIC_API_BASE_URL ??
-    process.env.NEXT_PUBLIC_APP_URL ??
-    'http://localhost:2038'
+  if (typeof window !== 'undefined') {
+    return '';
+  }
+
+  return normalizeBaseUrl(
+    process.env.INTERNAL_API_BASE_URL ??
+      process.env.NEXT_PUBLIC_API_BASE_URL ??
+      process.env.NEXT_PUBLIC_APP_URL ??
+      'http://127.0.0.1:2038'
   );
+}
+
+function buildApiUrl(path: string) {
+  return `${getApiBaseUrl()}${path}`;
 }
 
 function buildHeaders(token?: string) {
@@ -29,7 +42,7 @@ export async function fetchWorkflowList(
   revalidate = 30
 ): Promise<WorkflowMeta[]> {
   try {
-    const response = await fetch(`${getApiBaseUrl()}/api/workflow`, {
+    const response = await fetch(buildApiUrl('/api/workflow'), {
       headers: buildHeaders(token),
       next: { revalidate },
     });
@@ -60,7 +73,7 @@ export async function fetchWorkflowContent(
 ): Promise<WorkflowContent | null> {
   try {
     const response = await fetch(
-      `${getApiBaseUrl()}/api/workflow/${workflowId}/content`,
+      buildApiUrl(`/api/workflow/${workflowId}/content`),
       {
         headers: buildHeaders(token),
         next: { revalidate: 0 },

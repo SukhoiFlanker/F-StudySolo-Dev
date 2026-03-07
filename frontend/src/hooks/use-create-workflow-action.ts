@@ -22,7 +22,7 @@ export function useCreateWorkflowAction(defaultName = '未命名工作流'): Use
 
     setCreating(true);
     try {
-      const response = await fetch('/api/workflow/', {
+      const response = await fetch('/api/workflow', {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },

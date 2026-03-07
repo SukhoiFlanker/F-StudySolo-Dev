@@ -7,7 +7,7 @@
 }
 
 .workflow-canvas .react-flow__background {
-  display: none;
+  opacity: 0.8;
 }
 
 .workflow-controls.react-flow__controls {
@@ -79,14 +79,35 @@
 
 .workflow-canvas .react-flow__edge-path {
   stroke: #6366f1;
-  stroke-opacity: 0.3;
-  stroke-width: 2;
+  stroke-opacity: 0.45;
+  stroke-width: 2.5;
 }
 
 .workflow-canvas .react-flow__minimap {
-  display: none;
+  background: rgba(15, 23, 42, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  overflow: hidden;
+  bottom: 16px;
+  left: 16px;
 }
 
 .workflow-canvas .react-flow__node.selected > div {
   box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.5), 0 0 20px rgba(99, 102, 241, 0.15);
+}
+
+.workflow-canvas .react-flow__connection-path {
+  stroke: rgba(129, 140, 248, 0.75);
+  stroke-width: 2.5;
+  stroke-dasharray: 6 4;
+}
+
+.workflow-canvas .react-flow__handle {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.workflow-canvas .react-flow__handle:hover {
+  transform: scale(1.15);
 }

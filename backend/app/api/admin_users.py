@@ -49,9 +49,10 @@ class PaginatedUserList(BaseModel):
 
 class SubscriptionInfo(BaseModel):
     id: str
-    plan_id: str | None
+    tier: str
+    plan_type: str | None
     status: str
-    current_period_end: str | None
+    expires_at: str | None
     created_at: str
 
 
@@ -191,7 +192,7 @@ async def get_user_detail(
         # 2. Fetch latest active subscription
         sub_result = (
             await db.table("subscriptions")
-            .select("id, plan_id, status, current_period_end, created_at")
+            .select("id, tier, plan_type, status, expires_at, created_at")
             .eq("user_id", user_id)
             .order("created_at", desc=True)
             .limit(1)
@@ -203,9 +204,10 @@ async def get_user_detail(
             s = sub_rows[0]
             subscription = SubscriptionInfo(
                 id=s["id"],
-                plan_id=s.get("plan_id"),
+                tier=s.get("tier", "free"),
+                plan_type=s.get("plan_type"),
                 status=s["status"],
-                current_period_end=str(s["current_period_end"]) if s.get("current_period_end") else None,
+                expires_at=str(s["expires_at"]) if s.get("expires_at") else None,
                 created_at=str(s["created_at"]),
             )
 

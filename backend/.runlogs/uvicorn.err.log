@@ -1,0 +1,26 @@
+INFO:     Started server process [83192]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:2038 (Press CTRL+C to quit)
+Supabase auth error for /api/workflow: invalid JWT: unable to parse or verify signature, token has invalid claims: token is expired
+Supabase auth error for /api/workflow/6fad322e-8da9-47e9-bf35-f7af257e6e38/content: invalid JWT: unable to parse or verify signature, token has invalid claims: token is expired
+Supabase auth error for /api/workflow: invalid JWT: unable to parse or verify signature, token has invalid claims: token is expired
+Supabase auth error for /api/workflow: invalid JWT: unable to parse or verify signature, token has invalid claims: token is expired
+Supabase auth error for /api/auth/me: invalid JWT: unable to parse or verify signature, token has invalid claims: token is expired
+Supabase auth error for /api/auth/me: invalid JWT: unable to parse or verify signature, token has invalid claims: token is expired
+Supabase auth error for /api/workflow/6fad322e-8da9-47e9-bf35-f7af257e6e38/content: invalid JWT: unable to parse or verify signature, token has invalid claims: token is expired
+Supabase auth error for /api/workflow: invalid JWT: unable to parse or verify signature, token has invalid claims: token is expired
+Supabase auth error for /api/workflow: invalid JWT: unable to parse or verify signature, token has invalid claims: token is expired
+Supabase auth error for /api/workflow: invalid JWT: unable to parse or verify signature, token has invalid claims: token is expired
+Supabase auth error for /api/workflow: invalid JWT: unable to parse or verify signature, token has invalid claims: token is expired
+Supabase auth error for /api/workflow: invalid JWT: unable to parse or verify signature, token has invalid claims: token is expired
+Supabase auth error for /api/auth/me: invalid JWT: unable to parse or verify signature, token has invalid claims: token is expired
+Supabase auth error for /api/knowledge: invalid JWT: unable to parse or verify signature, token has invalid claims: token is expired
+Supabase auth error for /api/knowledge: invalid JWT: unable to parse or verify signature, token has invalid claims: token is expired
+Supabase auth error for /api/workflow/6fad322e-8da9-47e9-bf35-f7af257e6e38/content: invalid JWT: unable to parse or verify signature, token has invalid claims: token is expired
+Supabase auth error for /api/workflow: invalid JWT: unable to parse or verify signature, token has invalid claims: token is expired
+Supabase auth error for /api/workflow: invalid JWT: unable to parse or verify signature, token has invalid claims: token is expired
+Supabase auth error for /api/workflow: invalid JWT: unable to parse or verify signature, token has invalid claims: token is expired
+Supabase auth error for /api/workflow: invalid JWT: unable to parse or verify signature, token has invalid claims: token is expired
+Supabase auth error for /api/workflow: invalid JWT: unable to parse or verify signature, token has invalid claims: token is expired
+Supabase auth error for /api/workflow: invalid JWT: unable to parse or verify signature, token has invalid claims: token is expired

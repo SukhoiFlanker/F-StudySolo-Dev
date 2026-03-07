@@ -1,6 +1,7 @@
-﻿import type { Metadata } from "next";
+import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import ThemeProvider from "@/components/layout/ThemeProvider";
+import { AuthSessionBridge } from "@/features/auth/components";
 import NextTopLoader from "nextjs-toploader";
 import { Toaster } from "sonner";
 import "./globals.css";
@@ -35,6 +36,7 @@ export default function RootLayout({
         />
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <AuthSessionBridge />
         <NextTopLoader
           color="#6366F1"
           initialPosition={0.08}
@@ -66,4 +68,3 @@ export default function RootLayout({
     </html>
   );
 }
-

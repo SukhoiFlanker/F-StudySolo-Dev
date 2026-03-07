@@ -13,6 +13,13 @@ class UserRegister(BaseModel):
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
+    remember_me: bool = True
+
+
+class SyncSessionRequest(BaseModel):
+    access_token: str
+    refresh_token: str
+    remember_me: bool = True
 
 
 class ForgotPasswordRequest(BaseModel):

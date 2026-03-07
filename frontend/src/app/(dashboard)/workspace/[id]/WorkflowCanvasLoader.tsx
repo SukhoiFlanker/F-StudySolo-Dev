@@ -2,6 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import { useEffect } from 'react';
+import { useWorkflowSync } from '@/hooks/use-workflow-sync';
 import { useWorkflowStore } from '@/stores/use-workflow-store';
 import type { Node, Edge } from '@xyflow/react';
 
@@ -26,6 +27,7 @@ interface Props {
 
 export default function WorkflowCanvasLoader({ workflowId, initialNodes, initialEdges }: Props) {
   const setCurrentWorkflow = useWorkflowStore((s) => s.setCurrentWorkflow);
+  useWorkflowSync();
 
   // Inject SSR-fetched data into Zustand Store on mount
   useEffect(() => {

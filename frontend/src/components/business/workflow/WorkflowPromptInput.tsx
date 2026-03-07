@@ -15,7 +15,7 @@ export default function WorkflowPromptInput() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { setNodes, setEdges } = useWorkflowStore();
+  const { replaceWorkflowGraph, setGenerationContext } = useWorkflowStore();
 
   const handleGenerate = async () => {
     if (!input.trim() || loading) return;
@@ -36,8 +36,8 @@ export default function WorkflowPromptInput() {
       }
 
       const data: GenerateResponse = await res.json();
-      setNodes(data.nodes);
-      setEdges(data.edges);
+      replaceWorkflowGraph(data.nodes, data.edges);
+      setGenerationContext(input.trim(), data.implicit_context);
     } catch (err) {
       setError(err instanceof Error ? err.message : '生成失败，请重试');
     } finally {

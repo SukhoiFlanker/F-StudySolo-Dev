@@ -44,7 +44,7 @@ class Settings(BaseSettings):
 
     # Email (Aliyun DirectMail) — 与 Platform 共用 accounts@email.1037solo.com
     smtp_host: str = "smtpdm.aliyun.com"
-    smtp_port: int = 465
+    smtp_port: int = 80
     smtp_user: str = ""
     smtp_pass: str = ""
 

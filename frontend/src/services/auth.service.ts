@@ -1,4 +1,5 @@
 import { createClient } from '@/utils/supabase/client';
+import { restoreAuthSession } from '@/services/auth-session.service';
 
 const API_BASE = '';
 
@@ -9,17 +10,43 @@ function redirectToLogin() {
   window.location.href = `/login?next=${next}`;
 }
 
-/** Fetch wrapper that auto-redirects on 401 (skipped for auth endpoints) */
-async function apiFetch(path: string, init?: RequestInit): Promise<Response> {
-  const res = await fetch(`${API_BASE}${path}`, {
+function requestWithCredentials(path: string, init?: RequestInit) {
+  return fetch(`${API_BASE}${path}`, {
     credentials: 'include',
     ...init,
   });
-  // Don't redirect on 401 for auth endpoints — let the caller handle the error
-  if (res.status === 401 && !path.startsWith('/api/auth/')) {
-    redirectToLogin();
+}
+
+/** Fetch wrapper that auto-refreshes auth once before redirecting. */
+async function apiFetch(path: string, init?: RequestInit, allowRetry = true): Promise<Response> {
+  const response = await requestWithCredentials(path, init);
+  if (response.status !== 401 || path.startsWith('/api/auth/')) {
+    return response;
   }
-  return res;
+
+  if (allowRetry && await restoreAuthSession()) {
+    const retriedResponse = await requestWithCredentials(path, init);
+    if (retriedResponse.status !== 401) {
+      return retriedResponse;
+    }
+  }
+
+  redirectToLogin();
+  return response;
+}
+
+async function readApiError(response: Response, fallback: string): Promise<string> {
+  if ([500, 502, 503, 504].includes(response.status)) {
+    return '后端服务暂不可用，请确认 StudySolo 后端已启动（默认端口 2038）';
+  }
+
+  const contentType = response.headers.get('content-type') || '';
+  if (!contentType.includes('application/json')) {
+    return fallback;
+  }
+
+  const data = await response.json().catch(() => ({}));
+  return data.detail || fallback;
 }
 
 export interface LoginResult {
@@ -60,15 +87,18 @@ export async function sendVerificationCode(
 }
 
 /** Login with email + password. Returns user info on success. */
-export async function login(email: string, password: string): Promise<LoginResult> {
+export async function login(
+  email: string,
+  password: string,
+  rememberMe = true,
+): Promise<LoginResult> {
   const res = await apiFetch('/api/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ email, password, remember_me: rememberMe }),
   });
   if (!res.ok) {
-    const data = await res.json().catch(() => ({}));
-    throw new Error(data.detail || '登录失败，请检查邮箱和密码');
+    throw new Error(await readApiError(res, '登录失败，请检查邮箱和密码'));
   }
   return res.json();
 }

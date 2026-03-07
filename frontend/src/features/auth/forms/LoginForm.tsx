@@ -1,10 +1,15 @@
-﻿'use client';
+'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { createClient } from '@/utils/supabase/client';
+import {
+  clearRememberedCredentials,
+  loadRememberedCredentials,
+  saveRememberedCredentials,
+} from '@/services/auth-credentials.service';
 import { login } from '@/services/auth.service';
 import { AuthShell } from '@/features/auth/components';
 
@@ -15,12 +20,29 @@ export function LoginForm() {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [remember, setRemember] = useState(false);
+  const [remember, setRemember] = useState(true);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const justRegistered = searchParams.get('registered') === 'true';
   const resetSuccess = searchParams.get('reset') === 'success';
+
+  useEffect(() => {
+    const savedCredentials = loadRememberedCredentials();
+    if (!savedCredentials) {
+      return;
+    }
+
+    setEmail(savedCredentials.email);
+    setPassword(savedCredentials.password);
+    setRemember(savedCredentials.remember);
+  }, []);
+
+  useEffect(() => {
+    if (!remember) {
+      clearRememberedCredentials();
+    }
+  }, [remember]);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -28,12 +50,18 @@ export function LoginForm() {
     setLoading(true);
 
     try {
-      const result = await login(email, password);
+      const result = await login(email, password, remember);
       const supabase = createClient();
       await supabase.auth.setSession({
         access_token: result.access_token,
         refresh_token: result.refresh_token,
       });
+
+      if (remember) {
+        saveRememberedCredentials(email, password);
+      } else {
+        clearRememberedCredentials();
+      }
 
       toast.success('登录成功', {
         description: '正在进入工作区...',

@@ -57,6 +57,8 @@ SYSTEM_PROMPTS: dict[NodeType, str] = {
         "- nodes: 节点数组，每个节点包含 id、type、position({x,y})、data({label,system_prompt,model_route,status,output})\n"
         "- edges: 连线数组，每条连线包含 id、source、target\n"
         "节点类型只能是：outline_gen、content_extract、summary、flashcard、chat_response、write_db\n"
+        "position 必须体现依赖逻辑：有分支时请使用多行或错位布局，不要把所有节点都放在同一条直线上。\n"
+        "edges 必须真实表达先后与分支关系，不能只做形式上的顺序拼接。\n"
         "最多生成 8 个节点。不要输出任何 JSON 以外的内容。"
     ),
     NodeType.outline_gen: (
@@ -103,6 +105,7 @@ class NodePosition(BaseModel):
 
 class NodeData(BaseModel):
     label: str
+    type: str = ""
     system_prompt: str = ""
     model_route: str = ""
     status: str = "pending"

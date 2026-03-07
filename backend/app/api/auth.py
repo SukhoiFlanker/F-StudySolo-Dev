@@ -17,6 +17,7 @@ import time
 from typing import Annotated
 
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Response, status
+from pydantic import BaseModel
 from supabase import AsyncClient
 
 from app.core.deps import (
@@ -29,6 +30,7 @@ from app.models.user import (
     ResetPasswordRequest,
     ResetPasswordWithCodeRequest,
     SendCodeRequest,
+    SyncSessionRequest,
     UserInfo,
     UserLogin,
     UserRegister,
@@ -50,12 +52,92 @@ _COOKIE_OPTS = dict(
     samesite="lax",
     path="/",
 )
+_AUTH_COOKIE_MAX_AGE = int(os.getenv("AUTH_COOKIE_MAX_AGE", str(60 * 60 * 24 * 30)))
 
 # Frontend URL for email redirect links
 _FRONTEND_URL = os.getenv("CORS_ORIGIN", "http://localhost:2037")
 
-# Captcha secret — simple HMAC-based slider verification
+# Captcha secret — HMAC-based challenge-response verification
 _CAPTCHA_SECRET = os.getenv("CAPTCHA_SECRET", "studysolo-captcha-2026")
+
+# ----------- Captcha PRNG (must match frontend mulberry32 exactly) -----------
+_PIECE_L = 42
+_PIECE_R = 9
+_L = _PIECE_L + _PIECE_R * 2 + 3  # 63
+_CANVAS_W = 320
+_CAPTCHA_TOLERANCE = 6
+
+
+def _build_cookie_options(remember_me: bool = True) -> dict:
+    """Return cookie options, using persistent cookies when remember_me is enabled."""
+    options = dict(_COOKIE_OPTS)
+    if remember_me:
+        options["max_age"] = _AUTH_COOKIE_MAX_AGE
+    return options
+
+
+def _set_auth_cookies(
+    response: Response,
+    access_token: str,
+    refresh_token: str,
+    remember_me: bool = True,
+) -> None:
+    """Write auth cookies, preserving the remember-me preference."""
+    cookie_options = _build_cookie_options(remember_me)
+    response.set_cookie(key="access_token", value=access_token, **cookie_options)
+    response.set_cookie(key="refresh_token", value=refresh_token, **cookie_options)
+    response.set_cookie(
+        key="remember_me",
+        value="1" if remember_me else "0",
+        **cookie_options,
+    )
+
+
+def _clear_auth_cookies(response: Response) -> None:
+    """Clear all user auth cookies."""
+    response.delete_cookie(key="access_token", path="/")
+    response.delete_cookie(key="refresh_token", path="/")
+    response.delete_cookie(key="remember_me", path="/")
+
+
+def _s32(x: int) -> int:
+    """Signed 32-bit (JS: x | 0)."""
+    x &= 0xFFFFFFFF
+    return x - 0x100000000 if x >= 0x80000000 else x
+
+
+def _u32(x: int) -> int:
+    """Unsigned 32-bit (JS: x >>> 0)."""
+    return x & 0xFFFFFFFF
+
+
+def _imul(a: int, b: int) -> int:
+    """32-bit multiply (JS: Math.imul)."""
+    return _s32(_s32(a) * _s32(b))
+
+
+def _mulberry32(seed: int):
+    """PRNG matching the frontend's mulberry32 implementation."""
+    state = [seed]
+
+    def _next() -> float:
+        state[0] = _s32(state[0])
+        state[0] = _s32(state[0] + 0x6D2B79F5)
+        a = state[0]
+        t = _imul(a ^ (_u32(a) >> 15), _s32(1 | a))
+        imul_r = _imul(_s32(t ^ (_u32(t) >> 7)), _s32(61 | t))
+        t = _s32(_s32(t + imul_r) ^ t)
+        return _u32(t ^ (_u32(t) >> 14)) / 4294967296
+
+    return _next
+
+
+def _compute_target_x(seed: int) -> int:
+    """Compute the puzzle target X from seed, matching frontend randRange."""
+    rng = _mulberry32(seed)
+    min_val = _L + 10    # 73
+    max_val = _CANVAS_W - _L - 10  # 247
+    return int(min_val + rng() * (max_val - min_val))
 
 
 def _verify_captcha_token(token: str) -> bool:
@@ -133,21 +215,77 @@ async def send_code(
 
 
 # ---------------------------------------------------------------------------
-# Captcha token generation (for the frontend slider component)
+# Captcha challenge-response (server-side verified)
 # ---------------------------------------------------------------------------
 
-@router.post("/captcha-token")
-async def generate_captcha_token():
-    """Generate a captcha verification token after slider completion.
 
-    The frontend sends the slider completion data, and we return a
-    signed token that must be included in the send-code request.
+class CaptchaVerifyRequest(BaseModel):
+    """Request body for /captcha-token."""
+    challenge: str
+    x: int
+
+
+@router.post("/captcha-challenge")
+async def generate_captcha_challenge():
+    """Generate a puzzle challenge.
+
+    Returns a seed (used by frontend to draw the puzzle) and a signed
+    challenge token that embeds the expected answer.
     """
+    seed = int.from_bytes(os.urandom(4), "big") % 100000
+    target_x = _compute_target_x(seed)
     ts = str(int(time.time()))
-    token_hmac = hmac.new(
-        _CAPTCHA_SECRET.encode(), ts.encode(), hashlib.sha256
+    payload = f"{seed}:{target_x}:{ts}"
+    sig = hmac.new(
+        _CAPTCHA_SECRET.encode(), payload.encode(), hashlib.sha256
     ).hexdigest()
-    return {"token": f"{ts}:{token_hmac}"}
+    challenge = f"{seed}:{ts}:{sig}"
+    return {"seed": seed, "challenge": challenge}
+
+
+@router.post("/captcha-token")
+async def verify_captcha_and_issue_token(body: CaptchaVerifyRequest):
+    """Verify the user's puzzle answer and return a signed auth token.
+
+    The frontend submits the challenge (from /captcha-challenge) together
+    with the X coordinate where the user placed the puzzle piece.
+    """
+    parts = body.challenge.split(":")
+    if len(parts) != 3:
+        raise HTTPException(status_code=400, detail="无效的验证挑战")
+
+    seed_str, ts_str, provided_sig = parts
+    try:
+        seed = int(seed_str)
+        ts = int(ts_str)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="无效的验证挑战")
+
+    # Check expiry (5 minutes)
+    if abs(time.time() - ts) > 300:
+        raise HTTPException(status_code=400, detail="验证已过期，请刷新重试")
+
+    # Recompute target X from seed
+    target_x = _compute_target_x(seed)
+
+    # Verify HMAC (ensures challenge was issued by us and not tampered)
+    payload = f"{seed}:{target_x}:{ts_str}"
+    expected_sig = hmac.new(
+        _CAPTCHA_SECRET.encode(), payload.encode(), hashlib.sha256
+    ).hexdigest()
+    if not hmac.compare_digest(expected_sig, provided_sig):
+        raise HTTPException(status_code=400, detail="无效的验证挑战")
+
+    # Check the user's answer
+    if abs(body.x - target_x) > _CAPTCHA_TOLERANCE:
+        raise HTTPException(status_code=400, detail="拼合不准确，请重试")
+
+    # Issue signed token
+    token_ts = str(int(time.time()))
+    token_hmac = hmac.new(
+        _CAPTCHA_SECRET.encode(), token_ts.encode(), hashlib.sha256
+    ).hexdigest()
+    return {"token": f"{token_ts}:{token_hmac}"}
 
 
 # ---------------------------------------------------------------------------
@@ -264,8 +402,12 @@ async def login(
     session = result.session
     user = result.user
 
-    response.set_cookie(key="access_token", value=session.access_token, **_COOKIE_OPTS)
-    response.set_cookie(key="refresh_token", value=session.refresh_token, **_COOKIE_OPTS)
+    _set_auth_cookies(
+        response,
+        session.access_token,
+        session.refresh_token,
+        body.remember_me,
+    )
 
     user_meta = user.user_metadata or {}
     return {
@@ -298,8 +440,7 @@ async def logout(
         except Exception:
             pass
 
-    response.delete_cookie(key="access_token", path="/")
-    response.delete_cookie(key="refresh_token", path="/")
+    _clear_auth_cookies(response)
     return {"message": "已退出登录"}
 
 
@@ -308,6 +449,7 @@ async def refresh(
     response: Response,
     anon_db: AsyncClient = Depends(get_anon_supabase_client),
     refresh_token: Annotated[str | None, Cookie()] = None,
+    remember_me: Annotated[str | None, Cookie()] = None,
 ):
     """Use the refresh_token cookie to obtain a new access_token."""
     if not refresh_token:
@@ -328,9 +470,63 @@ async def refresh(
         )
 
     session = result.session
-    response.set_cookie(key="access_token", value=session.access_token, **_COOKIE_OPTS)
-    response.set_cookie(key="refresh_token", value=session.refresh_token, **_COOKIE_OPTS)
-    return {"message": "Token 已刷新"}
+    keep_signed_in = remember_me != "0"
+    _set_auth_cookies(
+        response,
+        session.access_token,
+        session.refresh_token,
+        keep_signed_in,
+    )
+    return {
+        "message": "Token 已刷新",
+        "access_token": session.access_token,
+        "refresh_token": session.refresh_token,
+    }
+
+
+@router.post("/sync-session")
+async def sync_session(
+    body: SyncSessionRequest,
+    response: Response,
+    anon_db: AsyncClient = Depends(get_anon_supabase_client),
+):
+    """Restore backend HttpOnly cookies from a browser-persisted Supabase session."""
+    try:
+        result = await anon_db.auth.set_session(body.access_token, body.refresh_token)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="本地登录态已失效，请重新登录",
+        ) from exc
+
+    if result.session is None or result.user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="本地登录态已失效，请重新登录",
+        )
+
+    session = result.session
+    user = result.user
+    _set_auth_cookies(
+        response,
+        session.access_token,
+        session.refresh_token,
+        body.remember_me,
+    )
+
+    user_meta = user.user_metadata or {}
+    return {
+        "message": "登录状态已恢复",
+        "access_token": session.access_token,
+        "refresh_token": session.refresh_token,
+        "user": UserInfo(
+            id=str(user.id),
+            email=user.email or "",
+            name=user_meta.get("name") or user_meta.get("full_name"),
+            avatar_url=user_meta.get("avatar_url"),
+            role=user_meta.get("role", "user"),
+        ),
+    }
 
 
 @router.post("/forgot-password")
@@ -380,8 +576,7 @@ async def reset_password(
             status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)
         )
 
-    response.delete_cookie(key="access_token", path="/")
-    response.delete_cookie(key="refresh_token", path="/")
+    _clear_auth_cookies(response)
     return {"message": "密码重置成功，请使用新密码登录"}
 
 
@@ -402,32 +597,23 @@ async def reset_password_with_code(
             detail="验证码无效或已过期，请重新获取",
         )
 
-    # Find user by email (admin API)
+    # Find user by email via direct DB query (reliable, O(1))
     try:
-        # List users filtered by email
-        users_response = await db.auth.admin.list_users()
-        target_user = None
-        for u in users_response:
-            if hasattr(u, 'email') and u.email == body.email:
-                target_user = u
-                break
-            elif isinstance(u, list):
-                for user_obj in u:
-                    if hasattr(user_obj, 'email') and user_obj.email == body.email:
-                        target_user = user_obj
-                        break
-                if target_user:
-                    break
+        result = await db.from_("user_profiles").select("id").eq(
+            "email", body.email
+        ).limit(1).execute()
 
-        if not target_user:
+        if not result.data:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="该邮箱未注册",
             )
 
+        user_id = result.data[0]["id"]
+
         # Update password via admin API
         await db.auth.admin.update_user_by_id(
-            str(target_user.id),
+            user_id,
             {"password": body.new_password},
         )
     except HTTPException:

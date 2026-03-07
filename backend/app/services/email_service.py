@@ -27,43 +27,55 @@ def _build_verification_email_html(code: str) -> str:
     return f"""\
 <!DOCTYPE html>
 <html lang="zh-CN">
-<head><meta charset="UTF-8"></head>
-<body style="margin:0;padding:0;background:#0F172A;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0F172A;padding:40px 20px;">
+<head>
+  <meta charset="UTF-8">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body style="margin:0;padding:0;background-color:#020617;font-family:'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';-webkit-font-smoothing:antialiased;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#020617;padding:60px 20px;">
     <tr><td align="center">
-      <table width="460" cellpadding="0" cellspacing="0" style="background:#1E293B;border-radius:16px;border:1px solid rgba(255,255,255,0.06);overflow:hidden;">
+      <table width="480" cellpadding="0" cellspacing="0" style="background-color:#0F172A;border-radius:24px;border:1px solid rgba(255,255,255,0.08);overflow:hidden;box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);">
         <!-- Header -->
-        <tr><td style="padding:32px 32px 0;text-align:center;">
-          <div style="font-size:28px;font-weight:700;background:linear-gradient(135deg,#6366F1,#818CF8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">
-            ⚡ StudySolo
-          </div>
-          <div style="font-size:12px;color:#94A3B8;margin-top:4px;">1037Solo 统一账户</div>
+        <tr><td style="padding:48px 40px 0;text-align:center;">
+          <img src="https://husteread.com/wp-content/uploads/2026/01/1037-SOLO-%E5%8F%B3%E4%BE%A71.png" alt="1037Solo Logo" style="height:48px;width:auto;display:block;margin:0 auto 16px;">
+          <div style="font-size:14px;font-weight:500;color:#94A3B8;letter-spacing:1px;text-transform:uppercase;">StudySolo 账号安全中心</div>
         </td></tr>
         <!-- Body -->
-        <tr><td style="padding:32px;">
-          <p style="color:#E2E8F0;font-size:15px;margin:0 0 8px;">您好，</p>
-          <p style="color:#94A3B8;font-size:14px;margin:0 0 24px;line-height:1.6;">
-            您正在进行账号验证操作，以下是您的验证码：
+        <tr><td style="padding:40px;">
+          <h2 style="color:#F8FAFC;font-size:20px;font-weight:600;margin:0 0 16px;">您好，</h2>
+          <p style="color:#CBD5E1;font-size:15px;margin:0 0 32px;line-height:1.7;">
+            感谢访问 <strong>StudySolo</strong> — 由 1037Solo 团队为您打造的新一代个人数字工作平台。我们收到了一项关于您账号的验证请求。您的专属验证码为：
           </p>
-          <div style="text-align:center;margin:24px 0;">
-            <div style="display:inline-block;padding:16px 40px;background:linear-gradient(135deg,#6366F1,#4F46E5);border-radius:12px;letter-spacing:8px;font-size:32px;font-weight:700;color:#FFFFFF;">
+          <div style="text-align:center;margin:32px 0;">
+            <div style="display:inline-block;padding:20px 48px;background:linear-gradient(135deg, rgba(99,102,241,0.1) 0%, rgba(79,70,229,0.1) 100%);border:1px solid rgba(99,102,241,0.4);border-radius:16px;letter-spacing:12px;font-size:36px;font-weight:700;color:#818CF8;box-shadow: 0 4px 20px rgba(99,102,241,0.15);">
               {code}
             </div>
           </div>
-          <p style="color:#94A3B8;font-size:13px;text-align:center;margin:16px 0 0;">
-            验证码 <strong style="color:#E2E8F0;">5 分钟</strong>内有效，请勿告知他人
+          <p style="color:#94A3B8;font-size:14px;margin:32px 0 0;line-height:1.6;padding:16px;background-color:rgba(15,23,42,0.5);border-radius:12px;border:1px solid rgba(255,255,255,0.04);">
+            <span style="display:inline-block;margin-bottom:8px;">⏱️ 验证码 <strong style="color:#E2E8F0;">5 分钟</strong>内有效，请留意使用时间。</span><br>
+            🔒 请勿将此验证码泄露给其他任何人。
           </p>
         </td></tr>
         <!-- Divider -->
-        <tr><td style="padding:0 32px;">
-          <div style="height:1px;background:rgba(255,255,255,0.06);"></div>
+        <tr><td style="padding:0;text-align:center;">
+          <div style="width:80%;height:1px;background:linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);margin:0 auto;"></div>
         </td></tr>
         <!-- Footer -->
-        <tr><td style="padding:20px 32px 28px;text-align:center;">
-          <p style="color:#64748B;font-size:11px;margin:0;line-height:1.6;">
-            如果您没有请求此验证码，请忽略此邮件。<br>
-            © {datetime.now().year} 1037Solo Team · 
-            <a href="https://studyflow.1037solo.com" style="color:#6366F1;text-decoration:none;">studyflow.1037solo.com</a>
+        <tr><td style="padding:32px 40px;text-align:center;background-color:#0B1120;">
+          <p style="color:#64748B;font-size:12px;margin:0 0 12px;line-height:1.6;">
+            如果您并未发出此操作请求（重置密码或注册），请忽略本邮件，您的账号安全不会受到影响。
+          </p>
+          <div style="margin-top:24px;">
+            <a href="https://1037solo.com" style="color:#818CF8;font-size:13px;text-decoration:none;font-weight:500;margin:0 12px;">1037solo.com</a>
+            <span style="color:#334155;">|</span>
+            <a href="https://docs.1037solo.com" style="color:#818CF8;font-size:13px;text-decoration:none;font-weight:500;margin:0 12px;">帮助文档</a>
+            <span style="color:#334155;">|</span>
+            <a href="mailto:support@1037solo.com" style="color:#818CF8;font-size:13px;text-decoration:none;font-weight:500;margin:0 12px;">联系支持</a>
+          </div>
+          <p style="color:#334155;font-size:11px;margin:24px 0 0;">
+            © {datetime.now().year} 1037Solo Team. All rights reserved.
           </p>
         </td></tr>
       </table>
@@ -84,15 +96,22 @@ class EmailService:
         self.smtp_pass = s.smtp_pass
 
     def _send(self, to: str, subject: str, html_body: str) -> None:
-        """Send an email via SMTP SSL."""
+        """Send an email via SMTP with STARTTLS.
+
+        Uses port 80 with explicit TLS (STARTTLS) instead of implicit SSL
+        on port 465, which is incompatible with Python 3.14 / OpenSSL 3.x.
+        """
         msg = MIMEMultipart("alternative")
-        msg["From"] = f"StudySolo <{self.smtp_user}>"
+        msg["From"] = f"1037Solo <{self.smtp_user}>"
         msg["To"] = to
         msg["Subject"] = subject
         msg.attach(MIMEText(html_body, "html", "utf-8"))
 
         try:
-            with smtplib.SMTP_SSL(self.smtp_host, self.smtp_port, timeout=10) as server:
+            with smtplib.SMTP(self.smtp_host, self.smtp_port, timeout=10) as server:
+                server.ehlo()
+                server.starttls()
+                server.ehlo()
                 server.login(self.smtp_user, self.smtp_pass)
                 server.sendmail(self.smtp_user, [to], msg.as_string())
             logger.info("Email sent to %s", to)
@@ -102,7 +121,7 @@ class EmailService:
 
     def send_verification_code(self, to: str, code: str) -> None:
         """Send a verification code email."""
-        subject = f"【StudySolo】验证码：{code}"
+        subject = "【StudySolo】重置密码/注册"
         html = _build_verification_email_html(code)
         self._send(to, subject, html)
 

@@ -14,7 +14,7 @@ export function useWorkflowExecution() {
   const esRef = useRef<EventSource | null>(null);
   const reconnectCountRef = useRef(0);
 
-  const { currentWorkflowId, updateNodeData } = useWorkflowStore();
+  const { currentWorkflowId, setSelectedNodeId, updateNodeData } = useWorkflowStore();
 
   const stop = useCallback(() => {
     esRef.current?.close();
@@ -38,6 +38,7 @@ export function useWorkflowExecution() {
         es.addEventListener('node_status', (e) => {
           try {
             const data = JSON.parse(e.data);
+            setSelectedNodeId(data.node_id);
             updateNodeData(data.node_id, {
               status: data.status,
               ...(data.error ? { error: data.error } : {}),
@@ -48,6 +49,7 @@ export function useWorkflowExecution() {
         es.addEventListener('node_token', (e) => {
           try {
             const data = JSON.parse(e.data);
+            setSelectedNodeId(data.node_id);
             updateNodeData(data.node_id, (prev) => ({
               output: (prev.output ?? '') + data.token,
             }));
@@ -57,6 +59,7 @@ export function useWorkflowExecution() {
         es.addEventListener('node_done', (e) => {
           try {
             const data = JSON.parse(e.data);
+            setSelectedNodeId(data.node_id);
             updateNodeData(data.node_id, {
               output: data.full_output,
               status: 'done',
@@ -85,7 +88,7 @@ export function useWorkflowExecution() {
 
       connect(0);
     },
-    [currentWorkflowId, updateNodeData, stop]
+    [currentWorkflowId, setSelectedNodeId, updateNodeData, stop]
   );
 
   return { status, error, start, stop };

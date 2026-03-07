@@ -21,6 +21,7 @@ UNPROTECTED_PATHS = {
     "/api/auth/reset-password-with-code",
     "/api/auth/resend-verification",
     "/api/auth/send-code",
+    "/api/auth/captcha-challenge",
     "/api/auth/captcha-token",
     "/api/health",
     "/docs",

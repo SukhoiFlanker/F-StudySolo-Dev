@@ -2,9 +2,9 @@
 .SYNOPSIS
     StudySolo 全栈本地开发启动神器 (Windows)
 .DESCRIPTION
-    1. 自动检测并解放后端(8000)和前端(5173)端口。
+    1. 自动检测并解放后端(2038)和前端(2037)端口。
     2. 自动启动后端虚拟环境和 Uvicorn 服务。
-    3. 自动启动前端 Vite / pnpm dev 服务。
+    3. 自动清理 .next 缓存并启动前端 Next.js dev 服务。
     4. 采用高级炫酷的控制台动画和 UI 输出。
 .NOTES
     作者: AIMFl
@@ -149,8 +149,16 @@ function Start-Frontend {
     }
     Write-Info "正在构建前端视界 (Next.js)..."
     
-    # 启动新窗口执行
-    $cmd = "cd '$frontendDir'; pnpm dev"
+    # 清理 .next 缓存，防止旧的 rewrites 配置残留
+    $nextCacheDir = Join-Path $frontendDir ".next"
+    if (Test-Path $nextCacheDir) {
+        Write-Info "清理 .next 缓存..."
+        Remove-Item -Recurse -Force $nextCacheDir -ErrorAction SilentlyContinue
+        Write-Success ".next 缓存已清理。"
+    }
+    
+    # 启动新窗口执行（显式指定端口）
+    $cmd = "cd '$frontendDir'; pnpm dev --port $FrontendPort"
     Start-Process powershell -ArgumentList "-NoExit -Command `"$cmd`"" -WindowStyle Normal
     Write-Success "前端视界面板已展开！"
 }
@@ -188,9 +196,9 @@ Start-Frontend
 # 3. 完成结算
 Write-Host ""
 Write-Host "=== 🎯 系统已就绪 ===" -ForegroundColor Magenta
-Write-Host "  ✨ [ 前端控制台 ] -> http://localhost:$FrontendPort" -ForegroundColor Green
-Write-Host "  ✨ [ 后端 API 根地址 ] -> http://localhost:$BackendPort" -ForegroundColor Green
-Write-Host "  ✨ [ Swagger 接口文档 ] -> http://localhost:$BackendPort/docs" -ForegroundColor Green
+Write-Host "  ✨ [ 前端控制台 ] -> http://127.0.0.1:$FrontendPort" -ForegroundColor Green
+Write-Host "  ✨ [ 后端 API 根地址 ] -> http://127.0.0.1:$BackendPort" -ForegroundColor Green
+Write-Host "  ✨ [ Swagger 接口文档 ] -> http://127.0.0.1:$BackendPort/docs" -ForegroundColor Green
 Write-Host ""
 Write-Host "祝您开发愉快（代码永无 Bug）！🎉" -ForegroundColor Yellow
 Write-Host ""

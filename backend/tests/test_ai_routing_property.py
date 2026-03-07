@@ -13,9 +13,11 @@ Validates: Requirements 4.3, 4.5, 4.6
 """
 
 import pytest
+from httpx import Request
 from hypothesis import given, settings, assume
 from hypothesis import strategies as st
 from unittest.mock import AsyncMock, patch, MagicMock
+from openai import APIConnectionError
 
 from app.core.config_loader import get_config
 from app.services.ai_router import (
@@ -23,6 +25,7 @@ from app.services.ai_router import (
     get_fallback_chain,
     is_proxy_aggregator,
     AIRouterError,
+    call_llm,
 )
 
 # All valid node types from config.yaml
@@ -94,3 +97,53 @@ def test_fallback_chain_platforms_exist_in_config(chain_id: str):
         assert step["platform"] in cfg["platforms"], (
             f"Platform '{step['platform']}' in chain {chain_id} not found in platforms config"
         )
+
+
+@pytest.mark.asyncio
+async def test_call_llm_uses_safe_reserve_fallback_when_primary_chain_fails():
+    """Chain A should continue into verified native reserves before raising AIRouterError."""
+    request = Request("POST", "https://example.com/v1/chat/completions")
+
+    failing_client = MagicMock()
+    failing_client.chat.completions.create = AsyncMock(
+        side_effect=APIConnectionError(request=request)
+    )
+
+    reserve_client = MagicMock()
+    reserve_client.chat.completions.create = AsyncMock(
+        return_value=MagicMock(
+            choices=[MagicMock(message=MagicMock(content="reserve-ok"))]
+        )
+    )
+
+    route = {
+        "platform": "dashscope",
+        "default_model": "qwen-turbo",
+        "route_chain": "A",
+    }
+    steps = [
+        {"platform": "dashscope", "model": "qwen-turbo"},
+        {"platform": "deepseek", "model": "deepseek-chat"},
+        {"platform": "zhipu", "model": "glm-4"},
+    ]
+
+    with (
+        patch("app.services.ai_router.get_route", return_value=route),
+        patch("app.services.ai_router._build_fallback_steps", return_value=steps),
+        patch("app.services.ai_router._is_platform_configured", return_value=True),
+        patch(
+            "app.services.ai_router._get_client",
+            side_effect=[
+                (failing_client, "qwen-turbo"),
+                (failing_client, "deepseek-chat"),
+                (reserve_client, "glm-4"),
+            ],
+        ),
+    ):
+        result = await call_llm(
+            "ai_analyzer",
+            [{"role": "user", "content": "返回 JSON"}],
+            stream=False,
+        )
+
+    assert result == "reserve-ok"

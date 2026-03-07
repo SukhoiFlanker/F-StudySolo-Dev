@@ -8,7 +8,7 @@ import remarkGfm from 'remark-gfm'
 // Types
 // ---------------------------------------------------------------------------
 
-export type NoticeType = 'system' | 'feature' | 'maintenance' | 'promotion'
+export type NoticeType = 'system' | 'feature' | 'promotion' | 'education' | 'changelog' | 'maintenance'
 export type NoticeStatus = 'draft' | 'published' | 'archived'
 
 export interface NoticeFormData {
@@ -31,16 +31,18 @@ interface NoticeEditorProps {
 // ---------------------------------------------------------------------------
 
 const TYPE_OPTIONS: { value: NoticeType; label: string }[] = [
-  { value: 'system',      label: 'System' },
-  { value: 'feature',     label: 'Feature' },
+  { value: 'system', label: 'System' },
+  { value: 'feature', label: 'Feature' },
+  { value: 'promotion', label: 'Promotion' },
+  { value: 'education', label: 'Education' },
+  { value: 'changelog', label: 'Changelog' },
   { value: 'maintenance', label: 'Maintenance' },
-  { value: 'promotion',   label: 'Promotion' },
 ]
 
 const STATUS_OPTIONS: { value: NoticeStatus; label: string }[] = [
-  { value: 'draft',     label: 'Draft' },
+  { value: 'draft', label: 'Draft' },
   { value: 'published', label: 'Published' },
-  { value: 'archived',  label: 'Archived' },
+  { value: 'archived', label: 'Archived' },
 ]
 
 // ---------------------------------------------------------------------------
@@ -163,18 +165,16 @@ export default function NoticeEditor({
             <button
               type="button"
               onClick={() => setPreview(false)}
-              className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
-                !preview ? 'bg-indigo-600 text-white' : 'text-white/50 hover:text-white'
-              }`}
+              className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${!preview ? 'bg-indigo-600 text-white' : 'text-white/50 hover:text-white'
+                }`}
             >
               Edit
             </button>
             <button
               type="button"
               onClick={() => setPreview(true)}
-              className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
-                preview ? 'bg-indigo-600 text-white' : 'text-white/50 hover:text-white'
-              }`}
+              className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${preview ? 'bg-indigo-600 text-white' : 'text-white/50 hover:text-white'
+                }`}
             >
               Preview
             </button>

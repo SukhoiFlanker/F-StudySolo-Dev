@@ -18,8 +18,10 @@ const TYPE_OPTIONS: { value: NoticeTypeFilter; label: string }[] = [
   { value: 'all', label: 'All Types' },
   { value: 'system', label: 'System' },
   { value: 'feature', label: 'Feature' },
-  { value: 'maintenance', label: 'Maintenance' },
   { value: 'promotion', label: 'Promotion' },
+  { value: 'education', label: 'Education' },
+  { value: 'changelog', label: 'Changelog' },
+  { value: 'maintenance', label: 'Maintenance' },
 ];
 
 const STATUS_OPTIONS: { value: NoticeStatusFilter; label: string }[] = [

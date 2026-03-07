@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["admin-notices"])
 
-NoticeTypeFilter = Literal["system", "feature", "maintenance", "promotion"]
+NoticeTypeFilter = Literal["system", "feature", "promotion", "education", "changelog", "maintenance"]
 NoticeStatusFilter = Literal["draft", "published", "archived"]
 
 

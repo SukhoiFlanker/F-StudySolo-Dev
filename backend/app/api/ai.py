@@ -3,6 +3,7 @@
 import json
 import logging
 import re
+from collections import defaultdict, deque
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import ValidationError
@@ -62,6 +63,140 @@ def _extract_json(text: str) -> str:
     if m:
         return m.group(1).strip()
     return text.strip()
+
+
+def _normalize_edges(nodes: list[WorkflowNodeSchema], edges: list[WorkflowEdgeSchema]) -> list[WorkflowEdgeSchema]:
+    """Keep only valid edges and create a sequential fallback when missing."""
+    node_ids = {node.id for node in nodes}
+    normalized: list[WorkflowEdgeSchema] = []
+    seen_pairs: set[tuple[str, str]] = set()
+
+    for edge in edges:
+        if edge.source not in node_ids or edge.target not in node_ids or edge.source == edge.target:
+            continue
+
+        pair = (edge.source, edge.target)
+        if pair in seen_pairs:
+            continue
+
+        seen_pairs.add(pair)
+        normalized.append(
+            WorkflowEdgeSchema(
+                id=edge.id or f"edge-{edge.source}-{edge.target}",
+                source=edge.source,
+                target=edge.target,
+            )
+        )
+
+    if normalized:
+        return normalized
+
+    fallback_edges: list[WorkflowEdgeSchema] = []
+    for index in range(len(nodes) - 1):
+        source = nodes[index].id
+        target = nodes[index + 1].id
+        fallback_edges.append(
+            WorkflowEdgeSchema(
+                id=f"edge-{source}-{target}",
+                source=source,
+                target=target,
+            )
+        )
+
+    return fallback_edges
+
+
+def _should_auto_layout(nodes: list[WorkflowNodeSchema], edges: list[WorkflowEdgeSchema]) -> bool:
+    """Auto-layout sparse or obviously flattened plans."""
+    if len(nodes) <= 1:
+        return False
+
+    positions = [node.position for node in nodes if node.position]
+    if len(positions) != len(nodes):
+        return True
+
+    snapped = {(round(position.x / 40), round(position.y / 40)) for position in positions}
+    if len(snapped) < len(nodes):
+        return True
+
+    unique_x = {round(position.x / 40) for position in positions}
+    unique_y = {round(position.y / 40) for position in positions}
+
+    indegree = defaultdict(int)
+    outdegree = defaultdict(int)
+    for edge in edges:
+        indegree[edge.target] += 1
+        outdegree[edge.source] += 1
+
+    has_branching = any(outdegree[node.id] > 1 or indegree[node.id] > 1 for node in nodes)
+    if has_branching and (len(unique_x) <= 2 or len(unique_y) <= 1):
+        return True
+
+    return len(unique_x) == 1 or len(unique_y) == 1
+
+
+def _auto_layout_nodes(nodes: list[WorkflowNodeSchema], edges: list[WorkflowEdgeSchema]) -> list[WorkflowNodeSchema]:
+    """Lay out the workflow by dependency levels so branches become visible."""
+    adjacency: dict[str, list[str]] = defaultdict(list)
+    indegree: dict[str, int] = {node.id: 0 for node in nodes}
+    node_order = {node.id: index for index, node in enumerate(nodes)}
+
+    for edge in edges:
+        adjacency[edge.source].append(edge.target)
+        indegree[edge.target] = indegree.get(edge.target, 0) + 1
+
+    roots = [node.id for node in nodes if indegree.get(node.id, 0) == 0]
+    queue = deque(sorted(roots, key=node_order.get))
+    levels: dict[str, int] = {node_id: 0 for node_id in roots}
+    visited: list[str] = []
+
+    while queue:
+        current = queue.popleft()
+        visited.append(current)
+        current_level = levels.get(current, 0)
+
+        for neighbor in adjacency.get(current, []):
+            levels[neighbor] = max(levels.get(neighbor, 0), current_level + 1)
+            indegree[neighbor] -= 1
+            if indegree[neighbor] == 0:
+                queue.append(neighbor)
+
+    if len(visited) != len(nodes):
+        next_level = max(levels.values(), default=-1) + 1
+        for node in nodes:
+            if node.id not in levels:
+                levels[node.id] = next_level
+                next_level += 1
+
+    columns: dict[int, list[WorkflowNodeSchema]] = defaultdict(list)
+    for node in nodes:
+        columns[levels.get(node.id, 0)].append(node)
+
+    laid_out: list[WorkflowNodeSchema] = []
+    for level in sorted(columns.keys()):
+        column_nodes = sorted(
+            columns[level],
+            key=lambda current: (
+                round(current.position.y / 20) if current.position else 0,
+                node_order[current.id],
+            ),
+        )
+        offset = 36 if len(column_nodes) > 1 and level % 2 else 0
+
+        for row, node in enumerate(column_nodes):
+            laid_out.append(
+                WorkflowNodeSchema(
+                    id=node.id,
+                    type=node.type,
+                    position=NodePosition(
+                        x=120 + level * 340,
+                        y=120 + row * 220 + offset,
+                    ),
+                    data=node.data,
+                )
+            )
+
+    return sorted(laid_out, key=lambda node: node_order[node.id])
 
 
 # ── Retry-validated AI call ──────────────────────────────────────────────────
@@ -151,7 +286,7 @@ async def generate_workflow(
 
     # Inject system prompts and model routes into generated nodes
     enriched_nodes: list[WorkflowNodeSchema] = []
-    for i, node in enumerate(planner_output.nodes):
+    for node in planner_output.nodes:
         try:
             node_type_enum = NodeType(node.type)
         except ValueError:
@@ -161,9 +296,10 @@ async def generate_workflow(
             WorkflowNodeSchema(
                 id=node.id,
                 type=node.type,
-                position=NodePosition(x=i * 350, y=100),
+                position=node.position or NodePosition(x=0, y=0),
                 data=NodeData(
                     label=node.data.label,
+                    type=node.type,
                     system_prompt=SYSTEM_PROMPTS.get(node_type_enum, ""),
                     model_route=node.data.model_route or f"{node_type_enum.value}/default",
                     status="pending",
@@ -172,8 +308,15 @@ async def generate_workflow(
             )
         )
 
+    normalized_edges = _normalize_edges(enriched_nodes, planner_output.edges)
+    final_nodes = (
+        _auto_layout_nodes(enriched_nodes, normalized_edges)
+        if _should_auto_layout(enriched_nodes, normalized_edges)
+        else enriched_nodes
+    )
+
     return GenerateWorkflowResponse(
-        nodes=enriched_nodes,
-        edges=planner_output.edges,
+        nodes=final_nodes,
+        edges=normalized_edges,
         implicit_context=implicit_context,
     )

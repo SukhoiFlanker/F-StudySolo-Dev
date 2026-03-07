@@ -7,10 +7,10 @@ platforms:
     base_url: "$DASHSCOPE_BASE_URL"
     api_key: "$DASHSCOPE_API_KEY"
     models:
-      - name: "qwen3-turbo"
+      - name: "qwen-turbo"
         max_tokens: 4096
         temperature: 0.7
-      - name: "qwen3-plus"
+      - name: "qwen-plus"
         max_tokens: 8192
         temperature: 0.7
 
@@ -19,10 +19,10 @@ platforms:
     base_url: "$DEEPSEEK_BASE_URL"
     api_key: "$DEEPSEEK_API_KEY"
     models:
-      - name: "deepseek-r1"
+      - name: "deepseek-reasoner"
         max_tokens: 8192
         temperature: 0.7
-      - name: "deepseek-v3"
+      - name: "deepseek-chat"
         max_tokens: 8192
         temperature: 0.7
 
@@ -86,76 +86,76 @@ platforms:
 node_routes:
   trigger_input:
     route_chain: "A"
-    default_model: "qwen3-turbo"
+    default_model: "qwen-turbo"
     platform: "dashscope"
   ai_analyzer:
     route_chain: "A"
-    default_model: "qwen3-turbo"
+    default_model: "qwen-turbo"
     platform: "dashscope"
   ai_planner:
     route_chain: "A"
-    default_model: "qwen3-turbo"
+    default_model: "qwen-turbo"
     platform: "dashscope"
   outline_gen:
     route_chain: "B"
-    default_model: "deepseek-r1"
+    default_model: "deepseek-reasoner"
     platform: "deepseek"
   content_extract:
     route_chain: "B"
-    default_model: "deepseek-r1"
+    default_model: "deepseek-reasoner"
     platform: "deepseek"
   summary:
     route_chain: "B"
-    default_model: "deepseek-r1"
+    default_model: "deepseek-reasoner"
     platform: "deepseek"
   flashcard:
     route_chain: "A"
-    default_model: "qwen3-turbo"
+    default_model: "qwen-turbo"
     platform: "dashscope"
   chat_response:
     route_chain: "B"
-    default_model: "deepseek-r1"
+    default_model: "deepseek-reasoner"
     platform: "deepseek"
   write_db:
     route_chain: "A"
-    default_model: "qwen3-turbo"
+    default_model: "qwen-turbo"
     platform: "dashscope"
   # ── P1 新增节点 ──
   merge_polish:
     route_chain: "B"
-    default_model: "deepseek-r1"
+    default_model: "deepseek-reasoner"
     platform: "deepseek"
   compare:
     route_chain: "B"
-    default_model: "deepseek-r1"
+    default_model: "deepseek-reasoner"
     platform: "deepseek"
   quiz_gen:
     route_chain: "A"
-    default_model: "qwen3-turbo"
+    default_model: "qwen-turbo"
     platform: "dashscope"
   mind_map:
     route_chain: "A"
-    default_model: "qwen3-turbo"
+    default_model: "qwen-turbo"
     platform: "dashscope"
   knowledge_base:
     route_chain: "A"
-    default_model: "qwen3-turbo"
+    default_model: "qwen-turbo"
     platform: "dashscope"
   web_search:
     route_chain: "A"
-    default_model: "qwen3-turbo"
+    default_model: "qwen-turbo"
     platform: "dashscope"
   export_file:
     route_chain: "A"
-    default_model: "qwen3-turbo"
+    default_model: "qwen-turbo"
     platform: "dashscope"
   logic_switch:
     route_chain: "A"
-    default_model: "qwen3-turbo"
+    default_model: "qwen-turbo"
     platform: "dashscope"
   loop_map:
     route_chain: "A"
-    default_model: "qwen3-turbo"
+    default_model: "qwen-turbo"
     platform: "dashscope"
 
 # 容灾降级配置
@@ -170,16 +170,18 @@ fallback:
   chains:
     A:  # 格式严格链降级路径（禁止代理聚合平台）
       - platform: "dashscope"
-        model: "qwen3-turbo"
+        model: "qwen-turbo"
       - platform: "deepseek"
-        model: "deepseek-v3"
+        model: "deepseek-chat"
+      - platform: "zhipu"
+        model: "glm-4"
       - platform: "moonshot"
         model: "moonshot-v1-8k"
     B:  # 深度推理链降级路径
       - platform: "deepseek"
-        model: "deepseek-r1"
+        model: "deepseek-reasoner"
       - platform: "dashscope"
-        model: "qwen3-plus"
+        model: "qwen-plus"
       - platform: "volcengine"
         model: "doubao-pro-32k"
 

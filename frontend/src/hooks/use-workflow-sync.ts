@@ -38,6 +38,26 @@ export function useWorkflowSync(): UseWorkflowSync {
   const localTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cloudTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cloudUpdatedAtRef = useRef<string>(new Date().toISOString());
+  const pendingSnapshotRef = useRef<{
+    currentWorkflowId: string | null;
+    edges: Edge[];
+    isDirty: boolean;
+    nodes: Node[];
+  }>({
+    currentWorkflowId,
+    nodes,
+    edges,
+    isDirty,
+  });
+
+  useEffect(() => {
+    pendingSnapshotRef.current = {
+      currentWorkflowId,
+      nodes,
+      edges,
+      isDirty,
+    };
+  }, [currentWorkflowId, nodes, edges, isDirty]);
 
   // ── Crash recovery detection on mount ──────────────────────────────────
   useEffect(() => {
@@ -141,6 +161,37 @@ export function useWorkflowSync(): UseWorkflowSync {
       if (cloudTimerRef.current) clearTimeout(cloudTimerRef.current);
     };
   }, [isDirty, currentWorkflowId, nodes, edges, saveLocal, saveCloud]);
+
+  // ── Flush pending changes before route/workflow switch or unmount ────────
+  useEffect(() => {
+    return () => {
+      const pending = pendingSnapshotRef.current;
+      if (!pending.isDirty || !pending.currentWorkflowId) {
+        return;
+      }
+
+      const payload = JSON.stringify({
+        nodes_json: pending.nodes,
+        edges_json: pending.edges,
+      });
+
+      void localforage.setItem(cacheKey(pending.currentWorkflowId), {
+        workflow_id: pending.currentWorkflowId,
+        nodes: pending.nodes,
+        edges: pending.edges,
+        dirty: true,
+        local_updated_at: new Date().toISOString(),
+        cloud_updated_at: cloudUpdatedAtRef.current,
+      } satisfies LocalWorkflowCache);
+
+      void fetch(`/api/workflow/${pending.currentWorkflowId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: payload,
+        keepalive: true,
+      });
+    };
+  }, []);
 
   // ── Warn on page close with unsaved data ───────────────────────────────
   useEffect(() => {
