@@ -1,12 +1,24 @@
-﻿import { useCallback } from 'react';
+import { useCallback } from 'react';
 import { usePathname } from 'next/navigation';
 import { useAdminStore } from '@/stores/use-admin-store';
-import {
-  isAdminNavItemActive,
-  shouldCloseSidebarOnNavigate,
-} from '@/hooks/admin-sidebar-navigation.helpers';
 
 const MOBILE_WIDTH = 768;
+
+export function isAdminNavItemActive(pathname: string, href: string): boolean {
+  if (href === '/admin-analysis') {
+    return pathname === '/admin-analysis';
+  }
+
+  return pathname.startsWith(href);
+}
+
+export function shouldCloseSidebarOnNavigate(
+  innerWidth: number,
+  sidebarOpen: boolean,
+  mobileWidth = 768
+): boolean {
+  return sidebarOpen && innerWidth < mobileWidth;
+}
 
 interface UseAdminSidebarNavigationResult {
   pathname: string;

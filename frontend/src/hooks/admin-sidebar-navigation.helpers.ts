@@ -1,15 +1,8 @@
-﻿export function isAdminNavItemActive(pathname: string, href: string): boolean {
-  if (href === '/admin-analysis') {
-    return pathname === '/admin-analysis';
-  }
-
-  return pathname.startsWith(href);
-}
-
-export function shouldCloseSidebarOnNavigate(
-  innerWidth: number,
-  sidebarOpen: boolean,
-  mobileWidth = 768
-): boolean {
-  return sidebarOpen && innerWidth < mobileWidth;
-}
+/**
+ * @deprecated Moved to '@/features/admin/hooks/use-admin-sidebar-navigation'.
+ * This file is kept only for backward compatibility with existing tests.
+ */
+export {
+  isAdminNavItemActive,
+  shouldCloseSidebarOnNavigate,
+} from '@/features/admin/hooks/use-admin-sidebar-navigation';

@@ -1,11 +1,9 @@
-﻿export function isWorkflowRouteActive(pathname: string, workflowId: string): boolean {
-  return pathname === `/workspace/${workflowId}`;
-}
-
-export function isSettingsRouteActive(pathname: string): boolean {
-  return pathname === '/settings';
-}
-
-export function isKnowledgeRouteActive(pathname: string): boolean {
-  return pathname === '/knowledge';
-}
+/**
+ * @deprecated Moved to '@/hooks/use-sidebar-navigation'.
+ * This file is kept only for backward compatibility with existing tests.
+ */
+export {
+  isWorkflowRouteActive,
+  isSettingsRouteActive,
+  isKnowledgeRouteActive,
+} from '@/hooks/use-sidebar-navigation';

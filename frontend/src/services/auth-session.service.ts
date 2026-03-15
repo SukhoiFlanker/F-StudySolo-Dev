@@ -1,6 +1,6 @@
 import { createClient } from '@/utils/supabase/client';
+import { credentialsFetch } from '@/services/api-client';
 
-const API_BASE = '';
 const SESSION_REFRESH_WINDOW_MS = 60_000;
 
 type SessionPayload = {
@@ -11,15 +11,8 @@ type SessionPayload = {
 
 let restorePromise: Promise<boolean> | null = null;
 
-async function fetchAuth(path: string, init?: RequestInit) {
-  return fetch(`${API_BASE}${path}`, {
-    credentials: 'include',
-    ...init,
-  });
-}
-
 async function syncSessionTokens(payload: SessionPayload) {
-  const response = await fetchAuth('/api/auth/sync-session', {
+  const response = await credentialsFetch('/api/auth/sync-session', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -37,7 +30,7 @@ async function setBrowserSession(accessToken: string, refreshToken: string) {
 }
 
 export async function refreshBackendSession() {
-  const response = await fetchAuth('/api/auth/refresh', { method: 'POST' });
+  const response = await credentialsFetch('/api/auth/refresh', { method: 'POST' });
   if (!response.ok) {
     return false;
   }

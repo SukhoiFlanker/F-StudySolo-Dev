@@ -1,6 +1,6 @@
 'use client'
 
-import { AdminSidebar, AdminTopbar } from '@/features/admin/shared/components'
+import { AdminSidebar, AdminTopbar } from '@/features/admin/shared'
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (

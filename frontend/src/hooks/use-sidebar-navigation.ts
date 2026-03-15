@@ -1,11 +1,18 @@
-﻿import { useCallback } from 'react';
+import { useCallback } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { logout } from '@/services/auth.service';
-import {
-  isSettingsRouteActive,
-  isWorkflowRouteActive,
-  isKnowledgeRouteActive,
-} from '@/hooks/sidebar-navigation.helpers';
+
+export function isWorkflowRouteActive(pathname: string, workflowId: string): boolean {
+  return pathname === `/workspace/${workflowId}`;
+}
+
+export function isSettingsRouteActive(pathname: string): boolean {
+  return pathname === '/settings';
+}
+
+export function isKnowledgeRouteActive(pathname: string): boolean {
+  return pathname === '/knowledge';
+}
 
 interface UseSidebarNavigationResult {
   pathname: string;

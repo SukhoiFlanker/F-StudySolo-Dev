@@ -1,53 +1,6 @@
-import { createClient } from '@/utils/supabase/client';
-import { restoreAuthSession } from '@/services/auth-session.service';
+import { authedFetch, parseApiError, initCrossTabSync } from '@/services/api-client';
 
-const API_BASE = '';
-
-/** Redirect to /login, preserving current path as ?next= */
-function redirectToLogin() {
-  if (typeof window === 'undefined') return;
-  const next = encodeURIComponent(window.location.pathname + window.location.search);
-  window.location.href = `/login?next=${next}`;
-}
-
-function requestWithCredentials(path: string, init?: RequestInit) {
-  return fetch(`${API_BASE}${path}`, {
-    credentials: 'include',
-    ...init,
-  });
-}
-
-/** Fetch wrapper that auto-refreshes auth once before redirecting. */
-async function apiFetch(path: string, init?: RequestInit, allowRetry = true): Promise<Response> {
-  const response = await requestWithCredentials(path, init);
-  if (response.status !== 401 || path.startsWith('/api/auth/')) {
-    return response;
-  }
-
-  if (allowRetry && await restoreAuthSession()) {
-    const retriedResponse = await requestWithCredentials(path, init);
-    if (retriedResponse.status !== 401) {
-      return retriedResponse;
-    }
-  }
-
-  redirectToLogin();
-  return response;
-}
-
-async function readApiError(response: Response, fallback: string): Promise<string> {
-  if ([500, 502, 503, 504].includes(response.status)) {
-    return '后端服务暂不可用，请确认 StudySolo 后端已启动（默认端口 2038）';
-  }
-
-  const contentType = response.headers.get('content-type') || '';
-  if (!contentType.includes('application/json')) {
-    return fallback;
-  }
-
-  const data = await response.json().catch(() => ({}));
-  return data.detail || fallback;
-}
+export { initCrossTabSync };
 
 export interface LoginResult {
   access_token: string;
@@ -74,31 +27,30 @@ export async function sendVerificationCode(
   captchaToken: string,
   codeType: 'register' | 'reset_password' = 'register',
 ): Promise<{ message: string }> {
-  const res = await apiFetch('/api/auth/send-code', {
+  const res = await authedFetch('/api/auth/send-code', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, captcha_token: captchaToken, code_type: codeType }),
   });
   if (!res.ok) {
-    const data = await res.json().catch(() => ({}));
-    throw new Error(data.detail || '验证码发送失败，请重试');
+    throw new Error(await parseApiError(res, '验证码发送失败，请重试'));
   }
   return res.json();
 }
 
-/** Login with email + password. Returns user info on success. */
+/** Login with email + password. */
 export async function login(
   email: string,
   password: string,
   rememberMe = true,
 ): Promise<LoginResult> {
-  const res = await apiFetch('/api/auth/login', {
+  const res = await authedFetch('/api/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password, remember_me: rememberMe }),
   });
   if (!res.ok) {
-    throw new Error(await readApiError(res, '登录失败，请检查邮箱和密码'));
+    throw new Error(await parseApiError(res, '登录失败，请检查邮箱和密码'));
   }
   return res.json();
 }
@@ -110,7 +62,7 @@ export async function register(
   verificationCode: string,
   name?: string,
 ): Promise<RegisterResult> {
-  const res = await apiFetch('/api/auth/register', {
+  const res = await authedFetch('/api/auth/register', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -121,45 +73,41 @@ export async function register(
     }),
   });
   if (!res.ok) {
-    const data = await res.json().catch(() => ({}));
-    throw new Error(data.detail || '注册失败，请重试');
+    throw new Error(await parseApiError(res, '注册失败，请重试'));
   }
   return res.json();
 }
 
 /** Resend email verification link (legacy). */
 export async function resendVerification(email: string): Promise<{ message: string }> {
-  const res = await apiFetch('/api/auth/resend-verification', {
+  const res = await authedFetch('/api/auth/resend-verification', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email }),
   });
   if (!res.ok) {
-    const data = await res.json().catch(() => ({}));
-    throw new Error(data.detail || '发送失败，请重试');
+    throw new Error(await parseApiError(res, '发送失败，请重试'));
   }
   return res.json();
 }
 
 /** Logout — clears both backend HttpOnly cookies and Supabase SSR session. */
 export async function logout(): Promise<void> {
-  // 1. Clear backend cookies
-  await apiFetch('/api/auth/logout', { method: 'POST' });
-  // 2. Clear Supabase client session so Next.js middleware also sees logout
+  const { createClient } = await import('@/utils/supabase/client');
+  await authedFetch('/api/auth/logout', { method: 'POST' });
   const supabase = createClient();
   await supabase.auth.signOut();
 }
 
 /** Request a password reset email. */
 export async function forgotPassword(email: string): Promise<{ message: string }> {
-  const res = await apiFetch('/api/auth/forgot-password', {
+  const res = await authedFetch('/api/auth/forgot-password', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email }),
   });
   if (!res.ok) {
-    const data = await res.json().catch(() => ({}));
-    throw new Error(data.detail || '发送失败，请重试');
+    throw new Error(await parseApiError(res, '发送失败，请重试'));
   }
   return res.json();
 }
@@ -170,7 +118,7 @@ export async function resetPassword(
   refreshToken: string,
   newPassword: string
 ): Promise<{ message: string }> {
-  const res = await apiFetch('/api/auth/reset-password', {
+  const res = await authedFetch('/api/auth/reset-password', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -180,8 +128,7 @@ export async function resetPassword(
     }),
   });
   if (!res.ok) {
-    const data = await res.json().catch(() => ({}));
-    throw new Error(data.detail || '重置失败，请重试');
+    throw new Error(await parseApiError(res, '重置失败，请重试'));
   }
   return res.json();
 }
@@ -192,40 +139,22 @@ export async function resetPasswordWithCode(
   code: string,
   newPassword: string,
 ): Promise<{ message: string }> {
-  const res = await apiFetch('/api/auth/reset-password-with-code', {
+  const res = await authedFetch('/api/auth/reset-password-with-code', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, code, new_password: newPassword }),
   });
   if (!res.ok) {
-    const data = await res.json().catch(() => ({}));
-    throw new Error(data.detail || '重置失败，请重试');
+    throw new Error(await parseApiError(res, '重置失败，请重试'));
   }
   return res.json();
 }
 
 /** Get current authenticated user info. */
 export async function getUser(): Promise<UserInfo> {
-  const res = await apiFetch('/api/auth/me');
+  const res = await authedFetch('/api/auth/me');
   if (!res.ok) {
-    const data = await res.json().catch(() => ({}));
-    throw new Error(data.detail || '获取用户信息失败');
+    throw new Error(await parseApiError(res, '获取用户信息失败'));
   }
   return res.json();
-}
-
-/**
- * Initialize cross-tab logout sync.
- * Call once at app startup (e.g. in root layout or a client component).
- * Listens for Supabase SIGNED_OUT events and redirects all tabs to /login.
- * Returns an unsubscribe function.
- */
-export function initCrossTabSync(): () => void {
-  const supabase = createClient();
-  const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-    if (event === 'SIGNED_OUT') {
-      redirectToLogin();
-    }
-  });
-  return () => subscription.unsubscribe();
 }

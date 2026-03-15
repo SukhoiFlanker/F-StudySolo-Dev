@@ -1,41 +1,5 @@
+import { buildApiUrl, buildAuthHeaders, parseApiError } from '@/services/api-client';
 import type { WorkflowContent, WorkflowMeta } from '@/types/workflow';
-
-function normalizeBaseUrl(baseUrl: string) {
-  return baseUrl.replace(/\/+$/, '');
-}
-
-function getApiBaseUrl() {
-  if (typeof window !== 'undefined') {
-    return '';
-  }
-
-  return normalizeBaseUrl(
-    process.env.INTERNAL_API_BASE_URL ??
-      process.env.NEXT_PUBLIC_API_BASE_URL ??
-      process.env.NEXT_PUBLIC_APP_URL ??
-      'http://127.0.0.1:2038'
-  );
-}
-
-function buildApiUrl(path: string) {
-  return `${getApiBaseUrl()}${path}`;
-}
-
-function buildHeaders(token?: string) {
-  return {
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    'Content-Type': 'application/json',
-  };
-}
-
-async function parseError(response: Response, fallback: string) {
-  try {
-    const data = (await response.json()) as { detail?: string };
-    return data.detail ?? fallback;
-  } catch {
-    return fallback;
-  }
-}
 
 export async function fetchWorkflowList(
   token?: string,
@@ -43,7 +7,7 @@ export async function fetchWorkflowList(
 ): Promise<WorkflowMeta[]> {
   try {
     const response = await fetch(buildApiUrl('/api/workflow'), {
-      headers: buildHeaders(token),
+      headers: buildAuthHeaders(token),
       next: { revalidate },
     });
 
@@ -75,7 +39,7 @@ export async function fetchWorkflowContent(
     const response = await fetch(
       buildApiUrl(`/api/workflow/${workflowId}/content`),
       {
-        headers: buildHeaders(token),
+        headers: buildAuthHeaders(token),
         next: { revalidate: 0 },
       }
     );
@@ -102,7 +66,7 @@ export async function renameWorkflow(
   });
 
   if (!response.ok) {
-    throw new Error(await parseError(response, '重命名工作流失败'));
+    throw new Error(await parseApiError(response, '重命名工作流失败'));
   }
 
   return (await response.json()) as WorkflowMeta;
@@ -115,6 +79,6 @@ export async function deleteWorkflow(workflowId: string): Promise<void> {
   });
 
   if (!response.ok) {
-    throw new Error(await parseError(response, '删除工作流失败'));
+    throw new Error(await parseApiError(response, '删除工作流失败'));
   }
 }
