@@ -236,7 +236,7 @@ pytest tests/          # 156 passed
 
 ## 📜 License
 
-本项目为个人学习项目，暂未选择开源许可证。
+[MIT License](./LICENSE) © 2026 [1037Solo](https://github.com/AIMFllys)
 
 ---
 

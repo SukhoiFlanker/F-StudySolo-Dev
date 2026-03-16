@@ -83,31 +83,6 @@ export function useWorkflowSync(): UseWorkflowSync {
               local_updated_at: cached.local_updated_at,
               cloud_updated_at: cached.cloud_updated_at,
             },
-
-  // ── Crash recovery detection on mount ──────────────────────────────────
-  useEffect(() => {
-    if (!currentWorkflowId) return;
-
-    (async () => {
-      const cached = await localforage.getItem<LocalWorkflowCache>(
-        cacheKey(currentWorkflowId)
-      );
-      if (!cached) return;
-
-      const localTs = new Date(cached.local_updated_at).getTime();
-      const cloudTs = new Date(cached.cloud_updated_at).getTime();
-
-      if (cached.dirty && localTs > cloudTs) {
-        // Conflict detected — dispatch a custom event for UI to handle
-        window.dispatchEvent(
-          new CustomEvent('workflow:crash-recovery', {
-            detail: {
-              workflowId: currentWorkflowId,
-              localNodes: cached.nodes,
-              localEdges: cached.edges,
-              local_updated_at: cached.local_updated_at,
-              cloud_updated_at: cached.cloud_updated_at,
-            },
           })
         );
       }
