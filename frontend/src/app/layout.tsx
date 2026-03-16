@@ -59,10 +59,10 @@ export default function RootLayout({
           closeButton
           toastOptions={{
             style: {
-              background: "var(--ss-surface-glass)",
+              background: "var(--card)",
               backdropFilter: "blur(12px)",
-              border: "1px solid var(--ss-border-dark)",
-              color: "var(--ss-text-main)",
+              border: "1px solid var(--border)",
+              color: "var(--foreground)",
             },
             className: "glass-card shadow-glow",
           }}

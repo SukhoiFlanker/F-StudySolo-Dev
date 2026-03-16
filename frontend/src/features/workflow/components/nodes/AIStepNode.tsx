@@ -52,15 +52,15 @@ function AIStepNode({ data, selected, type }: NodeProps) {
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-2">
             <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-[var(--ss-text-main)]">{label}</p>
-              <p className="truncate text-[11px] text-[var(--ss-text-muted)]">{typeMeta.description}</p>
+              <p className="truncate text-sm font-semibold text-foreground">{label}</p>
+              <p className="truncate text-[11px] text-muted-foreground">{typeMeta.description}</p>
             </div>
             <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-medium ${statusMeta.badgeClassName}`}>
               {statusMeta.label}
             </span>
           </div>
 
-          <div className="mt-2 flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-[var(--ss-text-muted)]">
+          <div className="mt-2 flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
             <span className={`inline-block h-2.5 w-2.5 rounded-full ${statusMeta.dotClassName}`} />
             <span>{typeMeta.label}</span>
             {model_route ? (
@@ -72,7 +72,7 @@ function AIStepNode({ data, selected, type }: NodeProps) {
 
       <div className="px-4 py-3">
         <div className="rounded-2xl border border-white/8 bg-black/10 px-3 py-2.5">
-          <div className="mb-2 flex items-center justify-between text-[10px] uppercase tracking-[0.18em] text-[var(--ss-text-muted)]">
+          <div className="mb-2 flex items-center justify-between text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
             <span>输出预览</span>
             {status === 'running' ? (
               <span className="flex items-center gap-1 text-sky-300">
@@ -92,17 +92,17 @@ function AIStepNode({ data, selected, type }: NodeProps) {
               })}
             </div>
           ) : (
-            <p className="line-clamp-4 text-xs leading-6 text-[var(--ss-text-muted)]">{preview}</p>
+            <p className="line-clamp-4 text-xs leading-6 text-muted-foreground">{preview}</p>
           )}
         </div>
       </div>
 
-      <div className="flex items-center justify-between border-t border-white/8 px-4 py-2.5 text-[11px] text-[var(--ss-text-muted)]">
+      <div className="flex items-center justify-between border-t border-white/8 px-4 py-2.5 text-[11px] text-muted-foreground">
         <span className="truncate">{preview}</span>
         {status === 'done' && output ? (
           <button
             onClick={() => void handleCopy()}
-            className="shrink-0 rounded-full border border-white/10 px-2.5 py-1 text-[10px] font-medium text-[var(--ss-text-main)] transition-colors hover:border-primary/40 hover:text-primary"
+            className="shrink-0 rounded-full border border-white/10 px-2.5 py-1 text-[10px] font-medium text-foreground transition-colors hover:border-primary/40 hover:text-primary"
             aria-label="复制输出内容"
           >
             {copied ? '已复制' : '复制结果'}

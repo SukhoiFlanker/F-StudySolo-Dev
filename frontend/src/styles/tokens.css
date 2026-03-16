@@ -45,34 +45,6 @@
 
 :root {
   --radius: 0.625rem;
-
-  --ss-primary: #6366f1;
-  --ss-primary-dark: #4f46e5;
-  --ss-accent: #10b981;
-  --ss-background-dark: #020617;
-  --ss-surface-dark: #0f172a;
-  --ss-surface-glass: rgba(15, 23, 42, 0.6);
-  --ss-border-dark: rgba(255, 255, 255, 0.08);
-  --ss-text-main: #f8fafc;
-  --ss-text-muted: #94a3b8;
-
-  --ss-success: #10b981;
-  --ss-error: #ef4444;
-  --ss-warning: #f59e0b;
-  --ss-info: #6366f1;
-
-  --ss-shadow-glass: 0 4px 30px rgba(0, 0, 0, 0.1);
-  --ss-shadow-glow: 0 0 15px rgba(99, 102, 241, 0.3);
-  --ss-shadow-glow-sm: 0 0 10px rgba(99, 102, 241, 0.2);
-  --ss-shadow-glow-accent: 0 0 8px rgba(16, 185, 129, 0.5);
-
-  --ss-spacing-1: 4px;
-  --ss-spacing-2: 8px;
-  --ss-spacing-3: 12px;
-  --ss-spacing-4: 16px;
-  --ss-spacing-5: 20px;
-  --ss-spacing-6: 24px;
-  --ss-spacing-8: 32px;
 }
 
 .dark,
@@ -108,13 +80,6 @@
   --sidebar-accent-foreground: #f8fafc;
   --sidebar-border: rgba(255, 255, 255, 0.08);
   --sidebar-ring: rgba(99, 102, 241, 0.5);
-
-  --ss-background-dark: #020617;
-  --ss-surface-dark: #0f172a;
-  --ss-surface-glass: rgba(15, 23, 42, 0.6);
-  --ss-border-dark: rgba(255, 255, 255, 0.08);
-  --ss-text-main: #f8fafc;
-  --ss-text-muted: #94a3b8;
 }
 
 .light {
@@ -149,13 +114,6 @@
   --sidebar-accent-foreground: #0f172a;
   --sidebar-border: #e2e8f0;
   --sidebar-ring: rgba(99, 102, 241, 0.4);
-
-  --ss-background-dark: #f8fafc;
-  --ss-surface-dark: #ffffff;
-  --ss-surface-glass: rgba(255, 255, 255, 0.7);
-  --ss-border-dark: #e2e8f0;
-  --ss-text-main: #0f172a;
-  --ss-text-muted: #64748b;
 }
 
 @theme {

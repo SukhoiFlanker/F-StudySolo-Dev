@@ -1,8 +1,8 @@
-﻿.glass-panel {
-  background: var(--ss-surface-glass);
+.glass-panel {
+  background: color-mix(in srgb, var(--card) 60%, transparent);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--ss-border-dark);
+  border: 1px solid var(--border);
 }
 
 .glass-card {
