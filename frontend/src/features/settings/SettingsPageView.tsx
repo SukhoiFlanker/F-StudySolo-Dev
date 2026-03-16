@@ -1,6 +1,7 @@
-﻿'use client';
+'use client';
 
 import { toast } from 'sonner';
+import { Settings as SettingsIcon } from 'lucide-react';
 import {
   useSettingsStore,
   type AccentColor,
@@ -43,7 +44,7 @@ export function SettingsPageView() {
       <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="flex items-center gap-2 text-xl font-bold text-foreground">
-            <span className="material-symbols-outlined text-xl text-primary">settings</span>
+            <SettingsIcon className="w-5 h-5 text-primary" />
             设置
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -70,13 +71,11 @@ export function SettingsPageView() {
                       : 'border-white/[0.08] text-muted-foreground hover:border-white/[0.15] hover:text-foreground dark:border-white/[0.08] dark:hover:border-white/[0.15] light:border-slate-200 light:hover:border-slate-300'
                   }`}
                 >
-                  <span
-                    className={`material-symbols-outlined text-2xl ${
+                  <option.icon
+                    className={`w-6 h-6 ${
                       theme === option.value ? 'text-primary' : ''
                     }`}
-                  >
-                    {option.icon}
-                  </span>
+                  />
                   <span className="text-xs font-medium">{option.label}</span>
                 </button>
               ))}

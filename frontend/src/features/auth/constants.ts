@@ -1,4 +1,4 @@
-﻿export const authAnimationStyles = `
+export const authAnimationStyles = `
 @keyframes twinkle {
   0%, 100% { opacity: 0.3; }
   50% { opacity: 1; }
@@ -33,9 +33,3 @@ export const rainColumns = Array.from({ length: 10 }, (_, index) => ({
   duration: `${4 + (index % 3) * 2}s`,
 }));
 
-export const brandFeaturePills = [
-  { icon: 'auto_awesome', label: '智能大纲' },
-  { icon: 'psychology', label: '知识提炼' },
-  { icon: 'summarize', label: '总结归纳' },
-  { icon: 'style', label: '闪卡生成' },
-];

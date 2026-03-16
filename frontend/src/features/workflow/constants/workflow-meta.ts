@@ -1,4 +1,25 @@
 import type { Node } from '@xyflow/react';
+import type { LucideIcon } from 'lucide-react';
+import {
+  Play,
+  BarChart3,
+  GitBranch,
+  List,
+  BookOpen,
+  FileText,
+  Layers,
+  MessageSquare,
+  Database,
+  ArrowLeftRight,
+  Network,
+  HelpCircle,
+  Wand2,
+  Library,
+  Globe,
+  Download,
+  Split,
+  Repeat,
+} from 'lucide-react';
 import type { AIStepNodeData, NodeStatus, NodeType } from '@/types';
 
 type StatusMeta = {
@@ -10,7 +31,7 @@ type StatusMeta = {
 type NodeTypeMeta = {
   accentClassName: string;
   description: string;
-  icon: string;
+  icon: LucideIcon;
   label: string;
 };
 
@@ -49,117 +70,109 @@ export const STATUS_META: Record<NodeStatus, StatusMeta> = {
 export const NODE_TYPE_META: Record<NodeType, NodeTypeMeta> = {
   trigger_input: {
     label: '输入触发',
-    icon: 'play_arrow',
+    icon: Play,
     description: '接收用户目标与限制条件',
     accentClassName: 'from-cyan-500/20 to-sky-500/5 text-cyan-100 ring-cyan-400/30',
   },
   ai_analyzer: {
     label: '需求分析',
-    icon: 'analytics',
+    icon: BarChart3,
     description: '抽取学习目标、约束与上下文',
     accentClassName: 'from-violet-500/20 to-indigo-500/5 text-violet-100 ring-violet-400/30',
   },
   ai_planner: {
     label: '流程规划',
-    icon: 'account_tree',
+    icon: GitBranch,
     description: '决定节点拆分、连接关系与执行顺序',
     accentClassName: 'from-fuchsia-500/20 to-violet-500/5 text-fuchsia-100 ring-fuchsia-400/30',
   },
   outline_gen: {
     label: '大纲生成',
-    icon: 'segment',
+    icon: List,
     description: '形成清晰的知识结构与章节顺序',
     accentClassName: 'from-indigo-500/20 to-blue-500/5 text-indigo-100 ring-indigo-400/30',
   },
   content_extract: {
     label: '内容提炼',
-    icon: 'auto_stories',
+    icon: BookOpen,
     description: '提炼关键概念、案例与解释',
     accentClassName: 'from-emerald-500/20 to-green-500/5 text-emerald-100 ring-emerald-400/30',
   },
   summary: {
     label: '总结归纳',
-    icon: 'docs',
+    icon: FileText,
     description: '整理重点、结论与复习摘要',
     accentClassName: 'from-amber-500/20 to-orange-500/5 text-amber-100 ring-amber-400/30',
   },
   flashcard: {
     label: '闪卡生成',
-    icon: 'style',
+    icon: Layers,
     description: '转成适合记忆练习的问答卡片',
     accentClassName: 'from-rose-500/20 to-pink-500/5 text-rose-100 ring-rose-400/30',
   },
   chat_response: {
     label: '学习回复',
-    icon: 'chat',
+    icon: MessageSquare,
     description: '输出最终建议、答复与引导',
     accentClassName: 'from-sky-500/20 to-cyan-500/5 text-sky-100 ring-sky-400/30',
   },
   write_db: {
     label: '写入数据',
-    icon: 'database',
+    icon: Database,
     description: '持久化结果并同步到工作流记录',
     accentClassName: 'from-slate-500/20 to-zinc-500/5 text-slate-100 ring-slate-400/30',
   },
-
-  // ── P1 generation 节点 ──
   compare: {
     label: '对比分析',
-    icon: 'compare_arrows',
+    icon: ArrowLeftRight,
     description: '多维度内容对比分析',
     accentClassName: 'from-teal-500/20 to-emerald-500/5 text-teal-100 ring-teal-400/30',
   },
   mind_map: {
     label: '思维导图',
-    icon: 'account_tree',
+    icon: Network,
     description: '生成结构化思维导图',
     accentClassName: 'from-lime-500/20 to-green-500/5 text-lime-100 ring-lime-400/30',
   },
   quiz_gen: {
     label: '测验生成',
-    icon: 'quiz',
+    icon: HelpCircle,
     description: '生成测验题目与解析',
     accentClassName: 'from-yellow-500/20 to-amber-500/5 text-yellow-100 ring-yellow-400/30',
   },
   merge_polish: {
     label: '合并润色',
-    icon: 'auto_fix_high',
+    icon: Wand2,
     description: '整合与润色多源内容',
     accentClassName: 'from-pink-500/20 to-rose-500/5 text-pink-100 ring-pink-400/30',
   },
-
-  // ── P1 input 节点 ──
   knowledge_base: {
     label: '知识库检索',
-    icon: 'local_library',
+    icon: Library,
     description: '从知识库检索相关内容',
     accentClassName: 'from-blue-500/20 to-indigo-500/5 text-blue-100 ring-blue-400/30',
   },
   web_search: {
     label: '网络搜索',
-    icon: 'travel_explore',
+    icon: Globe,
     description: '互联网内容搜索与整合',
     accentClassName: 'from-cyan-500/20 to-blue-500/5 text-cyan-100 ring-cyan-400/30',
   },
-
-  // ── P1 output 节点 ──
   export_file: {
     label: '文件导出',
-    icon: 'download',
+    icon: Download,
     description: '导出工作流结果为文件',
     accentClassName: 'from-gray-500/20 to-slate-500/5 text-gray-100 ring-gray-400/30',
   },
-
-  // ── P2 analysis 节点 ──
   logic_switch: {
     label: '逻辑分支',
-    icon: 'call_split',
+    icon: Split,
     description: '基于条件动态路由',
     accentClassName: 'from-orange-500/20 to-amber-500/5 text-orange-100 ring-orange-400/30',
   },
   loop_map: {
     label: '循环映射',
-    icon: 'all_inclusive',
+    icon: Repeat,
     description: '循环处理列表数据',
     accentClassName: 'from-red-500/20 to-orange-500/5 text-red-100 ring-red-400/30',
   },

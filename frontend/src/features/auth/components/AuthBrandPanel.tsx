@@ -1,5 +1,14 @@
-﻿import { brandFeaturePills, rainColumns, stars } from '@/features/auth/constants';
+import { Sparkles, Brain, FileText, Layers } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+import { rainColumns, stars } from '@/features/auth/constants';
 import { AuthLogo } from './AuthLogo';
+
+const brandFeaturePills: { icon: LucideIcon; label: string }[] = [
+  { icon: Sparkles, label: '智能大纲' },
+  { icon: Brain, label: '知识提炼' },
+  { icon: FileText, label: '总结归纳' },
+  { icon: Layers, label: '闪卡生成' },
+];
 
 export function AuthBrandPanel() {
   return (
@@ -58,7 +67,7 @@ export function AuthBrandPanel() {
               key={item.label}
               className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06] text-white/60 text-xs"
             >
-              <span className="material-symbols-outlined text-sm text-primary/70">{item.icon}</span>
+              <item.icon className="w-4 h-4 text-primary/70" />
               {item.label}
             </div>
           ))}

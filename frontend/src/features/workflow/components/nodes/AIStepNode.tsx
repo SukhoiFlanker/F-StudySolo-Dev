@@ -2,6 +2,7 @@
 
 import { createElement, memo, useState } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
+import { Loader2 } from 'lucide-react';
 import type { AIStepNodeData } from '@/types';
 import { getNodePreview, getNodeTypeMeta, getStatusMeta } from '@/features/workflow/constants/workflow-meta';
 import { getRenderer } from './index';
@@ -45,7 +46,7 @@ function AIStepNode({ data, selected, type }: NodeProps) {
 
       <div className="flex items-start gap-3 border-b border-white/8 px-4 pb-3 pt-4">
         <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ring-1 ${typeMeta.accentClassName}`}>
-          <span className="material-symbols-outlined text-lg">{typeMeta.icon}</span>
+          <typeMeta.icon className="h-5 w-5" />
         </div>
 
         <div className="min-w-0 flex-1">
@@ -75,7 +76,7 @@ function AIStepNode({ data, selected, type }: NodeProps) {
             <span>输出预览</span>
             {status === 'running' ? (
               <span className="flex items-center gap-1 text-sky-300">
-                <span className="material-symbols-outlined text-sm animate-spin">progress_activity</span>
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 Streaming
               </span>
             ) : null}

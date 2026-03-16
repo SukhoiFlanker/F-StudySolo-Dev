@@ -1,7 +1,8 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Zap, Search, Plus, Loader2, Settings, LogOut } from 'lucide-react';
 import { getUser, logout, type UserInfo } from '@/services/auth.service';
 import { useCreateWorkflowAction } from '@/features/workflow/hooks/use-create-workflow-action';
 
@@ -41,16 +42,9 @@ export default function Navbar({ onNewWorkflow, creating = false }: NavbarProps)
   return (
     <header className="glass-panel h-14 flex items-center justify-between px-4 shrink-0 z-10">
       <div className="flex items-center gap-2 select-none">
-        <span className="material-symbols-outlined text-xl" style={{ color: '#6366F1' }}>
-          bolt
-        </span>
+        <Zap className="w-5 h-5 text-primary fill-primary/20" />
         <span
-          className="font-bold text-sm tracking-tight"
-          style={{
-            background: 'linear-gradient(135deg, #6366F1, #10B981)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-          }}
+          className="font-bold text-sm tracking-tight bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent"
         >
           StudySolo
         </span>
@@ -58,13 +52,11 @@ export default function Navbar({ onNewWorkflow, creating = false }: NavbarProps)
 
       <div className="hidden sm:flex flex-1 max-w-md mx-4">
         <div className="relative w-full">
-          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-sm text-[#94A3B8]">
-            search
-          </span>
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
             type="text"
             placeholder="搜索工作流..."
-            className="w-full bg-slate-900/50 text-sm text-[#F8FAFC] placeholder-[#94A3B8] rounded-full py-1.5 pl-9 pr-4 border border-white/[0.08] focus:outline-none focus:ring-1 focus:ring-[#6366F1]/50 transition-all"
+            className="w-full bg-secondary/50 text-sm text-foreground placeholder-muted-foreground rounded-full py-1.5 pl-9 pr-4 border border-border focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all"
           />
         </div>
       </div>
@@ -75,9 +67,10 @@ export default function Navbar({ onNewWorkflow, creating = false }: NavbarProps)
           disabled={effectiveCreating}
           className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-primary text-primary-foreground text-sm font-medium shadow-glow hover:opacity-90 transition-opacity disabled:opacity-50 active:scale-[0.98]"
         >
-          <span className="material-symbols-outlined text-base leading-none">
-            {effectiveCreating ? 'hourglass_empty' : 'add'}
-          </span>
+          {effectiveCreating
+            ? <Loader2 className="w-4 h-4 animate-spin" />
+            : <Plus className="w-4 h-4" />
+          }
           <span>{effectiveCreating ? '创建中' : '新建'}</span>
         </button>
 
@@ -100,7 +93,7 @@ export default function Navbar({ onNewWorkflow, creating = false }: NavbarProps)
               <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
               <div className="absolute right-0 top-10 z-20 w-44 rounded-lg glass-card py-1 text-sm">
                 {user ? (
-                  <div className="px-3 py-2 text-muted-foreground truncate border-b border-white/[0.08] dark:border-white/[0.08] light:border-slate-200 mb-1">
+                  <div className="px-3 py-2 text-muted-foreground truncate border-b border-border mb-1">
                     {user.email}
                   </div>
                 ) : null}
@@ -109,16 +102,16 @@ export default function Navbar({ onNewWorkflow, creating = false }: NavbarProps)
                     setMenuOpen(false);
                     router.push('/settings');
                   }}
-                  className="w-full text-left px-3 py-2 hover:bg-white/5 dark:hover:bg-white/5 light:hover:bg-slate-100 transition-colors flex items-center gap-2"
+                  className="w-full text-left px-3 py-2 hover:bg-white/5 dark:hover:bg-white/5 transition-colors flex items-center gap-2"
                 >
-                  <span className="material-symbols-outlined text-base">settings</span>
+                  <Settings className="w-4 h-4" />
                   设置
                 </button>
                 <button
                   onClick={() => void handleLogout()}
-                  className="w-full text-left px-3 py-2 hover:bg-white/5 dark:hover:bg-white/5 light:hover:bg-slate-100 transition-colors flex items-center gap-2"
+                  className="w-full text-left px-3 py-2 hover:bg-white/5 dark:hover:bg-white/5 transition-colors flex items-center gap-2"
                 >
-                  <span className="material-symbols-outlined text-base">logout</span>
+                  <LogOut className="w-4 h-4" />
                   退出登录
                 </button>
               </div>

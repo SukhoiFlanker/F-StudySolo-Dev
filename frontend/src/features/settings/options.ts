@@ -1,9 +1,11 @@
-﻿import type { AccentColor, FontSize, ThemeMode } from '@/types/settings';
+import { Sun, Moon, Monitor } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+import type { AccentColor, FontSize, ThemeMode } from '@/types/settings';
 
-export const THEME_OPTIONS: { value: ThemeMode; label: string; icon: string }[] = [
-  { value: 'light', label: '浅色', icon: 'light_mode' },
-  { value: 'dark', label: '深色', icon: 'dark_mode' },
-  { value: 'system', label: '跟随系统', icon: 'desktop_windows' },
+export const THEME_OPTIONS: { value: ThemeMode; label: string; icon: LucideIcon }[] = [
+  { value: 'light', label: '浅色', icon: Sun },
+  { value: 'dark', label: '深色', icon: Moon },
+  { value: 'system', label: '跟随系统', icon: Monitor },
 ];
 
 export const ACCENT_OPTIONS: {

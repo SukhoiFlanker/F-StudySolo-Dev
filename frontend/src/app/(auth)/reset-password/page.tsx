@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { Zap } from 'lucide-react';
 import { resetPassword } from '@/services/auth.service';
 
 /**
@@ -63,20 +64,18 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#020617] p-6">
+    <div className="min-h-screen flex items-center justify-center bg-background p-6">
       <div className="w-full max-w-sm">
         <div className="flex items-center gap-2 mb-8">
-          <span className="material-symbols-outlined text-2xl text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>
-            bolt
-          </span>
-          <span className="text-2xl font-bold bg-gradient-to-r from-primary to-[#818CF8] bg-clip-text text-transparent">
+          <Zap className="w-6 h-6 text-primary fill-primary/20" />
+          <span className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
             StudySolo
           </span>
         </div>
 
         <div className="mb-6">
-          <h2 className="text-2xl font-bold text-white">重置密码</h2>
-          <p className="text-sm text-[#94A3B8] mt-1">设置你的新密码</p>
+          <h2 className="text-2xl font-bold text-foreground">重置密码</h2>
+          <p className="text-sm text-muted-foreground mt-1">设置你的新密码</p>
         </div>
 
         {success ? (
@@ -90,11 +89,11 @@ export default function ResetPasswordPage() {
                 </div>
               </div>
               <p className="text-green-400 text-sm font-medium">密码重置成功！</p>
-              <p className="text-[#94A3B8] text-xs mt-1">正在跳转到登录页面...</p>
+              <p className="text-muted-foreground text-xs mt-1">正在跳转到登录页面...</p>
             </div>
             <Link
               href="/login"
-              className="block text-center h-10 leading-10 rounded-lg bg-primary text-white text-sm font-medium hover:bg-[#4F46E5] transition-all"
+              className="block text-center h-10 leading-10 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-all"
             >
               立即登录
             </Link>
@@ -102,7 +101,7 @@ export default function ResetPasswordPage() {
         ) : (
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="password" className="text-sm font-medium text-white/80">新密码</label>
+              <label htmlFor="password" className="text-sm font-medium text-foreground/80">新密码</label>
               <input
                 id="password"
                 type="password"
@@ -113,12 +112,12 @@ export default function ResetPasswordPage() {
                 placeholder="至少 8 位"
                 minLength={8}
                 disabled={!tokens}
-                className="h-10 rounded-lg bg-[#0F172A]/50 border border-white/[0.08] px-3 text-sm text-white placeholder:text-[#94A3B8]/60 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/30 transition disabled:opacity-50"
+                className="h-10 rounded-lg bg-secondary/50 border border-border px-3 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/30 transition disabled:opacity-50"
               />
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="confirmPassword" className="text-sm font-medium text-white/80">确认新密码</label>
+              <label htmlFor="confirmPassword" className="text-sm font-medium text-foreground/80">确认新密码</label>
               <input
                 id="confirmPassword"
                 type="password"
@@ -129,7 +128,7 @@ export default function ResetPasswordPage() {
                 placeholder="再次输入新密码"
                 minLength={8}
                 disabled={!tokens}
-                className="h-10 rounded-lg bg-[#0F172A]/50 border border-white/[0.08] px-3 text-sm text-white placeholder:text-[#94A3B8]/60 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/30 transition disabled:opacity-50"
+                className="h-10 rounded-lg bg-secondary/50 border border-border px-3 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/30 transition disabled:opacity-50"
               />
             </div>
 
@@ -140,12 +139,12 @@ export default function ResetPasswordPage() {
             <button
               type="submit"
               disabled={loading || !tokens}
-              className="mt-1 h-10 rounded-lg bg-primary text-white text-sm font-medium hover:bg-[#4F46E5] shadow-glow disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-[0.98]"
+              className="mt-1 h-10 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 shadow-glow disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-[0.98]"
             >
               {loading ? '重置中...' : '重置密码'}
             </button>
 
-            <p className="text-center text-sm text-[#94A3B8]">
+            <p className="text-center text-sm text-muted-foreground">
               <Link href="/forgot-password" className="text-primary font-medium hover:underline">
                 使用验证码重置
               </Link>

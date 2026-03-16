@@ -156,7 +156,7 @@ export default function RightPanel() {
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3">
                     <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ring-1 ${meta.accentClassName}`}>
-                      <span className="material-symbols-outlined text-base">{meta.icon}</span>
+                      <meta.icon className="h-4.5 w-4.5" />
                     </div>
                     <div className="min-w-0">
                       <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">Step {index + 1}</p>

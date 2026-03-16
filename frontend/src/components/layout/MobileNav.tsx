@@ -1,7 +1,9 @@
-﻿'use client';
+'use client';
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { LayoutDashboard, GitBranch, Plus, Loader2, Settings } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
 interface MobileNavProps {
   onNewWorkflow?: () => Promise<void> | void;
@@ -11,22 +13,22 @@ interface MobileNavProps {
 export default function MobileNav({ onNewWorkflow, creating = false }: MobileNavProps) {
   const pathname = usePathname();
 
-  const navItems = [
+  const navItems: { href: string; icon: LucideIcon; label: string; isActive: boolean }[] = [
     {
       href: '/workspace',
-      icon: 'dashboard',
+      icon: LayoutDashboard,
       label: '首页',
       isActive: pathname === '/workspace',
     },
     {
       href: '/workspace',
-      icon: 'account_tree',
+      icon: GitBranch,
       label: '工作流',
       isActive: pathname?.startsWith('/workspace/') ?? false,
     },
     {
       href: '/settings',
-      icon: 'settings',
+      icon: Settings,
       label: '设置',
       isActive: pathname === '/settings',
     },
@@ -40,15 +42,15 @@ export default function MobileNav({ onNewWorkflow, creating = false }: MobileNav
     >
       {navItems.slice(0, 2).map((item) => (
         <Link
-          key={item.icon}
+          key={item.label}
           href={item.href}
           className={`flex flex-col items-center justify-center gap-0.5 min-w-[3rem] py-1 transition-colors ${
-            item.isActive ? 'text-primary' : 'text-[#94A3B8] hover:text-[#F8FAFC]'
+            item.isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
           }`}
           aria-label={item.label}
           aria-current={item.isActive ? 'page' : undefined}
         >
-          <span className="material-symbols-outlined text-xl leading-none">{item.icon}</span>
+          <item.icon className="w-5 h-5" />
           <span className="text-[10px] font-medium leading-tight">{item.label}</span>
         </Link>
       ))}
@@ -60,9 +62,10 @@ export default function MobileNav({ onNewWorkflow, creating = false }: MobileNav
         aria-label="新建工作流"
       >
         <span className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center shadow-glow group-hover:opacity-90 group-active:scale-[0.95] transition-all">
-          <span className="material-symbols-outlined text-xl leading-none">
-            {creating ? 'hourglass_empty' : 'add'}
-          </span>
+          {creating
+            ? <Loader2 className="w-5 h-5 animate-spin" />
+            : <Plus className="w-5 h-5" />
+          }
         </span>
         <span className="text-[10px] font-medium leading-tight text-primary">
           {creating ? '创建中' : '新建'}
@@ -71,15 +74,15 @@ export default function MobileNav({ onNewWorkflow, creating = false }: MobileNav
 
       {navItems.slice(2).map((item) => (
         <Link
-          key={item.icon}
+          key={item.label}
           href={item.href}
           className={`flex flex-col items-center justify-center gap-0.5 min-w-[3rem] py-1 transition-colors ${
-            item.isActive ? 'text-primary' : 'text-[#94A3B8] hover:text-[#F8FAFC]'
+            item.isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
           }`}
           aria-label={item.label}
           aria-current={item.isActive ? 'page' : undefined}
         >
-          <span className="material-symbols-outlined text-xl leading-none">{item.icon}</span>
+          <item.icon className="w-5 h-5" />
           <span className="text-[10px] font-medium leading-tight">{item.label}</span>
         </Link>
       ))}
