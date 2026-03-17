@@ -22,195 +22,210 @@ export interface UseWorkflowSync {
   forceSave: () => Promise<void>;
 }
 
-const LOCAL_DEBOUNCE_MS = 500;
-const CLOUD_DEBOUNCE_MS = 4000;
+// ── Config ────────────────────────────────────────────────────────────────────
+const SNAPSHOT_INTERVAL_MS = 2000;      // Take snapshot every 2s
+const CLOUD_THROTTLE_MS   = 8000;      // Upload to cloud at most every 8s
+const KEEPALIVE_MAX_BYTES = 60_000;    // Stay under browser 64KB keepalive limit
 
 function cacheKey(id: string) {
   return `workflow_cache_${id}`;
 }
 
-export function useWorkflowSync(): UseWorkflowSync {
-  const { nodes, edges, currentWorkflowId, isDirty, markClean } = useWorkflowStore();
+// ── Minimal fast comparison ───────────────────────────────────────────────────
+// Avoid full JSON.stringify on every tick; compare lengths first then stringify.
+function snapshotHash(nodes: Node[], edges: Edge[]): string {
+  // Using a fast-path: only hash positions + edge count + node count + data statuses
+  let h = `n${nodes.length}e${edges.length}`;
+  for (const n of nodes) {
+    h += `|${n.id}:${Math.round(n.position.x)},${Math.round(n.position.y)}`;
+    const d = n.data as Record<string, unknown>;
+    if (d.status) h += `:${d.status as string}`;
+    if (d.output) h += `:${(d.output as string).length}`;
+  }
+  return h;
+}
 
+export function useWorkflowSync(): UseWorkflowSync {
   const [syncStatus, setSyncStatus] = useState<SyncStatus>('synced');
   const [lastSyncedAt, setLastSyncedAt] = useState<Date | null>(null);
 
-  const localTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const cloudTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const cloudUpdatedAtRef = useRef<string>(new Date().toISOString());
-  const pendingSnapshotRef = useRef<{
-    currentWorkflowId: string | null;
-    edges: Edge[];
-    isDirty: boolean;
-    nodes: Node[];
-  }>({
-    currentWorkflowId,
-    nodes,
-    edges,
-    isDirty,
-  });
+  // Stable refs so intervals/callbacks can read latest vals without re-subscribe
+  const cloudUpdatedAtRef   = useRef<string>(new Date().toISOString());
+  const lastSavedHashRef    = useRef<string>('');
+  const lastCloudHashRef    = useRef<string>('');
+  const lastCloudTimeRef    = useRef<number>(0);
+  const executionLockRef    = useRef<boolean>(false);
+  const intervalRef         = useRef<ReturnType<typeof setInterval> | null>(null);
+  const cloudTimerRef       = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // ── Execution lock: pause cloud sync during SSE execution ─────────────────
   useEffect(() => {
-    pendingSnapshotRef.current = {
-      currentWorkflowId,
-      nodes,
-      edges,
-      isDirty,
+    const lockHandler = () => { executionLockRef.current = true; };
+    const unlockHandler = () => {
+      executionLockRef.current = false;
+      // After execution, force a cloud save of whatever backend wrote
+      // Give 1s grace for backend save_callback to finish
+      setTimeout(() => {
+        lastCloudHashRef.current = '';  // Invalidate so next tick saves
+      }, 1500);
     };
-  }, [currentWorkflowId, nodes, edges, isDirty]);
 
-  // ── Crash recovery detection on mount ──────────────────────────────────
-  useEffect(() => {
-    if (!currentWorkflowId) return;
+    window.addEventListener('workflow:execution-start', lockHandler);
+    window.addEventListener('workflow:execution-end', unlockHandler);
+    return () => {
+      window.removeEventListener('workflow:execution-start', lockHandler);
+      window.removeEventListener('workflow:execution-end', unlockHandler);
+    };
+  }, []);
 
-    (async () => {
-      const cached = await localforage.getItem<LocalWorkflowCache>(
-        cacheKey(currentWorkflowId)
-      );
-      if (!cached) return;
-
-      const localTs = new Date(cached.local_updated_at).getTime();
-      const cloudTs = new Date(cached.cloud_updated_at).getTime();
-
-      if (cached.dirty && localTs > cloudTs) {
-        // Conflict detected — dispatch a custom event for UI to handle
-        window.dispatchEvent(
-          new CustomEvent('workflow:crash-recovery', {
-            detail: {
-              workflowId: currentWorkflowId,
-              localNodes: cached.nodes,
-              localEdges: cached.edges,
-              local_updated_at: cached.local_updated_at,
-              cloud_updated_at: cached.cloud_updated_at,
-            },
-          })
-        );
-      }
-    })();
-  }, [currentWorkflowId]);
-
-  // ── Save to IndexedDB (500ms debounce) ─────────────────────────────────
-  const saveLocal = useCallback(async () => {
-    const snap = pendingSnapshotRef.current;
-    if (!snap.currentWorkflowId) return;
+  // ── Core save functions ───────────────────────────────────────────────────
+  const saveToLocal = useCallback(async (
+    workflowId: string, nodes: Node[], edges: Edge[]
+  ) => {
     setSyncStatus('saving_local');
-
     const now = new Date().toISOString();
     const cache: LocalWorkflowCache = {
-      workflow_id: snap.currentWorkflowId,
-      nodes: snap.nodes,
-      edges: snap.edges,
+      workflow_id: workflowId,
+      nodes,
+      edges,
       dirty: true,
       local_updated_at: now,
       cloud_updated_at: cloudUpdatedAtRef.current,
     };
-
-    await localforage.setItem(cacheKey(snap.currentWorkflowId), cache);
+    await localforage.setItem(cacheKey(workflowId), cache);
   }, []);
 
-  // ── Save to cloud (3-5s debounce) ──────────────────────────────────────
-  const saveCloud = useCallback(async () => {
-    const snap = pendingSnapshotRef.current;
-    if (!snap.currentWorkflowId) return;
+  const saveToCloud = useCallback(async (
+    workflowId: string, nodes: Node[], edges: Edge[]
+  ) => {
+    if (executionLockRef.current) return; // Don't overwrite during execution
     setSyncStatus('saving_cloud');
-
     try {
-      const res = await fetch(`/api/workflow/${snap.currentWorkflowId}`, {
+      const res = await fetch(`/api/workflow/${workflowId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nodes_json: snap.nodes, edges_json: snap.edges }),
+        body: JSON.stringify({ nodes_json: nodes, edges_json: edges }),
       });
-
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
       const now = new Date().toISOString();
       cloudUpdatedAtRef.current = now;
+      lastCloudTimeRef.current = Date.now();
 
       // Clear dirty flag in IndexedDB
-      const cached = await localforage.getItem<LocalWorkflowCache>(
-        cacheKey(snap.currentWorkflowId)
-      );
+      const cached = await localforage.getItem<LocalWorkflowCache>(cacheKey(workflowId));
       if (cached) {
-        await localforage.setItem(cacheKey(snap.currentWorkflowId), {
+        await localforage.setItem(cacheKey(workflowId), {
           ...cached,
           dirty: false,
           cloud_updated_at: now,
         });
       }
 
-      markClean();
+      useWorkflowStore.getState().markClean();
       setSyncStatus('synced');
       setLastSyncedAt(new Date());
     } catch {
       setSyncStatus(navigator.onLine ? 'error' : 'offline');
     }
-  }, [markClean]);
+  }, []);
 
-  // ── Trigger debounced saves when isDirty changes ────────────────────────
+  // ── Periodic snapshot interval ────────────────────────────────────────────
   useEffect(() => {
-    if (!isDirty || !currentWorkflowId) return;
+    intervalRef.current = setInterval(() => {
+      const { currentWorkflowId, nodes, edges } = useWorkflowStore.getState();
+      if (!currentWorkflowId || nodes.length === 0) return;
 
-    // Local: 500ms debounce
-    if (localTimerRef.current) clearTimeout(localTimerRef.current);
-    localTimerRef.current = setTimeout(saveLocal, LOCAL_DEBOUNCE_MS);
+      const hash = snapshotHash(nodes, edges);
 
-    // Cloud: 4s debounce
-    if (cloudTimerRef.current) clearTimeout(cloudTimerRef.current);
-    cloudTimerRef.current = setTimeout(saveCloud, CLOUD_DEBOUNCE_MS);
+      // No change since last save → skip
+      if (hash === lastSavedHashRef.current) return;
+
+      // ── Local save (immediate, every 2s if changed) ──
+      lastSavedHashRef.current = hash;
+      void saveToLocal(currentWorkflowId, nodes, edges);
+
+      // ── Cloud save (throttled to 8s, not during execution) ──
+      if (hash === lastCloudHashRef.current) return;
+      const elapsed = Date.now() - lastCloudTimeRef.current;
+      if (elapsed >= CLOUD_THROTTLE_MS) {
+        lastCloudHashRef.current = hash;
+        void saveToCloud(currentWorkflowId, nodes, edges);
+      } else if (!cloudTimerRef.current) {
+        // Schedule cloud save for remaining time
+        const remaining = CLOUD_THROTTLE_MS - elapsed;
+        cloudTimerRef.current = setTimeout(() => {
+          cloudTimerRef.current = null;
+          const latest = useWorkflowStore.getState();
+          if (!latest.currentWorkflowId) return;
+          const latestHash = snapshotHash(latest.nodes, latest.edges);
+          if (latestHash !== lastCloudHashRef.current) {
+            lastCloudHashRef.current = latestHash;
+            void saveToCloud(latest.currentWorkflowId, latest.nodes, latest.edges);
+          }
+        }, remaining);
+      }
+    }, SNAPSHOT_INTERVAL_MS);
 
     return () => {
-      if (localTimerRef.current) clearTimeout(localTimerRef.current);
+      if (intervalRef.current) clearInterval(intervalRef.current);
       if (cloudTimerRef.current) clearTimeout(cloudTimerRef.current);
     };
-  }, [isDirty, currentWorkflowId, saveLocal, saveCloud]);
+  }, [saveToLocal, saveToCloud]);
 
-  // ── Flush pending changes before route/workflow switch or unmount ────────
+  // ── Flush on unmount / route change ───────────────────────────────────────
   useEffect(() => {
     return () => {
-      const pending = pendingSnapshotRef.current;
-      if (!pending.isDirty || !pending.currentWorkflowId) {
-        return;
-      }
+      const { currentWorkflowId, nodes, edges } = useWorkflowStore.getState();
+      if (!currentWorkflowId || nodes.length === 0) return;
 
-      const payload = JSON.stringify({
-        nodes_json: pending.nodes,
-        edges_json: pending.edges,
-      });
+      const hash = snapshotHash(nodes, edges);
+      if (hash === lastCloudHashRef.current) return; // Already synced
 
-      void localforage.setItem(cacheKey(pending.currentWorkflowId), {
-        workflow_id: pending.currentWorkflowId,
-        nodes: pending.nodes,
-        edges: pending.edges,
+      // Save to IndexedDB (fire-and-forget)
+      void localforage.setItem(cacheKey(currentWorkflowId), {
+        workflow_id: currentWorkflowId,
+        nodes,
+        edges,
         dirty: true,
         local_updated_at: new Date().toISOString(),
         cloud_updated_at: cloudUpdatedAtRef.current,
       } satisfies LocalWorkflowCache);
 
-      void fetch(`/api/workflow/${pending.currentWorkflowId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: payload,
-        keepalive: true,
-      });
+      // Best-effort cloud save with keepalive
+      const payload = JSON.stringify({ nodes_json: nodes, edges_json: edges });
+      if (payload.length < KEEPALIVE_MAX_BYTES) {
+        void fetch(`/api/workflow/${currentWorkflowId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: payload,
+          keepalive: true,
+        });
+      }
+      // If payload too large, IndexedDB has it — will sync on next visit
     };
   }, []);
 
-  // ── Warn on page close with unsaved data ───────────────────────────────
+  // ── Warn on page close with unsaved data ──────────────────────────────────
   useEffect(() => {
     const handler = (e: BeforeUnloadEvent) => {
-      if (isDirty) {
+      const { currentWorkflowId, nodes, edges } = useWorkflowStore.getState();
+      if (!currentWorkflowId) return;
+      const hash = snapshotHash(nodes, edges);
+      if (hash !== lastCloudHashRef.current) {
         e.preventDefault();
         e.returnValue = '';
       }
     };
     window.addEventListener('beforeunload', handler);
     return () => window.removeEventListener('beforeunload', handler);
-  }, [isDirty]);
+  }, []);
 
-  // ── Online/offline status ───────────────────────────────────────────────
+  // ── Online/offline ────────────────────────────────────────────────────────
   useEffect(() => {
     const handleOnline = () => {
-      if (isDirty) saveCloud();
+      // When back online, invalidate cloud hash to force re-upload
+      lastCloudHashRef.current = '';
     };
     const handleOffline = () => setSyncStatus('offline');
 
@@ -220,14 +235,17 @@ export function useWorkflowSync(): UseWorkflowSync {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, [isDirty, saveCloud]);
+  }, []);
 
+  // ── Force save (manual trigger) ──────────────────────────────────────────
   const forceSave = useCallback(async () => {
-    if (localTimerRef.current) clearTimeout(localTimerRef.current);
-    if (cloudTimerRef.current) clearTimeout(cloudTimerRef.current);
-    await saveLocal();
-    await saveCloud();
-  }, [saveLocal, saveCloud]);
+    const { currentWorkflowId, nodes, edges } = useWorkflowStore.getState();
+    if (!currentWorkflowId) return;
+
+    await saveToLocal(currentWorkflowId, nodes, edges);
+    lastCloudHashRef.current = '';  // Force cloud refresh
+    await saveToCloud(currentWorkflowId, nodes, edges);
+  }, [saveToLocal, saveToCloud]);
 
   return { syncStatus, lastSyncedAt, forceSave };
 }

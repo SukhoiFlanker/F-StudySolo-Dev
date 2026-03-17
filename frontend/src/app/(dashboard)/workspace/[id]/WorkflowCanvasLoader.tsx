@@ -5,18 +5,15 @@ import { useEffect, useRef } from 'react';
 import localforage from 'localforage';
 import { useWorkflowSync, type LocalWorkflowCache } from '@/features/workflow/hooks/use-workflow-sync';
 import { useWorkflowStore } from '@/stores/use-workflow-store';
+import CanvasTraceLoader from '@/features/workflow/components/canvas/CanvasTraceLoader';
 import type { Node, Edge } from '@xyflow/react';
 
-// Lazy-load the heavy canvas component
+// Lazy-load the heavy canvas component with hand-drawn trace loader
 const WorkflowCanvas = dynamic(
   () => import('@/features/workflow/components/canvas/WorkflowCanvas'),
   {
     ssr: false,
-    loading: () => (
-      <div className="w-full h-full flex items-center justify-center animate-pulse">
-        <span className="text-muted-foreground text-sm">初始化画布…</span>
-      </div>
-    ),
+    loading: () => <CanvasTraceLoader />,
   }
 );
 
@@ -45,7 +42,7 @@ export default function WorkflowCanvasLoader({ workflowId, initialNodes, initial
 
       // If local cache has unsaved changes with actual content, prefer it
       if (cached?.dirty && cached.nodes.length > 0) {
-        setCurrentWorkflow(workflowId, cached.nodes, cached.edges);
+        setCurrentWorkflow(workflowId, cached.nodes, cached.edges, true);
       } else {
         setCurrentWorkflow(workflowId, initialNodes, initialEdges);
       }

@@ -19,6 +19,7 @@ import BottomDrawer from '@/features/workflow/components/panel/BottomDrawer';
 import FloatingToolbar from '@/features/workflow/components/toolbar/FloatingToolbar';
 import AnimatedEdge from '@/features/workflow/components/canvas/edges/AnimatedEdge';
 import AIStepNode from '@/features/workflow/components/nodes/AIStepNode';
+import GeneratingNode from '@/features/workflow/components/nodes/GeneratingNode';
 import { useWorkflowStore } from '@/stores/use-workflow-store';
 import type { AIStepNodeData } from '@/types';
 
@@ -44,6 +45,8 @@ const nodeTypes: NodeTypes = {
   // ── P2 引擎节点 (2) ──
   logic_switch: AIStepNode,
   loop_map: AIStepNode,
+  // ── 状态节点 (1) ──
+  generating: GeneratingNode,
 };
 
 const edgeTypes: EdgeTypes = {
@@ -138,7 +141,6 @@ export default function WorkflowCanvas() {
         maxZoom={2}
         proOptions={proOptions}
       >
-        <Background variant={BackgroundVariant.Dots} gap={24} size={1.25} color="rgba(148, 163, 184, 0.18)" />
         <MiniMap
           pannable
           zoomable

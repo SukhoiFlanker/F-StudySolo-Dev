@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Noto_Sans_SC, JetBrains_Mono } from "next/font/google";
+import { Inter, Noto_Sans_SC, JetBrains_Mono, Noto_Serif_SC } from "next/font/google";
 import ThemeProvider from "@/components/layout/ThemeProvider";
 import { AuthSessionBridge } from "@/features/auth/components";
 import NextTopLoader from "nextjs-toploader";
@@ -25,6 +25,13 @@ const jetbrainsMono = JetBrains_Mono({
   display: "swap",
 });
 
+const notoSerifSC = Noto_Serif_SC({
+  variable: "--font-serif-sc",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "900"],
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   title: "StudySolo - AI Learning Workflow Platform",
   description:
@@ -38,7 +45,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="zh-CN" className="dark" suppressHydrationWarning>
-      <body className={`${inter.variable} ${notoSansSC.variable} ${jetbrainsMono.variable} antialiased`}>
+      <body className={`${inter.variable} ${notoSansSC.variable} ${jetbrainsMono.variable} ${notoSerifSC.variable} antialiased`}>
         <AuthSessionBridge />
         <NextTopLoader
           color="#6366F1"

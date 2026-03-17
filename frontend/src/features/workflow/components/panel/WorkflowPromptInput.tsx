@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
 import { useWorkflowStore } from '@/stores/use-workflow-store';
@@ -22,6 +22,17 @@ export default function WorkflowPromptInput() {
 
     setLoading(true);
     setError(null);
+
+    // Show generating loader node on the canvas while waiting
+    replaceWorkflowGraph(
+      [{
+        id: 'generating-node',
+        position: { x: 300, y: 200 },
+        type: 'generating',
+        data: {},
+      }],
+      []
+    );
 
     try {
       const res = await fetch('/api/ai/generate-workflow', {

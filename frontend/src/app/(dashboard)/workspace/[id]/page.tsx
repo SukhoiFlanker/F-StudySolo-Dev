@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import WorkflowCanvasLoader from './WorkflowCanvasLoader';
 import WorkflowPageShell from './WorkflowPageShell';
 import { fetchWorkflowContentForServer } from '@/services/workflow.server.service';
+import CanvasTraceLoader from '@/features/workflow/components/canvas/CanvasTraceLoader';
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -18,7 +19,7 @@ export default async function WorkflowPage({ params }: Props) {
 
   return (
     <WorkflowPageShell workflowName={workflow.name}>
-      <Suspense fallback={<CanvasSkeleton />}>
+      <Suspense fallback={<CanvasTraceLoader />}>
         <WorkflowCanvasLoader
           key={workflow.id}
           workflowId={workflow.id}
@@ -30,11 +31,4 @@ export default async function WorkflowPage({ params }: Props) {
   );
 }
 
-function CanvasSkeleton() {
-  return (
-    <div className="flex h-full w-full items-center justify-center bg-muted/20 animate-pulse">
-      <span className="text-sm text-muted-foreground">加载画布中...</span>
-    </div>
-  );
-}
 

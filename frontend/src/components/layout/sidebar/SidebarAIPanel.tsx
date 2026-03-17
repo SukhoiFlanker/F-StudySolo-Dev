@@ -41,6 +41,17 @@ export function SidebarAIPanel() {
     setLoading(true);
     setError(null);
 
+    // Show generating loader node on the canvas while waiting
+    replaceWorkflowGraph(
+      [{
+        id: 'generating-node',
+        position: { x: 300, y: 200 },
+        type: 'generating',
+        data: {},
+      }],
+      []
+    );
+
     try {
       const res = await fetch('/api/ai/generate-workflow', {
         method: 'POST',

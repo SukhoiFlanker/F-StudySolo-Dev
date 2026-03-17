@@ -7,7 +7,98 @@ import type { AIStepNodeData } from '@/types';
 import { getNodePreview, getNodeTypeMeta, getStatusMeta } from '@/features/workflow/constants/workflow-meta';
 import { getRenderer } from './index';
 
-function AIStepNode({ data, selected, type }: NodeProps) {
+function getNodeTheme(nodeType: string) {
+  // 1. RAW_DATA (数据源/输入) - 灰色打孔纸质感
+  if (['trigger_input'].includes(nodeType)) {
+    return {
+      category: 'RAW_DATA',
+      borderClass: 'border border-dashed border-slate-400 dark:border-slate-500',
+      innerBorderClass: 'border-none',
+      headerTextColor: 'text-slate-600 dark:text-slate-400',
+    };
+  }
+  // 2. ANALYSIS (逻辑分析) - 墨绿双线审阅质感
+  if (['ai_analyzer', 'content_extract', 'compare'].includes(nodeType)) {
+    return {
+      category: 'ANALYSIS',
+      borderClass: 'border-2 border-emerald-800 dark:border-emerald-600',
+      innerBorderClass: 'border-[0.5px] border-dashed border-emerald-800/60 dark:border-emerald-500/60',
+      headerTextColor: 'text-emerald-800 dark:text-emerald-500',
+    };
+  }
+  // 3. GENERATION (内容生成) - 靛蓝厚重书写质感
+  if (['outline_gen', 'summary'].includes(nodeType)) {
+    return {
+      category: 'GENERATION',
+      borderClass: 'border-[3px] border-indigo-900 dark:border-indigo-400',
+      innerBorderClass: 'border-[0.5px] border-solid border-indigo-900/40 dark:border-indigo-400/40',
+      headerTextColor: 'text-indigo-900 dark:text-indigo-400',
+    };
+  }
+  // 4. FINAL_REPORT (正式报告/终稿) - 沉稳藏青带内嵌缝线
+  if (['chat_response', 'merge_polish'].includes(nodeType)) {
+    return {
+      category: 'FINAL_REPORT',
+      borderClass: 'border-[2px] border-slate-800 dark:border-slate-300 ring-4 ring-slate-800/5 dark:ring-slate-300/5',
+      innerBorderClass: 'border-[1px] border-dashed border-slate-800/30 dark:border-slate-300/30 m-1',
+      headerTextColor: 'text-slate-800 dark:text-slate-300',
+    };
+  }
+  // 5. EXTERNAL_TOOL (外部检索) - 青色胶布贴边质感
+  if (['knowledge_base', 'web_search'].includes(nodeType)) {
+    return {
+      category: 'EXTERNAL_TOOL',
+      borderClass: 'border-l-4 border-y border-r border-cyan-700 dark:border-cyan-500',
+      innerBorderClass: 'border-none',
+      headerTextColor: 'text-cyan-800 dark:text-cyan-500',
+    };
+  }
+  // 6. ACTION_IO (系统读写) - 工业灰点线排版
+  if (['write_db', 'export_file'].includes(nodeType)) {
+    return {
+      category: 'ACTION_IO',
+      borderClass: 'border-[1.5px] border-dotted border-zinc-500 dark:border-zinc-400',
+      innerBorderClass: 'border-[0.5px] border-solid border-zinc-500/20 dark:border-zinc-400/20',
+      headerTextColor: 'text-zinc-600 dark:text-zinc-400',
+    };
+  }
+  // 7. CONTROL_FLOW (逻辑控制) - 琥珀色警告线质感
+  if (['logic_switch', 'loop_map'].includes(nodeType)) {
+    return {
+      category: 'CONTROL_FLOW',
+      borderClass: 'border-2 border-amber-600 dark:border-amber-500',
+      innerBorderClass: 'border-[0.5px] border-dashed border-amber-600/50 dark:border-amber-500/50',
+      headerTextColor: 'text-amber-700 dark:text-amber-500',
+    };
+  }
+  // 8. VISUALIZE (图表渲染) - 紫色相框质感
+  if (['mind_map'].includes(nodeType)) {
+    return {
+      category: 'VISUALIZE',
+      borderClass: 'border border-fuchsia-800 dark:border-fuchsia-500 shadow-[inset_0_0_0_2px_rgba(134,25,143,0.1)]',
+      innerBorderClass: 'border-[0.5px] border-solid border-fuchsia-800/30 dark:border-fuchsia-500/30 m-2',
+      headerTextColor: 'text-fuchsia-800 dark:text-fuchsia-400',
+    };
+  }
+  // 9. ASSESSMENT (考核测试) - 玫瑰红考卷质感
+  if (['quiz_gen', 'flashcard'].includes(nodeType)) {
+    return {
+      category: 'ASSESSMENT',
+      borderClass: 'border-2 border-rose-800 dark:border-rose-400',
+      innerBorderClass: 'border-t-[0.5px] border-b-[0.5px] border-solid border-rose-800/30 dark:border-rose-400/30 my-4',
+      headerTextColor: 'text-rose-800 dark:text-rose-400',
+    };
+  }
+  // 10. FEEDBACK (评估反馈) - 青绿色批改笔迹质感 (Fallback / 预留)
+  return {
+    category: 'FEEDBACK',
+    borderClass: 'border-[1.5px] border-teal-700 dark:border-teal-500',
+    innerBorderClass: 'border-[1px] border-dotted border-teal-700/40 dark:border-teal-500/40',
+    headerTextColor: 'text-teal-800 dark:text-teal-400',
+  };
+}
+
+function AIStepNode({ data, selected, type, id }: NodeProps) {
   const nodeData = data as unknown as AIStepNodeData;
   const { error, label, model_route, output, output_format, status } = nodeData;
   const nodeType = nodeData.type ?? type ?? 'chat_response';
@@ -16,81 +107,77 @@ function AIStepNode({ data, selected, type }: NodeProps) {
   const preview = getNodePreview(output, status === 'running' ? '正在持续生成内容...' : '等待上游节点触发');
   const [copied, setCopied] = useState(false);
   const isActive = status === 'running' || selected;
-  const cardClass = isActive ? 'glass-active' : 'glass-card';
+  const nodeTheme = getNodeTheme(nodeType);
+  
+  const cardShadow = isActive ? 'ring-2 ring-primary/40 shadow-xl shadow-primary/10 scale-[1.02]' : '';
 
   const handleCopy = async () => {
     if (!output || !navigator.clipboard) {
       return;
     }
-
     await navigator.clipboard.writeText(output);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const [fromClass, toClass] = typeMeta.accentClassName.split(' ');
-
   return (
     <div
-      className={`${cardClass} relative w-[20rem] overflow-hidden rounded-2xl border border-white/10`}
+      className={`${cardShadow} node-paper-bg relative w-[22rem] transition-all duration-200 ${nodeTheme.borderClass}`}
       role="article"
       aria-label={`节点: ${label}`}
     >
-      {/* ─── Notebook Grid Texture ─── */}
-      <div className="node-paper-texture absolute inset-0 z-0 pointer-events-none opacity-50 dark:opacity-60 mix-blend-overlay" />
-      
-      {/* ─── Paper Margins ─── */}
-      <div className="absolute top-0 bottom-0 left-6 w-[2px] bg-red-400/25 dark:bg-rose-400/15 z-0 pointer-events-none" />
-      <div className="absolute top-0 bottom-0 left-7 w-px bg-red-400/25 dark:bg-rose-400/15 z-0 pointer-events-none" />
-
-      <div className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${fromClass} ${toClass} z-20`} />
+      <div className={`absolute inset-1 pointer-events-none z-0 ${nodeTheme.innerBorderClass}`} />
 
       <Handle
         type="target"
         position={Position.Left}
-        className="!h-3.5 !w-3.5 !-left-2 !border-[3px] !border-slate-950/70 !bg-sky-300 !shadow-[0_0_12px_rgba(125,211,252,0.8)] z-20"
+        className={`!h-3.5 !w-3.5 !-left-[9px] !border-2 !border-background !bg-current z-20 ${nodeTheme.headerTextColor}`}
       />
 
-      <div className="relative z-10 flex items-start gap-3 border-b border-white/8 px-4 pb-3 pt-4 pl-10">
-        <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ring-1 ${typeMeta.accentClassName}`}>
-          <typeMeta.icon className="h-5 w-5 text-stone-900" />
-        </div>
-
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center justify-between gap-2">
-            <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-foreground">{label}</p>
-              <p className="truncate text-[11px] text-muted-foreground">{typeMeta.description}</p>
-            </div>
-            <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-medium ${statusMeta.badgeClassName}`}>
-              {statusMeta.label}
+      <div className="relative z-10 p-6 flex flex-col h-full min-h-[14rem]">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-5">
+          <div className={`flex items-center gap-2 text-[11px] font-mono tracking-wider uppercase font-bold ${nodeTheme.headerTextColor}`}>
+            <typeMeta.icon className="h-3.5 w-3.5" />
+            #{id.slice(0, 3)}_{nodeTheme.category} {status === 'running' ? '(ACTIVE)' : ''}
+          </div>
+          {model_route && (
+            <span className="truncate rounded bg-black/5 dark:bg-white/10 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider text-black/50 dark:text-white/50">
+              {model_route}
             </span>
-          </div>
-
-          <div className="mt-2 flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-            <span className={`inline-block h-2.5 w-2.5 rounded-full ${statusMeta.dotClassName}`} />
-            <span>{typeMeta.label}</span>
-            {model_route ? (
-              <span className="truncate rounded-full bg-black/10 px-2 py-0.5 normal-case">{model_route}</span>
-            ) : null}
-          </div>
+          )}
         </div>
-      </div>
 
-      <div className="relative z-10 px-4 py-3 pl-10">
-        <div className="rounded-xl border border-white/10 dark:border-white/5 bg-black/5 dark:bg-black/20 px-3 py-2.5 backdrop-blur-sm">
-          <div className="mb-2 flex items-center justify-between text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-            <span>输出预览</span>
-            {status === 'running' ? (
-              <span className="flex items-center gap-1 text-sky-300">
+        {/* Title & Desc */}
+        <div className="mb-4 flex-1">
+          <h3 className="text-[22px] font-bold font-serif text-black dark:text-white leading-tight tracking-wide mb-2">
+            {label}
+          </h3>
+          <p className="text-[13px] text-black/60 dark:text-white/60 font-serif leading-relaxed line-clamp-2">
+            {typeMeta.description}
+          </p>
+        </div>
+
+        {/* Divider */}
+        <hr className="border-t-[1px] border-dashed border-black/15 dark:border-white/15 my-4" />
+
+        {/* Dynamic Content Area */}
+        <div className="w-full min-h-[4rem]">
+          {status === 'running' ? (
+            <div className={`font-mono text-xs ${nodeTheme.headerTextColor}`}>
+              <div className="flex items-center gap-2 mb-2 font-bold tracking-widest uppercase">
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                Streaming
-              </span>
-            ) : null}
-          </div>
-
-          {output || status === 'running' ? (
-            <div className="max-h-56 overflow-y-auto">
+                PROCESS: RUNNING
+              </div>
+              <div className="h-1.5 w-full bg-black/5 dark:bg-white/10 overflow-hidden mt-3">
+                <div className="h-full bg-current w-2/3 animate-pulse" />
+              </div>
+              <div className="mt-3 font-serif text-sm text-black/70 dark:text-white/70 italic line-clamp-2 normal-case font-normal">
+                {preview}
+              </div>
+            </div>
+          ) : output ? (
+            <div className="max-h-48 overflow-y-auto font-serif text-sm text-black/80 dark:text-white/80 leading-relaxed scrollbar-hide select-text">
               {createElement(getRenderer(nodeType), {
                 output: output || '',
                 format: output_format || 'markdown',
@@ -99,36 +186,42 @@ function AIStepNode({ data, selected, type }: NodeProps) {
               })}
             </div>
           ) : (
-            <p className="line-clamp-4 text-xs leading-6 text-muted-foreground">{preview}</p>
+            <div className="text-sm font-serif text-black/40 dark:text-white/40 italic">
+              {preview || '等待上游节点触发...'}
+            </div>
           )}
         </div>
-      </div>
 
-      <div className="relative z-10 flex items-center justify-between border-t border-white/8 px-4 py-2.5 pl-10 text-[11px] text-muted-foreground bg-white/5 dark:bg-black/10 backdrop-blur-sm">
-        <span className="truncate">{preview}</span>
-        {status === 'done' && output ? (
-          <button
-            onClick={() => void handleCopy()}
-            className="shrink-0 rounded-full border border-white/10 px-2.5 py-1 text-[10px] font-medium text-foreground transition-colors hover:border-primary/40 hover:text-primary"
-            aria-label="复制输出内容"
-          >
-            {copied ? '已复制' : '复制结果'}
-          </button>
-        ) : null}
-      </div>
-
-      {status === 'error' ? (
-        <div className="relative z-10 border-t border-rose-400/20 bg-rose-500/10 px-4 py-2 pl-10 text-xs text-rose-200">
-          {error || '执行失败，请检查配置或重试当前节点'}
+        {/* Footer info (Status badge & Copy output) */}
+        <div className="mt-5 flex items-center justify-between pt-1">
+          <span className={`inline-flex items-center px-2 py-0.5 rounded-sm font-mono text-[10px] uppercase font-bold tracking-wider ${statusMeta.badgeClassName} bg-opacity-10`}>
+            {statusMeta.label}
+          </span>
+          <div className="flex items-center gap-3">
+            {status === 'done' && output && (
+              <button
+                onClick={() => void handleCopy()}
+                className={`text-[10px] font-mono font-bold tracking-widest uppercase hover:underline transition-all ${nodeTheme.headerTextColor}`}
+                aria-label="复制输出内容"
+              >
+                {copied ? 'COPIED!' : 'COPY DATA'}
+              </button>
+            )}
+            <span className={`inline-block h-3 w-3 rounded-full ${statusMeta.dotClassName}`} />
+          </div>
         </div>
-      ) : null}
 
-      <div className="pointer-events-none absolute inset-y-0 right-0 w-24 bg-gradient-to-l from-white/[0.035] to-transparent z-10" />
+        {status === 'error' && (
+          <div className="mt-4 border-t border-dashed border-rose-400/30 pt-3 text-xs font-serif text-rose-500 italic">
+            {error || '执行失败，请检查配置或重试当前节点'}
+          </div>
+        )}
+      </div>
 
       <Handle
         type="source"
         position={Position.Right}
-        className="!h-3.5 !w-3.5 !-right-2 !border-[3px] !border-slate-950/70 !bg-violet-300 !shadow-[0_0_12px_rgba(196,181,253,0.8)] z-20"
+        className={`!h-3.5 !w-3.5 !-right-[9px] !border-2 !border-background !bg-current z-20 ${nodeTheme.headerTextColor}`}
       />
     </div>
   );

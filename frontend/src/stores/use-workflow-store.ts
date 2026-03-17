@@ -26,7 +26,7 @@ interface WorkflowStore {
   setSelectedNodeId: (nodeId: string | null) => void;
   replaceWorkflowGraph: (nodes: Node[], edges: Edge[]) => void;
   setGenerationContext: (prompt: string, implicitContext: Record<string, unknown> | null) => void;
-  setCurrentWorkflow: (id: string, nodes: Node[], edges: Edge[]) => void;
+  setCurrentWorkflow: (id: string, nodes: Node[], edges: Edge[], dirty?: boolean) => void;
   markClean: () => void;
 }
 
@@ -118,13 +118,13 @@ export const useWorkflowStore = create<WorkflowStore>((set) => ({
       lastImplicitContext,
     }),
 
-  setCurrentWorkflow: (id, nodes, edges) =>
+  setCurrentWorkflow: (id, nodes, edges, dirty = false) =>
     set({
       currentWorkflowId: id,
       nodes,
       edges,
       selectedNodeId: resolveSelectedNodeId(nodes, null),
-      isDirty: false,
+      isDirty: dirty,
     }),
 
   markClean: () => set({ isDirty: false }),

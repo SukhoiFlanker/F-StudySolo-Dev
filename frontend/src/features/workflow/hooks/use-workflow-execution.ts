@@ -32,6 +32,9 @@ export function useWorkflowExecution() {
       setStatus('running');
       setError(null);
 
+      // Pause cloud sync during execution to avoid race condition
+      window.dispatchEvent(new Event('workflow:execution-start'));
+
       const connect = (attempt: number) => {
         const es = new EventSource(`/api/workflow/${id}/execute`);
         esRef.current = es;
@@ -80,6 +83,8 @@ export function useWorkflowExecution() {
           } finally {
             es.close();
             esRef.current = null;
+            // Resume cloud sync after execution completes
+            window.dispatchEvent(new Event('workflow:execution-end'));
           }
         });
 
