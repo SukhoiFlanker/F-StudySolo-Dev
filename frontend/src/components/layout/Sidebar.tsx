@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import {
   LayoutList,
   MessageSquareCode,
@@ -13,6 +12,7 @@ import {
   LogOut,
   BookOpenText,
   UserCircle,
+  PanelRightDashed,
 } from 'lucide-react';
 import { useSidebarNavigation } from '@/hooks/use-sidebar-navigation';
 import { useWorkflowContextMenu } from '@/features/workflow/hooks/use-workflow-context-menu';
@@ -28,6 +28,7 @@ import WalletPanel from './sidebar/WalletPanel';
 import PluginsPanel from './sidebar/PluginsPanel';
 import UserPanel from './sidebar/UserPanel';
 import SettingsPanel from './sidebar/SettingsPanel';
+import RightPanelContent from './sidebar/RightPanelContent';
 import ResizableHandle from './ResizableHandle';
 import type { LucideIcon } from 'lucide-react';
 
@@ -69,6 +70,7 @@ function getPanelLabel(panel: SidebarPanel): string {
     'wallet': '钱包设置',
     'user-panel': '用户面板',
     'settings': '设置',
+    'execution': '执行面板',
   };
   return ALL[panel] ?? '';
 }
@@ -86,6 +88,8 @@ export default function Sidebar({ workflows }: SidebarProps) {
     toggleSidebarPanel,
     leftPanelWidth,
     setLeftPanelWidth,
+    rightPanelDockedToSidebar,
+    toggleRightPanelDock,
   } = usePanelStore();
   const isCollapsed = activeSidebarPanel === null;
 
@@ -131,7 +135,12 @@ export default function Sidebar({ workflows }: SidebarProps) {
       <div className="flex h-full shrink-0 border-r border-border">
         {/* ─── Activity Bar (always visible, fixed width) ─── */}
         <div className="flex h-full w-12 shrink-0 flex-col items-center bg-background py-2">
-          {/* User panel button (top, standalone) */}
+          {/* Execution panel — pinned at absolute top when docked */}
+          {rightPanelDockedToSidebar &&
+            renderActivityButton('execution', PanelRightDashed, '执行面板')
+          }
+
+          {/* User panel button */}
           {renderActivityButton('user-panel', UserCircle, '用户面板')}
 
           <div className="my-1 h-px w-6 bg-border/50" />
@@ -163,7 +172,7 @@ export default function Sidebar({ workflows }: SidebarProps) {
               <BookOpenText className="h-[18px] w-[18px]" />
             </a>
 
-            {/* Settings — now opens sidebar panel instead of navigating */}
+            {/* Settings — opens sidebar panel */}
             {renderActivityButton('settings', Settings, '设置')}
 
             <button
@@ -184,10 +193,22 @@ export default function Sidebar({ workflows }: SidebarProps) {
               style={{ width: leftPanelWidth }}
             >
               {/* Panel header */}
-              <div className="shrink-0 border-b border-border px-3 py-3">
+              <div className="shrink-0 border-b border-border px-3 py-3 flex items-center justify-between">
                 <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
                   {getPanelLabel(activeSidebarPanel!)}
                 </span>
+
+                {/* Undock button — only for execution panel */}
+                {activeSidebarPanel === 'execution' && (
+                  <button
+                    type="button"
+                    onClick={toggleRightPanelDock}
+                    className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
+                    title="移回右侧"
+                  >
+                    <PanelRightDashed className="h-3.5 w-3.5" />
+                  </button>
+                )}
               </div>
 
               {/* Panel body */}
@@ -217,6 +238,7 @@ export default function Sidebar({ workflows }: SidebarProps) {
               {activeSidebarPanel === 'plugins' && <PluginsPanel />}
               {activeSidebarPanel === 'user-panel' && <UserPanel />}
               {activeSidebarPanel === 'settings' && <SettingsPanel />}
+              {activeSidebarPanel === 'execution' && <RightPanelContent />}
             </div>
 
             {/* Resizable handle */}

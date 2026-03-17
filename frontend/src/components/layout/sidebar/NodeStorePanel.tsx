@@ -1,39 +1,46 @@
 'use client';
 
 import { useCallback, useMemo, useState, useRef } from 'react';
-import { GripVertical, Search, ChevronDown, ChevronRight, X } from 'lucide-react';
+import { GripVertical, Search, ChevronDown, ChevronRight, X, ChevronsUpDown } from 'lucide-react';
 import { NODE_TYPE_META } from '@/features/workflow/constants/workflow-meta';
 import type { NodeType } from '@/types';
 import { createPortal } from 'react-dom';
 
 /** 节点分类 */
-const NODE_CATEGORIES: { id: string; label: string; types: NodeType[] }[] = [
+const NODE_CATEGORIES: { id: string; label: string; emoji: string; types: NodeType[] }[] = [
   {
     id: 'trigger',
     label: '输入 & 触发',
+    emoji: '⚡',
     types: ['trigger_input'],
   },
   {
     id: 'ai',
     label: 'AI 处理',
+    emoji: '🤖',
     types: ['ai_analyzer', 'ai_planner', 'content_extract', 'merge_polish'],
   },
   {
     id: 'content',
     label: '内容生成',
+    emoji: '✍️',
     types: ['outline_gen', 'summary', 'flashcard', 'quiz_gen', 'mind_map', 'chat_response'],
   },
   {
     id: 'data',
     label: '数据 & 集成',
+    emoji: '🗄️',
     types: ['knowledge_base', 'web_search', 'write_db', 'export_file'],
   },
   {
     id: 'logic',
     label: '逻辑控制',
+    emoji: '🔀',
     types: ['compare', 'logic_switch', 'loop_map'],
   },
 ];
+
+const ALL_TAG = 'all';
 
 /** Extended description for hover tooltip */
 const NODE_EXTENDED_INFO: Partial<Record<NodeType, string>> = {
@@ -68,7 +75,6 @@ function NodeTooltip({
   const meta = NODE_TYPE_META[nodeType];
   const extended = NODE_EXTENDED_INFO[nodeType];
 
-  // Position tooltip to the right of the item
   const style: React.CSSProperties = {
     position: 'fixed',
     top: anchorRect.top,
@@ -96,11 +102,64 @@ function NodeTooltip({
       {extended ? (
         <p className="text-[11px] leading-relaxed text-muted-foreground">{extended}</p>
       ) : null}
-      <p className="mt-2 text-[9px] text-muted-foreground/50">
-        拖拽到画布 或 点击添加
-      </p>
+      <p className="mt-2 text-[9px] text-muted-foreground/50">拖拽到画布 或 点击添加</p>
     </div>,
     document.body
+  );
+}
+
+/* ─── Tag filter bar ─── */
+interface TagFilterBarProps {
+  selectedCategoryId: string;
+  onSelect: (id: string) => void;
+}
+
+function TagFilterBar({ selectedCategoryId, onSelect }: TagFilterBarProps) {
+  const [expanded, setExpanded] = useState(false);
+
+  const allTags = [
+    { id: ALL_TAG, label: '全部', emoji: '🔍' },
+    ...NODE_CATEGORIES.map((c) => ({ id: c.id, label: c.label, emoji: c.emoji })),
+  ];
+
+  // Collapsed: show only first row (All tag + up to 2 categories), plus expand button
+  const VISIBLE_COUNT = 3; // "全部" + first 2 categories
+  const visibleTags = expanded ? allTags : allTags.slice(0, VISIBLE_COUNT);
+
+  return (
+    <div className="shrink-0 border-b border-border px-2 py-2">
+      <div className="flex flex-wrap items-center gap-1">
+        {visibleTags.map((tag) => {
+          const isActive = selectedCategoryId === tag.id;
+          return (
+            <button
+              key={tag.id}
+              type="button"
+              onClick={() => onSelect(tag.id)}
+              className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium transition-colors ${
+                isActive
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
+              }`}
+            >
+              <span>{tag.emoji}</span>
+              <span className="hidden sm:inline">{tag.id === ALL_TAG ? '全部' : tag.label.split(' ')[0]}</span>
+            </button>
+          );
+        })}
+
+        {/* Expand / collapse toggle */}
+        <button
+          type="button"
+          onClick={() => setExpanded((e) => !e)}
+          title={expanded ? '收起筛选器' : '展开全部筛选器'}
+          className="ml-auto flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[9px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        >
+          <ChevronsUpDown className="h-3 w-3" />
+          <span>{expanded ? '收起' : '展开'}</span>
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -121,9 +180,7 @@ function NodeStoreItem({ nodeType }: { nodeType: NodeType }) {
 
   const handleClick = useCallback(() => {
     window.dispatchEvent(
-      new CustomEvent('node-store:add-node', {
-        detail: { nodeType },
-      })
+      new CustomEvent('node-store:add-node', { detail: { nodeType } })
     );
   }, [nodeType]);
 
@@ -180,7 +237,6 @@ function CategorySection({
 }) {
   const [collapsed, setCollapsed] = useState(false);
 
-  // Filter types by search
   const filtered = useMemo(() => {
     if (!searchQuery) return types;
     const q = searchQuery.toLowerCase();
@@ -225,22 +281,29 @@ function CategorySection({
 /* ─── Main panel ─── */
 export default function NodeStorePanel() {
   const [search, setSearch] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>(ALL_TAG);
+
+  // Categories to display based on selected tag
+  const visibleCategories = useMemo(() => {
+    if (selectedCategory === ALL_TAG) return NODE_CATEGORIES;
+    return NODE_CATEGORIES.filter((c) => c.id === selectedCategory);
+  }, [selectedCategory]);
 
   const totalFiltered = useMemo(() => {
-    if (!search) return 18;
     const q = search.toLowerCase();
-    return NODE_CATEGORIES.reduce((sum, cat) => {
+    return visibleCategories.reduce((sum, cat) => {
+      if (!search) return sum + cat.types.length;
       return sum + cat.types.filter((t) => {
         const m = NODE_TYPE_META[t];
         return m.label.toLowerCase().includes(q) || m.description.toLowerCase().includes(q) || t.toLowerCase().includes(q);
       }).length;
     }, 0);
-  }, [search]);
+  }, [search, visibleCategories]);
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       {/* Search bar */}
-      <div className="shrink-0 border-b border-border px-2 py-2">
+      <div className="shrink-0 px-2 pt-2 pb-1.5">
         <div className="relative">
           <Search className="absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
           <input
@@ -260,14 +323,28 @@ export default function NodeStorePanel() {
             </button>
           )}
         </div>
-        <p className="mt-1.5 px-1 text-[9px] text-muted-foreground/50">
-          {search ? `找到 ${totalFiltered} 个节点` : '拖拽到画布，或点击添加'}
+      </div>
+
+      {/* Tag filter bar */}
+      <TagFilterBar
+        selectedCategoryId={selectedCategory}
+        onSelect={setSelectedCategory}
+      />
+
+      {/* Result hint */}
+      <div className="shrink-0 px-3 py-1">
+        <p className="text-[9px] text-muted-foreground/50">
+          {search
+            ? `找到 ${totalFiltered} 个节点`
+            : selectedCategory === ALL_TAG
+            ? '拖拽到画布，或点击添加'
+            : `已筛选：${NODE_CATEGORIES.find((c) => c.id === selectedCategory)?.label}`}
         </p>
       </div>
 
       {/* Node list */}
-      <div className="scrollbar-hide flex-1 overflow-y-auto px-2 py-2">
-        {NODE_CATEGORIES.map((cat) => (
+      <div className="scrollbar-hide flex-1 overflow-y-auto px-2 pb-2">
+        {visibleCategories.map((cat) => (
           <CategorySection
             key={cat.id}
             id={cat.id}

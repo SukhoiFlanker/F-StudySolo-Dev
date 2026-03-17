@@ -12,7 +12,8 @@ export type SidebarPanel =
   | 'wallet'
   | 'plugins'
   | 'user-panel'
-  | 'settings';
+  | 'settings'
+  | 'execution';
 
 /** Min/max constraints for resizable panels */
 const LEFT_PANEL_MIN = 200;
@@ -33,6 +34,8 @@ interface PanelState {
   rightPanelCollapsed: boolean;
   /** Right panel section collapsed states */
   collapsedSections: Record<string, boolean>;
+  /** Whether the right panel is docked to the left sidebar */
+  rightPanelDockedToSidebar: boolean;
 
   /** Toggle a sidebar panel — if already active, collapse; if different, switch */
   toggleSidebarPanel: (panel: SidebarPanel) => void;
@@ -45,6 +48,9 @@ interface PanelState {
   setRightPanelCollapsed: (collapsed: boolean) => void;
   toggleSection: (sectionId: string) => void;
   isSectionCollapsed: (sectionId: string) => boolean;
+
+  /** Toggle docking the right panel into the left sidebar */
+  toggleRightPanelDock: () => void;
 }
 
 export const usePanelStore = create<PanelState>()(
@@ -55,6 +61,7 @@ export const usePanelStore = create<PanelState>()(
       rightPanelWidth: RIGHT_PANEL_DEFAULT,
       rightPanelCollapsed: false,
       collapsedSections: {},
+      rightPanelDockedToSidebar: false,
 
       toggleSidebarPanel: (panel) =>
         set((state) => ({
@@ -81,6 +88,18 @@ export const usePanelStore = create<PanelState>()(
         })),
 
       isSectionCollapsed: (sectionId) => !!get().collapsedSections[sectionId],
+
+      toggleRightPanelDock: () =>
+        set((state) => {
+          const docking = !state.rightPanelDockedToSidebar;
+          return {
+            rightPanelDockedToSidebar: docking,
+            // Docking → switch to execution panel; undocking → fall back to node-store
+            activeSidebarPanel: docking
+              ? ('execution' as SidebarPanel)
+              : ('node-store' as SidebarPanel),
+          };
+        }),
     }),
     {
       name: 'studysolo-panel-layout',
@@ -90,6 +109,7 @@ export const usePanelStore = create<PanelState>()(
         rightPanelWidth: state.rightPanelWidth,
         rightPanelCollapsed: state.rightPanelCollapsed,
         collapsedSections: state.collapsedSections,
+        rightPanelDockedToSidebar: state.rightPanelDockedToSidebar,
       }),
     }
   )
