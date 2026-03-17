@@ -41,13 +41,13 @@ export default function NotFound() {
           <Home className="w-4 h-4" />
           返回首页
         </Link>
-        <button
-          onClick={() => typeof window !== 'undefined' && window.history.back()}
+        <Link
+          href="/workspace"
           className="flex items-center gap-2 rounded-full border border-border px-6 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:border-primary/30 transition-all"
         >
           <ArrowLeft className="w-4 h-4" />
-          返回上页
-        </button>
+          进入工作台
+        </Link>
       </div>
     </div>
   );
