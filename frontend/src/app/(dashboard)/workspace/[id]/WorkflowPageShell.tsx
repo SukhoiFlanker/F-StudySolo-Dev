@@ -2,7 +2,6 @@
 
 import { ArrowLeft, Save, Loader2 } from 'lucide-react';
 import Link from 'next/link';
-import RunButton from '@/features/workflow/components/toolbar/RunButton';
 import RightPanel from '@/components/layout/RightPanel';
 import { useWorkflowStore } from '@/stores/use-workflow-store';
 
@@ -16,23 +15,23 @@ export default function WorkflowPageShell({ workflowName, children }: WorkflowPa
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
-      {/* ─── Toolbar ─── */}
-      <div className="shrink-0 border-b border-border bg-background/95 backdrop-blur px-4 py-2">
+      {/* ─── Slim info bar ─── */}
+      <div className="shrink-0 border-b border-border bg-background/80 backdrop-blur-sm px-4 py-1.5">
         <div className="flex items-center gap-3">
           <Link
             href="/workspace"
-            className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
+            className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             title="返回工作流列表"
           >
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft className="h-3.5 w-3.5" />
           </Link>
 
-          <div className="h-4 w-px bg-border" />
+          <div className="h-3.5 w-px bg-border" />
 
-          <h1 className="truncate text-sm font-medium min-w-0 flex-1">{workflowName}</h1>
+          <h1 className="truncate text-xs font-medium min-w-0 flex-1">{workflowName}</h1>
 
           {/* Save status indicator */}
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
             {isDirty ? (
               <>
                 <Loader2 className="h-3 w-3 animate-spin" />
@@ -45,14 +44,10 @@ export default function WorkflowPageShell({ workflowName, children }: WorkflowPa
               </>
             )}
           </div>
-
-          <div className="h-4 w-px bg-border" />
-
-          <RunButton />
         </div>
       </div>
 
-      {/* ─── Canvas + Right Panel (horizontal split) ─── */}
+      {/* ─── Canvas + Right Panel ─── */}
       <div className="flex flex-1 overflow-hidden min-h-0">
         <div className="relative flex-1 overflow-hidden">
           {children}
@@ -62,4 +57,3 @@ export default function WorkflowPageShell({ workflowName, children }: WorkflowPa
     </div>
   );
 }
-

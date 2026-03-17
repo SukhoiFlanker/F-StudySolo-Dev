@@ -16,6 +16,7 @@ import {
 import '@xyflow/react/dist/style.css';
 
 import BottomDrawer from '@/features/workflow/components/panel/BottomDrawer';
+import FloatingToolbar from '@/features/workflow/components/toolbar/FloatingToolbar';
 import AnimatedEdge from '@/features/workflow/components/canvas/edges/AnimatedEdge';
 import AIStepNode from '@/features/workflow/components/nodes/AIStepNode';
 import { useWorkflowStore } from '@/stores/use-workflow-store';
@@ -113,7 +114,7 @@ export default function WorkflowCanvas() {
   }, []);
 
   return (
-    <div className="workflow-canvas h-full w-full bg-background bg-grid-pattern-canvas" style={{ touchAction: 'none' }}>
+    <div className="workflow-canvas relative h-full w-full bg-background bg-grid-pattern-canvas" style={{ touchAction: 'none' }}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -149,6 +150,8 @@ export default function WorkflowCanvas() {
         />
         <Controls showInteractive={false} className="workflow-controls" position="bottom-right" />
       </ReactFlow>
+
+      <FloatingToolbar />
 
       <BottomDrawer
         open={drawerOpen}

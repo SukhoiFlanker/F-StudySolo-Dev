@@ -1,4 +1,5 @@
-﻿.workflow-canvas .react-flow__pane {
+/* ─── Canvas cursor ─── */
+.workflow-canvas .react-flow__pane {
   cursor: grab;
 }
 
@@ -10,25 +11,32 @@
   opacity: 0.8;
 }
 
+/* ─── Controls (zoom +/-/fit) — position bottom-right ─── */
 .workflow-controls.react-flow__controls {
   display: flex;
   flex-direction: row;
   gap: 2px;
-  background: rgba(15, 23, 42, 0.8);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 9999px;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
   padding: 4px;
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
   bottom: 16px;
   right: 16px;
+}
+
+.light .workflow-controls.react-flow__controls {
+  background: rgba(255, 255, 255, 0.92);
+  border-color: rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.06);
 }
 
 .workflow-controls .react-flow__controls-button {
   background: transparent;
   border: none;
-  border-radius: 9999px;
+  border-radius: 8px;
   width: 32px;
   height: 32px;
   display: flex;
@@ -39,20 +47,29 @@
 }
 
 .workflow-controls .react-flow__controls-button:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: #f8fafc;
+  background: rgba(255, 255, 255, 0.1);
+  color: #f1f5f9;
+}
+
+.light .workflow-controls .react-flow__controls-button {
+  color: #78716c;
+}
+
+.light .workflow-controls .react-flow__controls-button:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: #1c1917;
 }
 
 .workflow-controls .react-flow__controls-button svg {
   fill: currentColor;
 }
 
+/* ─── Edge animations ─── */
 @keyframes edge-pulse {
   0%,
   100% {
     opacity: 0.6;
   }
-
   50% {
     opacity: 1;
   }
@@ -67,7 +84,6 @@
   100% {
     border-color: rgba(99, 102, 241, 0.4);
   }
-
   50% {
     border-color: rgba(99, 102, 241, 0.7);
   }
@@ -77,16 +93,23 @@
   animation: border-pulse 2s ease-in-out infinite;
 }
 
+/* ─── Edge paths ─── */
 .workflow-canvas .react-flow__edge-path {
   stroke: #6366f1;
   stroke-opacity: 0.45;
   stroke-width: 2.5;
 }
 
+.light .workflow-canvas .react-flow__edge-path {
+  stroke: #4f46e5;
+  stroke-opacity: 0.35;
+}
+
+/* ─── MiniMap ─── */
 .workflow-canvas .react-flow__minimap {
   background: rgba(15, 23, 42, 0.82);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
+  border-radius: 12px;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   overflow: hidden;
@@ -94,20 +117,95 @@
   left: 16px;
 }
 
+.light .workflow-canvas .react-flow__minimap {
+  background: rgba(255, 255, 255, 0.88);
+  border-color: rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+}
+
+/* ─── Selection glow ─── */
 .workflow-canvas .react-flow__node.selected > div {
   box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.5), 0 0 20px rgba(99, 102, 241, 0.15);
 }
 
+.light .workflow-canvas .react-flow__node.selected > div {
+  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.45), 0 0 16px rgba(79, 70, 229, 0.1);
+}
+
+/* ─── Connection drag line ─── */
 .workflow-canvas .react-flow__connection-path {
   stroke: rgba(129, 140, 248, 0.75);
   stroke-width: 2.5;
   stroke-dasharray: 6 4;
 }
 
+.light .workflow-canvas .react-flow__connection-path {
+  stroke: rgba(79, 70, 229, 0.55);
+}
+
+/* ─── Handles ─── */
 .workflow-canvas .react-flow__handle {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .workflow-canvas .react-flow__handle:hover {
   transform: scale(1.15);
+}
+
+/* ─── Floating canvas toolbar ─── */
+.canvas-floating-toolbar {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.9);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.35);
+}
+
+.light .canvas-floating-toolbar {
+  background: rgba(28, 25, 23, 0.88);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+}
+
+.canvas-floating-toolbar button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  position: relative;
+}
+
+.canvas-floating-toolbar button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #f1f5f9;
+}
+
+.canvas-floating-toolbar button.active {
+  background: #4f46e5;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.4);
+}
+
+.canvas-floating-toolbar .toolbar-divider {
+  width: 1px;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.12);
+  margin: 0 2px;
 }

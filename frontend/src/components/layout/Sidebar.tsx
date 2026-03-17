@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import {
   LayoutList,
-  Sparkles,
+  MessageSquareCode,
   Store,
   BookTemplate,
   LayoutDashboard,
@@ -26,6 +26,8 @@ import WorkflowExamplesPanel from './sidebar/WorkflowExamplesPanel';
 import DashboardPanel from './sidebar/DashboardPanel';
 import WalletPanel from './sidebar/WalletPanel';
 import PluginsPanel from './sidebar/PluginsPanel';
+import UserPanel from './sidebar/UserPanel';
+import SettingsPanel from './sidebar/SettingsPanel';
 import ResizableHandle from './ResizableHandle';
 import type { LucideIcon } from 'lucide-react';
 
@@ -43,7 +45,7 @@ interface SidebarProps {
 /* ─── Panel config — upper zone (core feature panels) ─── */
 const UPPER_PANELS: { panel: SidebarPanel; icon: LucideIcon; label: string }[] = [
   { panel: 'workflows', icon: LayoutList, label: '工作流' },
-  { panel: 'ai-chat', icon: Sparkles, label: 'AI 对话' },
+  { panel: 'ai-chat', icon: MessageSquareCode, label: 'AI 对话' },
   { panel: 'node-store', icon: Store, label: '节点商店' },
   { panel: 'workflow-examples', icon: BookTemplate, label: '工作流样例' },
   { panel: 'dashboard', icon: LayoutDashboard, label: '仪表盘' },
@@ -57,12 +59,22 @@ const LOWER_PANELS: { panel: SidebarPanel; icon: LucideIcon; label: string }[] =
 
 /** Get the panel label for the active panel */
 function getPanelLabel(panel: SidebarPanel): string {
-  const all = [...UPPER_PANELS, ...LOWER_PANELS];
-  return all.find((p) => p.panel === panel)?.label ?? '';
+  const ALL: Record<SidebarPanel, string> = {
+    'workflows': '工作流',
+    'ai-chat': 'AI 对话',
+    'node-store': '节点商店',
+    'workflow-examples': '工作流样例',
+    'dashboard': '仪表盘',
+    'plugins': '插件',
+    'wallet': '钱包设置',
+    'user-panel': '用户面板',
+    'settings': '设置',
+  };
+  return ALL[panel] ?? '';
 }
 
 export default function Sidebar({ workflows }: SidebarProps) {
-  const { pathname, settingsActive, isWorkflowActive, logoutAndRedirect } =
+  const { pathname, isWorkflowActive, logoutAndRedirect } =
     useSidebarNavigation();
   const { contextMenu, handleContextMenu, closeContextMenu } =
     useWorkflowContextMenu();
@@ -120,15 +132,9 @@ export default function Sidebar({ workflows }: SidebarProps) {
         {/* ─── Activity Bar (always visible, fixed width) ─── */}
         <div className="flex h-full w-12 shrink-0 flex-col items-center bg-background py-2">
           {/* User panel button (top, standalone) */}
-          <button
-            type="button"
-            className="mb-2 flex h-10 w-10 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
-            title="用户面板"
-          >
-            <UserCircle className="h-[18px] w-[18px]" />
-          </button>
+          {renderActivityButton('user-panel', UserCircle, '用户面板')}
 
-          <div className="mb-1 h-px w-6 bg-border/50" />
+          <div className="my-1 h-px w-6 bg-border/50" />
 
           {/* Upper zone — core feature panels */}
           <div className="space-y-1">
@@ -157,17 +163,8 @@ export default function Sidebar({ workflows }: SidebarProps) {
               <BookOpenText className="h-[18px] w-[18px]" />
             </a>
 
-            <Link
-              href="/settings"
-              className={`flex h-10 w-10 items-center justify-center rounded-lg transition-colors ${
-                settingsActive
-                  ? 'bg-white/8 text-foreground'
-                  : 'text-muted-foreground hover:bg-white/5 hover:text-foreground'
-              }`}
-              title="设置"
-            >
-              <Settings className="h-[18px] w-[18px]" />
-            </Link>
+            {/* Settings — now opens sidebar panel instead of navigating */}
+            {renderActivityButton('settings', Settings, '设置')}
 
             <button
               onClick={() => void logoutAndRedirect()}
@@ -218,6 +215,8 @@ export default function Sidebar({ workflows }: SidebarProps) {
               {activeSidebarPanel === 'dashboard' && <DashboardPanel />}
               {activeSidebarPanel === 'wallet' && <WalletPanel />}
               {activeSidebarPanel === 'plugins' && <PluginsPanel />}
+              {activeSidebarPanel === 'user-panel' && <UserPanel />}
+              {activeSidebarPanel === 'settings' && <SettingsPanel />}
             </div>
 
             {/* Resizable handle */}

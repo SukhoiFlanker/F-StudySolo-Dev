@@ -10,7 +10,9 @@ export type SidebarPanel =
   | 'workflow-examples'
   | 'dashboard'
   | 'wallet'
-  | 'plugins';
+  | 'plugins'
+  | 'user-panel'
+  | 'settings';
 
 /** Min/max constraints for resizable panels */
 const LEFT_PANEL_MIN = 200;
