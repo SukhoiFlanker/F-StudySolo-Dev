@@ -33,7 +33,7 @@ export const useSettingsStore = create<SettingsState>()(
       fontSize: 'default',
       glassEffect: true,
       autoSave: true,
-      showMinimap: false,
+      showMinimap: true,
       sidebarPosition: 'left',
       setTheme: (theme) => set({ theme }),
       setAccentColor: (accentColor) => set({ accentColor }),

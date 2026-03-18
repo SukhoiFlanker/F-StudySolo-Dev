@@ -3,7 +3,6 @@
 import { useCallback, useMemo, useState, useEffect, useRef } from 'react';
 import {
   Controls,
-  MiniMap,
   type ConnectionLineType,
   MarkerType,
   ReactFlow,
@@ -24,6 +23,7 @@ import AIStepNode from '@/features/workflow/components/nodes/AIStepNode';
 import GeneratingNode from '@/features/workflow/components/nodes/GeneratingNode';
 import AnnotationNode from '@/features/workflow/components/nodes/AnnotationNode';
 import CanvasModal from '@/features/workflow/components/canvas/CanvasModal';
+import CanvasMiniMap from '@/features/workflow/components/canvas/CanvasMiniMap';
 import { useWorkflowStore } from '@/stores/use-workflow-store';
 import type { AIStepNodeData } from '@/types';
 
@@ -242,15 +242,7 @@ function WorkflowCanvasInner() {
         maxZoom={2}
         proOptions={proOptions}
       >
-        <MiniMap
-          pannable
-          zoomable
-          position="bottom-left"
-          nodeBorderRadius={18}
-          nodeStrokeWidth={selectedNodeId ? 2 : 1}
-          nodeColor={(node) => (node.id === selectedNodeId ? '#818cf8' : '#1e293b')}
-          maskColor="rgba(2, 6, 23, 0.45)"
-        />
+        <CanvasMiniMap />
         <Controls showInteractive={false} className="workflow-controls" position="bottom-right" />
       </ReactFlow>
 
