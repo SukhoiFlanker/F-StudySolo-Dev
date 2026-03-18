@@ -161,23 +161,15 @@ function AIStepNode({ data, selected, type, id }: NodeProps) {
     >
       <div className={`absolute inset-1 pointer-events-none z-0 ${nodeTheme.innerBorderClass}`} />
 
-      {/* ── 8 Handles: 4 方位 × source/target ── */}
+      {/* ── 4 Handles: LEFT/TOP=target, RIGHT/BOTTOM=source ── */}
       {/* Target Handles (输入) */}
       <Handle type="target" id="target-left" position={Position.Left}
-        className={`node-handle node-handle-target !h-3 !w-3 !-left-[8px] !border-2 !border-background !bg-current z-20 ${nodeTheme.headerTextColor} ${isWaitingTarget && !isSourceOfCurrentConnect ? 'node-handle-click-target' : ''}`}
+        className={`node-handle !h-3 !w-3 !-left-[8px] !border-2 !border-background !bg-current z-20 ${nodeTheme.headerTextColor} ${isWaitingTarget && !isSourceOfCurrentConnect ? 'node-handle-click-target' : ''}`}
         onClick={(e) => handleHandleClick(e, 'target-left', 'target')}
       />
       <Handle type="target" id="target-top" position={Position.Top}
-        className={`node-handle node-handle-target !h-3 !w-3 !-top-[8px] !border-2 !border-background !bg-current z-20 ${nodeTheme.headerTextColor} ${isWaitingTarget && !isSourceOfCurrentConnect ? 'node-handle-click-target' : ''}`}
+        className={`node-handle !h-3 !w-3 !-top-[8px] !border-2 !border-background !bg-current z-20 ${nodeTheme.headerTextColor} ${isWaitingTarget && !isSourceOfCurrentConnect ? 'node-handle-click-target' : ''}`}
         onClick={(e) => handleHandleClick(e, 'target-top', 'target')}
-      />
-      <Handle type="target" id="target-right" position={Position.Right}
-        className={`node-handle node-handle-target !h-3 !w-3 !-right-[8px] !border-2 !border-background !bg-current z-20 ${nodeTheme.headerTextColor} ${isWaitingTarget && !isSourceOfCurrentConnect ? 'node-handle-click-target' : ''}`}
-        onClick={(e) => handleHandleClick(e, 'target-right', 'target')}
-      />
-      <Handle type="target" id="target-bottom" position={Position.Bottom}
-        className={`node-handle node-handle-target !h-3 !w-3 !-bottom-[8px] !border-2 !border-background !bg-current z-20 ${nodeTheme.headerTextColor} ${isWaitingTarget && !isSourceOfCurrentConnect ? 'node-handle-click-target' : ''}`}
-        onClick={(e) => handleHandleClick(e, 'target-bottom', 'target')}
       />
 
       <div className="relative z-10 p-6 flex flex-col h-full min-h-[14rem]">
@@ -266,20 +258,12 @@ function AIStepNode({ data, selected, type, id }: NodeProps) {
 
       {/* Source Handles (输出) */}
       <Handle type="source" id="source-right" position={Position.Right}
-        className={`node-handle node-handle-source !h-3 !w-3 !-right-[8px] !border-2 !border-background !bg-current z-20 ${nodeTheme.headerTextColor} ${isSourceOfCurrentConnect && clickConnectState.sourceHandleId === 'source-right' ? 'node-handle-click-source-active' : ''}`}
+        className={`node-handle !h-3 !w-3 !-right-[8px] !border-2 !border-background !bg-current z-20 ${nodeTheme.headerTextColor} ${isSourceOfCurrentConnect && clickConnectState.sourceHandleId === 'source-right' ? 'node-handle-click-source-active' : ''}`}
         onClick={(e) => handleHandleClick(e, 'source-right', 'source')}
       />
       <Handle type="source" id="source-bottom" position={Position.Bottom}
-        className={`node-handle node-handle-source !h-3 !w-3 !-bottom-[8px] !border-2 !border-background !bg-current z-20 ${nodeTheme.headerTextColor} ${isSourceOfCurrentConnect && clickConnectState.sourceHandleId === 'source-bottom' ? 'node-handle-click-source-active' : ''}`}
+        className={`node-handle !h-3 !w-3 !-bottom-[8px] !border-2 !border-background !bg-current z-20 ${nodeTheme.headerTextColor} ${isSourceOfCurrentConnect && clickConnectState.sourceHandleId === 'source-bottom' ? 'node-handle-click-source-active' : ''}`}
         onClick={(e) => handleHandleClick(e, 'source-bottom', 'source')}
-      />
-      <Handle type="source" id="source-left" position={Position.Left}
-        className={`node-handle node-handle-source !h-3 !w-3 !-left-[8px] !border-2 !border-background !bg-current z-20 ${nodeTheme.headerTextColor} ${isSourceOfCurrentConnect && clickConnectState.sourceHandleId === 'source-left' ? 'node-handle-click-source-active' : ''}`}
-        onClick={(e) => handleHandleClick(e, 'source-left', 'source')}
-      />
-      <Handle type="source" id="source-top" position={Position.Top}
-        className={`node-handle node-handle-source !h-3 !w-3 !-top-[8px] !border-2 !border-background !bg-current z-20 ${nodeTheme.headerTextColor} ${isSourceOfCurrentConnect && clickConnectState.sourceHandleId === 'source-top' ? 'node-handle-click-source-active' : ''}`}
-        onClick={(e) => handleHandleClick(e, 'source-top', 'source')}
       />
     </div>
   );

@@ -1,11 +1,24 @@
 'use client';
 
-import { Key, CreditCard, Copy, Eye, EyeOff, ExternalLink } from 'lucide-react';
+import { Copy, Eye, EyeOff, ExternalLink, ChevronRight, CheckCircle2, Plus, Unplug, BrainCircuit, User } from 'lucide-react';
 import { useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 
-/** 模拟数据 — 后端 API 就绪后替换 */
-const MOCK_API_KEYS = [
-  { id: 'key-1', name: '默认 API Key', prefix: 'sk-solo-...8f3a', createdAt: '2026-02-15' },
+/** -------- 模拟数据 -------- */
+interface ApiKeyInfo {
+  provider: string;
+  name: string;
+  connected: boolean;
+  prefix?: string;
+}
+
+const EXTERNAL_PROVIDERS: ApiKeyInfo[] = [
+  { provider: 'openai', name: 'OpenAI', connected: true, prefix: 'sk-proj-...8a9b' },
+  { provider: 'deepseek', name: 'DeepSeek', connected: false },
+  { provider: 'dashscope', name: '通义千问 (DashScope)', connected: true, prefix: 'sk-dash-...210x' },
+  { provider: 'moonshot', name: 'Kimi (Moonshot)', connected: false },
+  { provider: 'zhipu', name: '智谱 (ZhiPu)', connected: false },
+  { provider: 'volcengine', name: '火山引擎 (VolcEngine)', connected: false },
 ];
 
 const MOCK_BILLING = {
@@ -15,107 +28,202 @@ const MOCK_BILLING = {
   monthlyLimit: 50.00,
 };
 
-function ApiKeyItem({ name, prefix }: { name: string; prefix: string }) {
-  const [revealed, setRevealed] = useState(false);
+const USER_TIER = 'Plus'; // 可选 'Free', 'Pro', 'Plus', 'Ultra'
 
-  const toggleReveal = useCallback(() => setRevealed((v) => !v), []);
+/** -------- 样式工具 (手绘/高级笔记风) -------- */
+const getTierBorder = (tier: string) => {
+  switch(tier) {
+    case 'Free': return 'border-muted-foreground/40 text-muted-foreground';
+    case 'Pro': return 'border-slate-500/60 text-slate-700 dark:text-slate-300';
+    case 'Plus': return 'border-emerald-500/60 text-emerald-700 dark:text-emerald-400';
+    case 'Ultra': return 'border-amber-500/70 text-amber-700 dark:text-amber-500';
+    default: return 'border-border/50 text-foreground';
+  }
+};
+
+const getTierCardStyle = (tier: string) => {
+  switch(tier) {
+    case 'Free': return 'bg-white/60 dark:bg-black/40 text-foreground border-border/60 hover:border-border';
+    case 'Pro': return 'bg-slate-50/80 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800/80 text-foreground hover:border-slate-300 dark:hover:border-slate-700';
+    case 'Plus': return 'bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200/60 dark:border-emerald-900/50 text-emerald-900 dark:text-emerald-100 hover:border-emerald-300/60 dark:hover:border-emerald-800/50';
+    case 'Ultra': return 'bg-amber-50/50 dark:bg-amber-950/20 border-amber-200/60 dark:border-amber-900/50 text-amber-900 dark:text-amber-100 hover:border-amber-300/60 dark:hover:border-amber-800/50';
+    default: return 'bg-background border-border text-foreground';
+  }
+}
+
+/** -------- 子组件 -------- */
+function ExternalApiItem({ item }: { item: ApiKeyInfo }) {
+  const [, setConnecting] = useState(false);
+  const Icon = item.connected ? CheckCircle2 : Plus;
 
   return (
-    <div className="rounded-xl border border-border/50 bg-black/5 p-3 dark:bg-white/3">
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-medium text-foreground">{name}</span>
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            onClick={toggleReveal}
-            className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
-            title={revealed ? '隐藏' : '显示'}
-          >
-            {revealed ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
-          </button>
-          <button
-            type="button"
-            className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
-            title="复制"
-          >
-            <Copy className="h-3 w-3" />
-          </button>
-        </div>
+    <div className={`flex items-center justify-between p-2.5 rounded-none border-b border-border/40 border-dashed last:border-b-0 transition-colors ${item.connected ? 'bg-primary/5' : 'hover:bg-white/40 dark:hover:bg-black/40'} group`}>
+      <div className="flex flex-col gap-0.5">
+        <span className={`text-[12px] font-serif tracking-wide ${item.connected ? 'text-foreground font-semibold' : 'text-muted-foreground font-medium'}`}>
+          {item.name}
+        </span>
+        {item.connected ? (
+          <span className="font-mono text-[10px] text-muted-foreground opacity-80">{item.prefix}</span>
+        ) : (
+          <span className="font-mono text-[9px] text-muted-foreground/50 tracking-widest">未配置</span>
+        )}
       </div>
-      <p className="mt-1.5 font-mono text-[11px] text-muted-foreground">
-        {revealed ? 'sk-solo-1a2b3c4d5e6f7g8h' : prefix}
-      </p>
+      <button
+        onClick={() => !item.connected && setConnecting(true)}
+        className={`flex h-6 w-6 items-center justify-center rounded transition-all focus:outline-none focus:ring-1 focus:ring-primary ${
+          item.connected 
+            ? 'text-primary' 
+            : 'text-muted-foreground hover:bg-black/5 dark:hover:bg-white/10 hover:text-foreground'
+        }`}
+        title={item.connected ? '已连接' : '配置密钥'}
+      >
+        <Icon className="h-3.5 w-3.5 stroke-[1.5]" />
+      </button>
     </div>
   );
 }
 
-export default function WalletPanel() {
+function InternalApiKeyDisplay() {
+  const [revealed, setRevealed] = useState(false);
+  const toggleReveal = useCallback(() => setRevealed((v) => !v), []);
+
   return (
-    <div className="flex flex-1 flex-col overflow-hidden">
-      <div className="scrollbar-hide flex-1 overflow-y-auto px-2 py-2">
-        {/* API Keys Section */}
-        <div className="mb-4">
-          <div className="mb-2 flex items-center gap-1.5 px-1">
-            <Key className="h-3 w-3 text-muted-foreground" />
-            <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground/70">
-              API 密钥
-            </span>
-          </div>
-          <div className="space-y-2">
-            {MOCK_API_KEYS.map((key) => (
-              <ApiKeyItem key={key.id} name={key.name} prefix={key.prefix} />
-            ))}
-          </div>
-          <button
-            type="button"
-            className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-border/50 py-2 text-[10px] text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
-          >
-            + 创建新密钥
+    <div className="relative mt-2 overflow-hidden rounded-lg border-[1.5px] border-dashed border-border/60 bg-white/40 dark:bg-black/20 text-foreground font-mono text-[11px]">
+      <div className="flex items-center justify-between border-b border-dashed border-border/40 px-2.5 py-2 hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
+        <div className="flex items-center gap-1.5">
+          <BrainCircuit className="h-3.5 w-3.5 text-primary opacity-80" />
+          <span className="tracking-widest text-muted-foreground font-serif text-[11px] font-semibold">开发者私钥</span>
+        </div>
+        <div className="flex gap-1 text-muted-foreground">
+          <button onClick={toggleReveal} className="p-1 hover:text-foreground transition-colors" title={revealed ? "隐藏密钥" : "显示密钥"}>
+            {revealed ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+          </button>
+          <button className="p-1 hover:text-foreground transition-colors" title="复制密钥">
+            <Copy className="h-3.5 w-3.5" />
           </button>
         </div>
+      </div>
+      <div className="p-3 break-all tracking-wider font-semibold text-center bg-transparent relative">
+        {revealed ? (
+          <span className="text-primary selection:bg-primary/20">sk-ss-live-8f92a4bc039e71d6f51...</span>
+        ) : (
+          <span className="text-muted-foreground opacity-60">••••••••••••••••••••••••</span>
+        )}
+      </div>
+    </div>
+  );
+}
 
-        {/* Billing Section */}
-        <div>
-          <div className="mb-2 flex items-center gap-1.5 px-1">
-            <CreditCard className="h-3 w-3 text-muted-foreground" />
-            <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground/70">
-              余额与用量
+/** -------- 主容器 -------- */
+export default function WalletPanel() {
+  const router = useRouter();
+
+  return (
+    <div className="flex flex-1 flex-col overflow-hidden bg-background">
+      <div className="scrollbar-hide flex-1 overflow-y-auto w-full px-3 py-4 space-y-6">
+        
+        {/* --- 第一部分：个人钱包与通行证 --- */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between px-1">
+            <span className="text-[11px] font-bold tracking-[0.1em] text-muted-foreground font-serif">
+              身份与资源
             </span>
           </div>
+          
+          <div 
+            onClick={() => router.push('/upgrade')}
+            className={`relative flex flex-col rounded-xl border-[1.5px] p-4 cursor-pointer transition-all duration-300 hover:scale-[1.01] hover:shadow-sm active:scale-[0.99] group ${getTierCardStyle(USER_TIER)}`}
+          >
+            {/* 纸张纹理感背景 (使用伪元素或细微内阴影) */}
+            <div className="absolute inset-0 rounded-xl shadow-[inset_0_0_20px_rgba(0,0,0,0.01)] dark:shadow-[inset_0_0_20px_rgba(255,255,255,0.02)] pointer-events-none" />
 
-          <div className="rounded-xl border border-border/50 bg-black/5 p-3 dark:bg-white/3">
-            <div className="flex items-baseline justify-between">
-              <span className="text-[10px] text-muted-foreground">当前余额</span>
-              <span className="text-lg font-semibold text-foreground">
-                {MOCK_BILLING.currency}{MOCK_BILLING.balance.toFixed(2)}
-              </span>
+            <div className="flex items-center gap-3 relative z-10">
+              <div className={`relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-background border-[2px] border-dashed ${getTierBorder(USER_TIER)}`}>
+                <User className="h-4.5 w-4.5 stroke-[1.5]" />
+                {/* 排名指示点 - 手绘墨点感 */}
+                <div className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-[1.5px] border-background bg-current" />
+              </div>
+              <div className="flex flex-col flex-1 pl-1">
+                <span className="text-sm font-serif font-bold opacity-90 tracking-wide">学习记录者</span>
+                <div className="flex items-center gap-1.5 font-mono text-[10px] mt-0.5 opacity-70">
+                  <span className="uppercase">等级:</span>
+                  <span className="font-bold border border-current/20 px-1 py-0.5 rounded-sm line-height-none tracking-widest">{USER_TIER}</span>
+                </div>
+              </div>
+              <ChevronRight className="h-4 w-4 opacity-40 transition-transform group-hover:translate-x-1 group-hover:opacity-100" />
             </div>
-            <div className="mt-2 flex items-baseline justify-between text-[10px] text-muted-foreground/60">
-              <span>本月已用</span>
-              <span>{MOCK_BILLING.currency}{MOCK_BILLING.monthlyUsage.toFixed(2)} / {MOCK_BILLING.currency}{MOCK_BILLING.monthlyLimit.toFixed(2)}</span>
+
+            <div className="mt-5 pt-4 border-t border-dashed border-current/20 flex justify-between items-end relative z-10">
+              <div className="flex flex-col gap-0.5">
+                <span className="text-[10px] font-serif tracking-wider opacity-70">学习点券余额</span>
+                <span className="text-xl font-mono font-bold leading-none tracking-tight">
+                  {MOCK_BILLING.currency}{MOCK_BILLING.balance.toFixed(2)}
+                </span>
+              </div>
+              
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); /* 充值逻辑 */ }}
+                className="rounded-lg text-[11px] font-serif font-bold tracking-widest px-3 py-1.5 border-[1.5px] border-current/30 hover:bg-current/5 transition-colors"
+              >
+                前往充值
+              </button>
             </div>
-            <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-white/8">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-amber-500 to-orange-400 transition-all duration-500"
-                style={{ width: `${(MOCK_BILLING.monthlyUsage / MOCK_BILLING.monthlyLimit) * 100}%` }}
-              />
+            
+            {/* 用量条 - 墨迹感 */}
+            <div className="mt-4 relative z-10">
+              <div className="flex justify-between text-[9px] font-mono tracking-wider opacity-70 mb-1.5">
+                <span>月度额度</span>
+                <span>{((MOCK_BILLING.monthlyUsage / MOCK_BILLING.monthlyLimit) * 100).toFixed(0)}%</span>
+              </div>
+              <div className="h-1.5 w-full bg-current/10 rounded-full overflow-hidden border border-current/10">
+                <div 
+                  className="h-full bg-current opacity-80 rounded-r-full" 
+                  style={{ width: `${(MOCK_BILLING.monthlyUsage / MOCK_BILLING.monthlyLimit) * 100}%` }}
+                />
+              </div>
             </div>
           </div>
+        </div>
 
-          <button
-            type="button"
-            className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary/10 py-2.5 text-xs font-medium text-primary transition-colors hover:bg-primary/20 active:scale-[0.98]"
-          >
-            <CreditCard className="h-3.5 w-3.5" />
-            充值
-          </button>
+        {/* --- 第二部分：模型厂商 API 导入 --- */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between px-1 mb-1">
+            <span className="text-[11px] font-bold tracking-[0.1em] text-muted-foreground font-serif">
+              模型厂商授权
+            </span>
+          </div>
+          
+          <div className="border-[1.5px] border-border/60 bg-white/60 dark:bg-black/20 rounded-xl overflow-hidden shadow-sm">
+            {EXTERNAL_PROVIDERS.map((item, idx) => (
+              <ExternalApiItem key={idx} item={item} />
+            ))}
+          </div>
+        </div>
 
+        {/* --- 第三部分：内部开发者 Key --- */}
+        <div className="space-y-2 pb-6">
+          <div className="flex items-center justify-between px-1 mb-1 border-b-[1.5px] border-dashed border-border/50 pb-2">
+            <span className="text-[11px] font-bold tracking-[0.1em] text-muted-foreground font-serif">
+              应用开发接入
+            </span>
+            <Unplug className="h-3.5 w-3.5 text-muted-foreground/60 stroke-[1.5]" />
+          </div>
+          
+          <p className="text-[11px] text-muted-foreground/80 leading-relaxed px-1 font-serif mt-2">
+            获取您的专属密钥以通过 API 调度工作流。如非集成需要，请勿外借。
+          </p>
+
+          <InternalApiKeyDisplay />
+          
           <a
-            href="#"
-            className="mt-2 flex items-center justify-center gap-1 text-[10px] text-muted-foreground/60 transition-colors hover:text-foreground"
+            href="https://docs.1037solo.com/api"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-4 flex items-center gap-1.5 px-1 text-[11px] font-serif font-bold tracking-wide text-muted-foreground hover:text-primary transition-colors hover:underline underline-offset-4 decoration-dashed"
           >
-            查看详细账单
-            <ExternalLink className="h-2.5 w-2.5" />
+            <ExternalLink className="h-3 w-3 stroke-[2]" />
+            查阅 API 接入文档
           </a>
         </div>
       </div>

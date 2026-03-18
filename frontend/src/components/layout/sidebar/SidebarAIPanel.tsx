@@ -38,16 +38,16 @@ interface ConversationRecord {
 
 /* ─── Thinking Intensity Levels ─── */
 const THINKING_LEVELS = [
-  { value: 'quick', label: '快速' },
-  { value: 'balanced', label: '均衡' },
-  { value: 'deep', label: '深度' },
+  { value: 'quick', shortLabel: '思考', label: '思考 Low' },
+  { value: 'balanced', shortLabel: '思考', label: '思考 Medium' },
+  { value: 'deep', shortLabel: '思考', label: '思考 High' },
 ] as const;
 
 /* ─── Node Complexity Levels ─── */
 const COMPLEXITY_LEVELS = [
-  { value: 'simple', label: '精简' },
-  { value: 'standard', label: '标准' },
-  { value: 'complex', label: '复杂' },
+  { value: 'simple', shortLabel: '节点', label: '简单的流程' },
+  { value: 'standard', shortLabel: '节点', label: '一般复杂的节点' },
+  { value: 'complex', shortLabel: '节点', label: '更复杂的节点' },
 ] as const;
 
 export function SidebarAIPanel() {
@@ -359,7 +359,7 @@ export function SidebarAIPanel() {
         ) : null}
 
         {/* Unified Input Box (Replicating Reference Design) */}
-        <div className="flex flex-col overflow-hidden rounded-[14px] border border-border/40 bg-muted/20 focus-within:border-primary/30 focus-within:bg-muted/30 transition-all">
+        <div className="flex flex-col rounded-[14px] border border-border/40 bg-muted/20 focus-within:border-primary/30 focus-within:bg-muted/30 transition-all">
           
           <textarea
             ref={textareaRef}
@@ -395,23 +395,25 @@ export function SidebarAIPanel() {
                   className="flex h-7 items-center gap-1 rounded-lg px-2 text-[11px] text-muted-foreground/70 transition-colors hover:bg-white/10 hover:text-foreground"
                 >
                   <ChevronUp className="h-3 w-3 opacity-60" />
-                  <span className="whitespace-nowrap">{currentThinking.label}</span>
+                  <span className="whitespace-nowrap">{currentThinking.shortLabel}</span>
                 </button>
 
                 {showThinkingPicker && (
-                  <div className="absolute bottom-full left-0 z-50 mb-1 w-24 rounded-xl border border-border/60 bg-background/95 p-1 shadow-lg backdrop-blur-xl animate-in fade-in slide-in-from-bottom-2 duration-200">
+                  <div className="absolute bottom-full left-0 z-50 mb-2 w-40 rounded-[10px] border border-border/60 bg-background p-1.5 shadow-lg animate-in fade-in slide-in-from-bottom-2 duration-200">
+                    <div className="px-2 pb-1.5 pt-1 text-[11px] text-muted-foreground font-medium">思考深度</div>
+                    <div className="mx-1 mb-1 border-t border-border/40" />
                     {THINKING_LEVELS.map((level) => (
                       <button
                         key={level.value}
                         type="button"
                         onClick={() => { setThinkingLevel(level.value); setShowThinkingPicker(false); }}
-                        className={`flex w-full items-center justify-center rounded-lg px-2 py-1.5 text-center text-[11px] transition-all ${
+                        className={`flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-[12px] transition-all hover:bg-muted ${
                           thinkingLevel === level.value
-                            ? 'bg-primary/10 text-foreground'
-                            : 'text-muted-foreground hover:bg-white/5 hover:text-foreground'
+                            ? 'bg-muted/80 text-foreground font-medium'
+                            : 'text-muted-foreground hover:text-foreground'
                         }`}
                       >
-                        {level.label}
+                        <span className="truncate">{level.label}</span>
                       </button>
                     ))}
                   </div>
@@ -426,23 +428,25 @@ export function SidebarAIPanel() {
                   className="flex h-7 items-center gap-1 rounded-lg px-2 text-[11px] text-muted-foreground/70 transition-colors hover:bg-white/10 hover:text-foreground"
                 >
                   <ChevronUp className="h-3 w-3 opacity-60" />
-                  <span className="whitespace-nowrap">{currentComplexity.label}</span>
+                  <span className="whitespace-nowrap">{currentComplexity.shortLabel}</span>
                 </button>
 
                 {showComplexityPicker && (
-                  <div className="absolute bottom-full left-0 z-50 mb-1 w-24 rounded-xl border border-border/60 bg-background/95 p-1 shadow-lg backdrop-blur-xl animate-in fade-in slide-in-from-bottom-2 duration-200">
+                  <div className="absolute bottom-full left-0 z-50 mb-2 w-44 rounded-[10px] border border-border/60 bg-background p-1.5 shadow-lg animate-in fade-in slide-in-from-bottom-2 duration-200">
+                    <div className="px-2 pb-1.5 pt-1 text-[11px] text-muted-foreground font-medium">节点复杂度</div>
+                    <div className="mx-1 mb-1 border-t border-border/40" />
                     {COMPLEXITY_LEVELS.map((level) => (
                       <button
                         key={level.value}
                         type="button"
                         onClick={() => { setComplexityLevel(level.value); setShowComplexityPicker(false); }}
-                        className={`flex w-full items-center justify-center rounded-lg px-2 py-1.5 text-center text-[11px] transition-all ${
+                        className={`flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-[12px] transition-all hover:bg-muted ${
                           complexityLevel === level.value
-                            ? 'bg-primary/10 text-foreground'
-                            : 'text-muted-foreground hover:bg-white/5 hover:text-foreground'
+                            ? 'bg-muted/80 text-foreground font-medium'
+                            : 'text-muted-foreground hover:text-foreground'
                         }`}
                       >
-                        {level.label}
+                        <span className="truncate">{level.label}</span>
                       </button>
                     ))}
                   </div>

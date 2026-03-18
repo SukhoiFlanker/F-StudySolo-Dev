@@ -218,6 +218,10 @@ function WorkflowCanvasInner() {
   // ── Edge reconnection handler ──────────────────────────────────────────────
   const edgeReconnectSuccessful = useRef(false);
 
+  const handleReconnectStart = useCallback(() => {
+    edgeReconnectSuccessful.current = false;
+  }, []);
+
   const handleEdgeReconnect = useCallback(
     (oldEdge: Edge, newConnection: { source: string; target: string; sourceHandle: string | null; targetHandle: string | null }) => {
       edgeReconnectSuccessful.current = true;
@@ -553,6 +557,7 @@ function WorkflowCanvasInner() {
         fitViewOptions={fitViewOptions}
         edgesReconnectable
         reconnectRadius={25}
+        onReconnectStart={handleReconnectStart}
         onReconnect={handleEdgeReconnect}
         onReconnectEnd={handleReconnectEnd}
         onEdgeClick={handleEdgeClick}

@@ -86,6 +86,14 @@ export default function EdgeContextMenu({ x, y, edgeId, onClose }: EdgeContextMe
   );
 
   const handleReverse = useCallback(() => {
+    // Handle mapping for direction reversal (LEFT/TOP=target, RIGHT/BOTTOM=source)
+    const reverseHandleMap: Record<string, string> = {
+      'source-right': 'target-left',
+      'source-bottom': 'target-top',
+      'target-left': 'source-right',
+      'target-top': 'source-bottom',
+    };
+
     const edges = useWorkflowStore.getState().edges;
     useWorkflowStore.getState().takeSnapshot();
     useWorkflowStore.getState().setEdges(
@@ -95,8 +103,8 @@ export default function EdgeContextMenu({ x, y, edgeId, onClose }: EdgeContextMe
           ...e,
           source: e.target,
           target: e.source,
-          sourceHandle: e.targetHandle?.replace('target-', 'source-') ?? null,
-          targetHandle: e.sourceHandle?.replace('source-', 'target-') ?? null,
+          sourceHandle: reverseHandleMap[e.targetHandle ?? ''] ?? 'source-right',
+          targetHandle: reverseHandleMap[e.sourceHandle ?? ''] ?? 'target-left',
         };
       })
     );

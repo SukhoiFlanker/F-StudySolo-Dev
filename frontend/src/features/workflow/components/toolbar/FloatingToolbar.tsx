@@ -127,7 +127,7 @@ export default function FloatingToolbar({ className = '' }: FloatingToolbarProps
         {/* Tool group */}
         <button
           type="button"
-          className={activeTool === 'select' ? 'active' : ''}
+          className={`toolbar-btn ${activeTool === 'select' ? 'active' : ''}`}
           onClick={() => handleToolChange('select')}
           title="选择工具 (V) — 框选节点"
         >
@@ -137,7 +137,7 @@ export default function FloatingToolbar({ className = '' }: FloatingToolbarProps
         <div className="relative">
           <button
             type="button"
-            className={showEdgePanel ? 'active' : ''}
+            className={`toolbar-btn ${showEdgePanel ? 'active' : ''}`}
             onClick={() => handleToolChange('edit')}
             title="连线工具 (E) — 选择连线类型"
           >
@@ -150,7 +150,7 @@ export default function FloatingToolbar({ className = '' }: FloatingToolbarProps
 
         <button
           type="button"
-          className={activeTool === 'pan' ? 'active' : ''}
+          className={`toolbar-btn ${activeTool === 'pan' ? 'active' : ''}`}
           onClick={() => handleToolChange('pan')}
           title="平移工具 (H) — 拖拽画布"
         >
@@ -159,7 +159,7 @@ export default function FloatingToolbar({ className = '' }: FloatingToolbarProps
 
         <button
           type="button"
-          className={showSearch || activeTool === 'search' ? 'active' : ''}
+          className={`toolbar-btn ${showSearch || activeTool === 'search' ? 'active' : ''}`}
           onClick={() => handleToolChange('search')}
           title="搜索节点 (Ctrl+P)"
         >
@@ -171,7 +171,7 @@ export default function FloatingToolbar({ className = '' }: FloatingToolbarProps
         {/* Action group */}
         <button
           type="button"
-          className={showEmoji ? 'active' : ''}
+          className={`toolbar-btn ${showEmoji ? 'active' : ''}`}
           onClick={handleEmojiToggle}
           title="添加标注"
         >
@@ -180,6 +180,7 @@ export default function FloatingToolbar({ className = '' }: FloatingToolbarProps
 
         <button
           type="button"
+          className="toolbar-btn"
           onClick={handleUpload}
           title="上传文件到画布"
         >
@@ -193,7 +194,7 @@ export default function FloatingToolbar({ className = '' }: FloatingToolbarProps
           <button
             type="button"
             onClick={stop}
-            className="!text-rose-400"
+            className="toolbar-btn !text-rose-400"
             title="停止运行"
           >
             <Square className="h-4 w-4 fill-current" />
@@ -203,7 +204,7 @@ export default function FloatingToolbar({ className = '' }: FloatingToolbarProps
             type="button"
             onClick={() => start()}
             disabled={!hasNodes}
-            className={hasNodes ? '!text-emerald-400' : '!text-muted-foreground/30 !cursor-not-allowed'}
+            className={`toolbar-btn ${hasNodes ? '!text-emerald-400' : '!text-muted-foreground/30 !cursor-not-allowed'}`}
             title="运行全部"
           >
             <Play className="h-4 w-4 fill-current" />

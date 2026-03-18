@@ -255,7 +255,7 @@
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
 }
 
-.canvas-floating-toolbar button {
+.canvas-floating-toolbar .toolbar-btn {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -270,12 +270,12 @@
   position: relative;
 }
 
-.canvas-floating-toolbar button:hover {
+.canvas-floating-toolbar .toolbar-btn:hover {
   background: rgba(255, 255, 255, 0.1);
   color: #f1f5f9;
 }
 
-.canvas-floating-toolbar button.active {
+.canvas-floating-toolbar .toolbar-btn.active {
   background: #4f46e5;
   color: #ffffff;
   box-shadow: 0 2px 8px rgba(79, 70, 229, 0.4);
@@ -1423,23 +1423,22 @@
 /* ─── Node Handle: 智能显隐 ─── */
 .node-handle {
   opacity: 0;
-  transform: scale(0.4);
-  transition: opacity 0.2s ease, transform 0.2s ease;
-  pointer-events: none;
+  transform: scale(0.6);
+  transition: opacity 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+  /* Always interactive — React Flow needs mousedown for drag-to-connect */
+  pointer-events: auto;
 }
 
 /* Hover 时显示所有 Handle */
 .react-flow__node:hover .node-handle {
   opacity: 1;
   transform: scale(1);
-  pointer-events: auto;
 }
 
 /* 选中节点时显示所有 Handle */
 .react-flow__node.selected .node-handle {
   opacity: 1;
   transform: scale(1);
-  pointer-events: auto;
 }
 
 /* 正在拖拽连线时显示所有节点的 Handle */
@@ -1447,7 +1446,6 @@
 .react-flow.connecting .node-handle {
   opacity: 0.7;
   transform: scale(1);
-  pointer-events: auto;
 }
 
 /* Handle hover 放大效果 */
@@ -1462,7 +1460,6 @@
 .react-flow__handle.connected.node-handle {
   opacity: 1;
   transform: scale(1);
-  pointer-events: auto;
 }
 
 /* ─── Click-to-Connect 视觉反馈 ─── */

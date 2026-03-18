@@ -122,7 +122,7 @@ function LoopEdge({
         strokeWidth={selected ? 3 : 2.5}
         strokeLinecap="round"
         strokeLinejoin="round"
-        markerEnd={markerEnd as string}
+        markerEnd={markerEnd}
         filter={`url(#${filterId})`}
         className="react-flow__edge-path"
         style={{ transition: 'stroke-width 0.15s ease' }}
