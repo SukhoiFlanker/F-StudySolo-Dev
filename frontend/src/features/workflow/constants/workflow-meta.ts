@@ -176,6 +176,12 @@ export const NODE_TYPE_META: Record<NodeType, NodeTypeMeta> = {
     description: '循环处理列表数据',
     accentClassName: 'from-red-500/20 to-orange-500/5 text-red-100 ring-red-400/30',
   },
+  loop_group: {
+    label: '循环块',
+    icon: Repeat,
+    description: '可缩放的循环容器',
+    accentClassName: 'from-emerald-500/20 to-teal-500/5 text-emerald-100 ring-emerald-400/30',
+  },
 };
 
 export function getStatusMeta(status?: string) {

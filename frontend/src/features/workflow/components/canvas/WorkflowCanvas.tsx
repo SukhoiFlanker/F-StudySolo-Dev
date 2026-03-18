@@ -25,18 +25,15 @@ import FloatingToolbar from '@/features/workflow/components/toolbar/FloatingTool
 import type { CanvasTool } from '@/features/workflow/components/toolbar/FloatingToolbar';
 import AnimatedEdge from '@/features/workflow/components/canvas/edges/AnimatedEdge';
 import SequentialEdge from '@/features/workflow/components/canvas/edges/SequentialEdge';
-import ConditionalEdge from '@/features/workflow/components/canvas/edges/ConditionalEdge';
-import LoopEdge from '@/features/workflow/components/canvas/edges/LoopEdge';
 import AIStepNode from '@/features/workflow/components/nodes/AIStepNode';
 import GeneratingNode from '@/features/workflow/components/nodes/GeneratingNode';
 import AnnotationNode from '@/features/workflow/components/nodes/AnnotationNode';
-import LoopRegionNode from '@/features/workflow/components/nodes/LoopRegionNode';
+import LoopGroupNode from '@/features/workflow/components/nodes/LoopGroupNode';
 import CanvasModal from '@/features/workflow/components/canvas/CanvasModal';
 import CanvasMiniMap from '@/features/workflow/components/canvas/CanvasMiniMap';
 import CanvasContextMenu, { buildCanvasMenuItems } from '@/features/workflow/components/canvas/CanvasContextMenu';
 import NodeContextMenu, { buildNodeMenuGroups } from '@/features/workflow/components/canvas/NodeContextMenu';
 import EdgeContextMenu from '@/features/workflow/components/canvas/EdgeContextMenu';
-import { useLoopRegion } from '@/features/workflow/hooks/use-loop-region';
 import { useWorkflowStore } from '@/stores/use-workflow-store';
 import type { AIStepNodeData } from '@/types';
 
@@ -74,15 +71,13 @@ const nodeTypes: NodeTypes = {
   generating: GeneratingNode,
   // ── 标注节点 ──
   annotation: AnnotationNode,
-  // ── 循环区域节点 ──
-  loop_region: LoopRegionNode,
+  // ── 循环容器块 ──
+  loop_group: LoopGroupNode,
 };
 
 const edgeTypes: EdgeTypes = {
   default: AnimatedEdge,
   sequential: SequentialEdge,
-  conditional: ConditionalEdge,
-  loop: LoopEdge,
 };
 
 function HistoryControls() {
@@ -114,7 +109,7 @@ function HistoryControls() {
 }
 
 function WorkflowCanvasInner() {
-  useLoopRegion(); // Auto-manage loop region nodes
+
   const {
     edges,
     nodes,
@@ -128,6 +123,7 @@ function WorkflowCanvasInner() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [canvasTool, setCanvasTool] = useState<CanvasTool>('pan');
   const [modal, setModal] = useState<{ title: string; message: string } | null>(null);
+  const [placementMode, setPlacementMode] = useState<string | null>(null);
   const reactFlowInstance = useReactFlow();
   const annotationCountRef = useRef(0);
 
@@ -177,14 +173,45 @@ function WorkflowCanvasInner() {
     [setSelectedNodeId]
   );
 
-  const handlePaneClick = useCallback(() => {
-    setSelectedNodeId(null);
-    setCanvasMenu(null);
-    setNodeMenu(null);
-    setEdgeMenu(null);
-    // Cancel click-to-connect if active
-    useWorkflowStore.getState().cancelClickConnect();
-  }, [setSelectedNodeId]);
+  const handlePaneClick = useCallback(
+    (event: React.MouseEvent) => {
+      setCanvasMenu(null);
+      setNodeMenu(null);
+      setEdgeMenu(null);
+
+      // Placement mode: place a node on canvas click
+      if (placementMode && (placementMode === 'logic_switch' || placementMode === 'loop_group')) {
+        const flowPos = reactFlowInstance.screenToFlowPosition({
+          x: event.clientX,
+          y: event.clientY,
+        });
+        const store = useWorkflowStore.getState();
+        store.takeSnapshot();
+
+        const nodeId = `${placementMode}-${Date.now().toString(36)}`;
+        const isLoop = placementMode === 'loop_group';
+
+        const newNode: Node = {
+          id: nodeId,
+          type: placementMode,
+          position: { x: flowPos.x - (isLoop ? 150 : 176), y: flowPos.y - (isLoop ? 100 : 70) },
+          data: isLoop
+            ? { label: '循环块', maxIterations: 3, intervalSeconds: 0 }
+            : { label: '逻辑分支', type: 'logic_switch', system_prompt: '', model_route: '', status: 'pending', output: '' },
+          ...(isLoop ? { style: { width: 500, height: 350 } } : {}),
+        };
+
+        store.setNodes([...store.nodes, newNode]);
+        setSelectedNodeId(nodeId);
+        setPlacementMode(null);
+        return;
+      }
+
+      setSelectedNodeId(null);
+      useWorkflowStore.getState().cancelClickConnect();
+    },
+    [setSelectedNodeId, placementMode, reactFlowInstance]
+  );
 
   const handleSelectionChange = useCallback(
     ({ nodes: selectedNodes }: { nodes: { id: string }[] }) => {
@@ -525,6 +552,16 @@ function WorkflowCanvasInner() {
     window.addEventListener('canvas:delete-annotation', handler);
     return () => window.removeEventListener('canvas:delete-annotation', handler);
   }, [setNodes]);
+
+  // ── Listen for placement mode events ────────────────────────────────────────
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { mode } = (e as CustomEvent).detail as { mode: string };
+      setPlacementMode(mode === 'connect' ? null : mode);
+    };
+    window.addEventListener('canvas:placement-mode', handler);
+    return () => window.removeEventListener('canvas:placement-mode', handler);
+  }, []);
 
   // ── Compute React Flow props based on active tool ──────────────────────────
   const isSelectMode = canvasTool === 'select';

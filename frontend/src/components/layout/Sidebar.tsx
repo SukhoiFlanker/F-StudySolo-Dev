@@ -1,5 +1,7 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import {
   LayoutList,
   MessageSquareCode,
@@ -13,7 +15,9 @@ import {
   BookOpenText,
   UserCircle,
   PanelRightDashed,
+  Crown,
 } from 'lucide-react';
+import { getUser, type UserInfo } from '@/services/auth.service';
 import { useSidebarNavigation } from '@/hooks/use-sidebar-navigation';
 import { useWorkflowContextMenu } from '@/features/workflow/hooks/use-workflow-context-menu';
 import { useWorkflowSidebarActions } from '@/features/workflow/hooks/use-workflow-sidebar-actions';
@@ -77,6 +81,12 @@ function getPanelLabel(panel: SidebarPanel): string {
 }
 
 export default function Sidebar({ workflows }: SidebarProps) {
+  const [user, setUser] = useState<UserInfo | null>(null);
+
+  useEffect(() => {
+    getUser().then(setUser).catch(() => null);
+  }, []);
+
   const { pathname, isWorkflowActive, logoutAndRedirect } =
     useSidebarNavigation();
   const { contextMenu, handleContextMenu, closeContextMenu } =
@@ -143,7 +153,7 @@ export default function Sidebar({ workflows }: SidebarProps) {
             renderActivityButton('execution', PanelRightDashed, '执行面板')
           }
 
-          {/* User panel button */}
+          {/* User panel button - Standard icon */}
           {renderActivityButton('user-panel', UserCircle, '用户面板')}
 
           <div className="my-1 h-px w-6 bg-border/50" />
@@ -160,6 +170,16 @@ export default function Sidebar({ workflows }: SidebarProps) {
 
           {/* Lower zone — tools & settings */}
           <div className="space-y-1">
+            {/* Upgrade button */}
+            <Link
+              href="/upgrade"
+              className="group relative flex h-10 w-10 items-center justify-center rounded-lg text-amber-500 transition-all hover:bg-amber-500/10 hover:text-amber-400"
+              title="升级会员"
+            >
+              <div className="absolute inset-0 rounded-lg bg-amber-500/10 opacity-0 transition-opacity group-hover:animate-pulse group-hover:opacity-100" />
+              <Crown className="h-[18px] w-[18px]" />
+            </Link>
+
             {LOWER_PANELS.map(({ panel, icon, label }) =>
               renderActivityButton(panel, icon, label)
             )}

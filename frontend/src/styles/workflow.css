@@ -1692,3 +1692,175 @@
   opacity: 1;
   background: rgba(5, 150, 105, 0.1);
 }
+
+/* ─── Canvas Placement Panel (replaces EdgeTypePanel) ─── */
+.canvas-placement-panel {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(15, 23, 42, 0.9);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 8px;
+  min-width: 160px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  z-index: 100;
+}
+
+.light .canvas-placement-panel {
+  background: rgba(255, 255, 255, 0.92);
+  border-color: rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.canvas-placement-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  width: 100%;
+  color: inherit;
+}
+
+.canvas-placement-option:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.light .canvas-placement-option:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.canvas-placement-option-active {
+  background: rgba(255, 255, 255, 0.1);
+  outline: 1px solid var(--option-color, #78716c);
+  outline-offset: -1px;
+}
+
+.light .canvas-placement-option-active {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+/* ─── Edge Labels ─── */
+.edge-label-container {
+  background: rgba(30, 30, 30, 0.8);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.7);
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s ease;
+}
+
+.light .edge-label-container {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(0, 0, 0, 0.12);
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.edge-label-container:hover {
+  background: rgba(30, 30, 30, 0.95);
+}
+
+.light .edge-label-container:hover {
+  background: rgba(255, 255, 255, 1);
+}
+
+.edge-label-branch {
+  border-color: rgba(217, 119, 6, 0.4);
+  color: #d97706;
+}
+
+.light .edge-label-branch {
+  border-color: rgba(217, 119, 6, 0.3);
+  color: #b45309;
+}
+
+.edge-label-input {
+  background: transparent;
+  border: none;
+  outline: none;
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+  width: 80px;
+  padding: 0;
+}
+
+/* ─── Loop Group Node ─── */
+.loop-group-container {
+  width: 100%;
+  height: 100%;
+  min-width: 300px;
+  min-height: 200px;
+  border: 2px dashed rgba(5, 150, 105, 0.4);
+  border-radius: 12px;
+  background: rgba(5, 150, 105, 0.03);
+  display: flex;
+  flex-direction: column;
+}
+
+.light .loop-group-container {
+  background: rgba(5, 150, 105, 0.04);
+  border-color: rgba(5, 150, 105, 0.3);
+}
+
+.loop-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  border-bottom: 1px dashed rgba(5, 150, 105, 0.2);
+  background: rgba(5, 150, 105, 0.06);
+  border-radius: 10px 10px 0 0;
+  flex-shrink: 0;
+}
+
+.loop-group-body {
+  flex: 1;
+  min-height: 120px;
+  padding: 8px;
+}
+
+.loop-group-param-input {
+  width: 40px;
+  padding: 1px 4px;
+  border: 1px solid rgba(5, 150, 105, 0.3);
+  border-radius: 4px;
+  background: rgba(5, 150, 105, 0.08);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: #059669;
+  outline: none;
+  text-align: center;
+}
+
+.loop-group-param-input:focus {
+  border-color: #059669;
+  box-shadow: 0 0 0 1px rgba(5, 150, 105, 0.2);
+}
+
+/* Resizer styling */
+.loop-group-resizer-line {
+  border-color: rgba(5, 150, 105, 0.4) !important;
+}
+
+.loop-group-resizer-handle {
+  width: 8px !important;
+  height: 8px !important;
+  border-radius: 2px !important;
+  background: #059669 !important;
+  border: 1px solid rgba(255, 255, 255, 0.5) !important;
+}

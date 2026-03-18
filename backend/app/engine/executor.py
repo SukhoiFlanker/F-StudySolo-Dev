@@ -11,6 +11,9 @@ Key features:
 4. Conditional branching via logic_switch nodes
 5. Per-node timeout control
 6. Parallel execution for independent nodes at the same topological level
+
+7. Edge-level wait time (waitSeconds) before executing downstream nodes
+8. Loop group containers that iterate their child subgraph N times
 """
 
 import asyncio
@@ -30,6 +33,8 @@ logger = logging.getLogger(__name__)
 
 # Default per-node timeout in seconds
 DEFAULT_NODE_TIMEOUT = 120
+# Maximum allowed wait between nodes (safety cap)
+MAX_WAIT_SECONDS = 300
 
 
 def _build_context_prompt(implicit_context: dict | None) -> str:
@@ -56,25 +61,33 @@ def topological_sort_levels(
     """Return node IDs grouped by topological levels (Kahn's algorithm).
 
     Each inner list contains node IDs that can be executed in parallel.
+    Nodes with parentId (loop group children) are excluded.
     Returns list of levels from top to bottom.
 
     Raises ValueError if a cycle is detected.
     """
-    in_degree: dict[str, int] = {n["id"]: 0 for n in nodes}
+    # Exclude child nodes that belong to a loop_group container
+    top_nodes = [
+        n for n in nodes
+        if not n.get("parentId")
+    ]
+    child_ids = {n["id"] for n in nodes if n.get("parentId")}
+
+    in_degree: dict[str, int] = {n["id"]: 0 for n in top_nodes}
     adjacency: dict[str, list[str]] = defaultdict(list)
 
     for edge in edges:
         src, tgt = edge["source"], edge["target"]
+        if src in child_ids or tgt in child_ids:
+            continue
         adjacency[src].append(tgt)
         in_degree[tgt] = in_degree.get(tgt, 0) + 1
 
-    # Start with all zero-degree nodes
     queue: deque[str] = deque(nid for nid, deg in in_degree.items() if deg == 0)
     levels: list[list[str]] = []
     processed = 0
 
     while queue:
-        # All nodes in current queue form one level (can run in parallel)
         level = list(queue)
         levels.append(level)
         queue.clear()
@@ -85,7 +98,7 @@ def topological_sort_levels(
                 if in_degree[neighbor] == 0:
                     queue.append(neighbor)
 
-    if processed != len(nodes):
+    if processed != len(top_nodes):
         raise ValueError("Workflow contains a cycle — cannot execute")
 
     return levels
@@ -95,6 +108,117 @@ def topological_sort(nodes: list[dict], edges: list[dict]) -> list[str]:
     """Flatten level-based sort into a single list (backward compatible)."""
     levels = topological_sort_levels(nodes, edges)
     return [nid for level in levels for nid in level]
+
+
+# ── Wait time helper ─────────────────────────────────────────────────────────
+
+def _get_max_wait_seconds(node_id: str, edges: list[dict]) -> float:
+    """Get the max waitSeconds from all incoming edges of a node."""
+    max_wait = 0.0
+    for edge in edges:
+        if edge["target"] == node_id:
+            wait = edge.get("data", {}).get("waitSeconds", 0)
+            if isinstance(wait, (int, float)) and wait > 0:
+                max_wait = max(max_wait, float(wait))
+    return min(max_wait, MAX_WAIT_SECONDS)
+
+
+# ── Loop group execution ─────────────────────────────────────────────────────
+
+async def _execute_loop_group(
+    group_node: dict,
+    all_nodes: list[dict],
+    all_edges: list[dict],
+    implicit_context: dict | None,
+    accumulated_outputs: dict[str, str],
+) -> AsyncIterator[str]:
+    """Execute a loop_group container: iterate its child subgraph N times."""
+    group_id = group_node["id"]
+    group_data = group_node.get("data", {})
+    max_iterations = min(int(group_data.get("maxIterations", 3)), 100)
+    interval_seconds = min(float(group_data.get("intervalSeconds", 0)), MAX_WAIT_SECONDS)
+
+    # Collect child nodes + internal edges
+    child_nodes = [n for n in all_nodes if n.get("parentId") == group_id]
+    child_ids = {n["id"] for n in child_nodes}
+    child_edges = [
+        e for e in all_edges
+        if e["source"] in child_ids and e["target"] in child_ids
+    ]
+
+    if not child_nodes:
+        yield sse_event("node_done", {"node_id": group_id, "full_output": "[循环块无子节点]"})
+        return
+
+    iteration_results: list[dict[str, str]] = []
+
+    for iteration in range(1, max_iterations + 1):
+        yield sse_event("loop_iteration", {
+            "group_id": group_id,
+            "iteration": iteration,
+            "total": max_iterations,
+        })
+
+        # Build sub-topology
+        try:
+            sub_levels = topological_sort_levels(child_nodes, child_edges)
+        except ValueError:
+            yield sse_event("node_status", {
+                "node_id": group_id, "status": "error",
+                "error": "循环块内部存在环",
+            })
+            return
+
+        # For iteration > 1, inject previous iteration outputs
+        iter_outputs = dict(accumulated_outputs)
+        if iteration_results:
+            iter_outputs.update(iteration_results[-1])
+
+        sub_outputs: dict[str, str] = {}
+        sub_failed: set[str] = set()
+        upstream_map = build_upstream_map(child_edges)
+
+        for level in sub_levels:
+            tasks = []
+            for nid in level:
+                if nid in sub_failed:
+                    continue
+                node_cfg = next((n for n in child_nodes if n["id"] == nid), None)
+                if not node_cfg:
+                    continue
+
+                direct_ups = upstream_map.get(nid, [])
+                ups = {
+                    uid: sub_outputs.get(uid, iter_outputs.get(uid, ""))
+                    for uid in direct_ups
+                }
+
+                tasks.append(asyncio.create_task(
+                    _execute_single_node_with_timeout(
+                        nid, node_cfg, ups, implicit_context,
+                    )
+                ))
+
+            if tasks:
+                results = await asyncio.gather(*tasks, return_exceptions=True)
+                for res in results:
+                    if isinstance(res, Exception):
+                        continue
+                    nid, output, error = res
+                    if error:
+                        sub_failed.add(nid)
+                    elif output is not None:
+                        sub_outputs[nid] = output
+
+        iteration_results.append(sub_outputs)
+
+        # Wait between iterations
+        if interval_seconds > 0 and iteration < max_iterations:
+            await asyncio.sleep(interval_seconds)
+
+    # Aggregate: last iteration outputs become the group's output
+    final_output = json.dumps(iteration_results, ensure_ascii=False, indent=2)
+    accumulated_outputs[group_id] = final_output
 
 
 # ── Branch filtering for logic_switch ────────────────────────────────────────
@@ -299,6 +423,26 @@ async def execute_workflow(
 
             node_type_str = node_cfg.get("type", "chat_response")
             node_data = node_cfg.get("data", {})
+
+            # Handle loop_group container
+            if node_type_str == "loop_group":
+                yield sse_event("node_status", {"node_id": node_id, "status": "running"})
+                async for event in _execute_loop_group(
+                    node_cfg, nodes, edges, implicit_context, accumulated_outputs,
+                ):
+                    yield event
+                yield sse_event("node_done", {
+                    "node_id": node_id,
+                    "full_output": accumulated_outputs.get(node_id, ""),
+                })
+                yield sse_event("node_status", {"node_id": node_id, "status": "done"})
+                continue
+
+            # Edge wait time
+            wait_secs = _get_max_wait_seconds(node_id, edges)
+            if wait_secs > 0:
+                yield sse_event("node_status", {"node_id": node_id, "status": "waiting"})
+                await asyncio.sleep(wait_secs)
 
             yield sse_event("node_status", {"node_id": node_id, "status": "running"})
 

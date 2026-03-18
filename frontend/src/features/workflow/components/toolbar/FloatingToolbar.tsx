@@ -15,7 +15,8 @@ import { useWorkflowExecution } from '@/features/workflow/hooks/use-workflow-exe
 import { useWorkflowStore } from '@/stores/use-workflow-store';
 import SearchBar from '@/features/workflow/components/toolbar/SearchBar';
 import EmojiPicker from '@/features/workflow/components/toolbar/EmojiPicker';
-import EdgeTypePanel from '@/features/workflow/components/toolbar/EdgeTypePanel';
+import CanvasPlacementPanel from '@/features/workflow/components/toolbar/CanvasPlacementPanel';
+import type { PlacementMode } from '@/features/workflow/components/toolbar/CanvasPlacementPanel';
 
 export type CanvasTool = 'select' | 'edit' | 'pan' | 'search';
 
@@ -38,15 +39,17 @@ export default function FloatingToolbar({ className = '' }: FloatingToolbarProps
   const [showSearch, setShowSearch] = useState(false);
   const [showEmoji, setShowEmoji] = useState(false);
   const [showEdgePanel, setShowEdgePanel] = useState(false);
+  const [placementMode, setPlacementMode] = useState<PlacementMode | null>(null);
   const { status, start, stop } = useWorkflowExecution();
   const nodes = useWorkflowStore((s) => s.nodes);
   const hasNodes = nodes.length > 0;
   const isRunning = status === 'running';
 
   const handleToolChange = useCallback((tool: CanvasTool) => {
-    // Special behavior for edit tool — toggle edge type panel
+    // Special behavior for edit tool — toggle placement panel
     if (tool === 'edit') {
       setShowEdgePanel((prev) => !prev);
+      setPlacementMode(null);
       setShowSearch(false);
       setShowEmoji(false);
       return;
@@ -55,6 +58,8 @@ export default function FloatingToolbar({ className = '' }: FloatingToolbarProps
     // Close overlays when switching away
     if (tool !== 'search') setShowSearch(false);
     setShowEmoji(false);
+    setShowEdgePanel(false);
+    setPlacementMode(null);
 
     // Search tool: toggle search bar
     if (tool === 'search') {
@@ -93,6 +98,14 @@ export default function FloatingToolbar({ className = '' }: FloatingToolbarProps
       new CustomEvent('canvas:add-annotation', { detail: { emoji } })
     );
     setShowEmoji(false);
+  }, []);
+
+  const handlePlacementSelect = useCallback((mode: PlacementMode) => {
+    setPlacementMode(mode);
+    // Dispatch placement mode event for canvas to handle
+    window.dispatchEvent(
+      new CustomEvent('canvas:placement-mode', { detail: { mode } })
+    );
   }, []);
 
   const handleSearchClose = useCallback(() => {
@@ -139,12 +152,16 @@ export default function FloatingToolbar({ className = '' }: FloatingToolbarProps
             type="button"
             className={`toolbar-btn ${showEdgePanel ? 'active' : ''}`}
             onClick={() => handleToolChange('edit')}
-            title="连线工具 (E) — 选择连线类型"
+            title="放置工具 (E) — 连线/分支/循环块"
           >
             <Pencil className="h-[18px] w-[18px]" />
           </button>
           {showEdgePanel && (
-            <EdgeTypePanel onClose={() => setShowEdgePanel(false)} />
+            <CanvasPlacementPanel
+              activeMode={placementMode}
+              onSelect={handlePlacementSelect}
+              onClose={() => setShowEdgePanel(false)}
+            />
           )}
         </div>
 

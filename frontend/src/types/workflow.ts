@@ -24,8 +24,11 @@ import type { Edge, Node } from '@xyflow/react';
  * export_file     — 文件导出
  *
  * ── P2 引擎节点 (2) ──
- * logic_switch    — 逻辑分支
- * loop_map        — 循环映射
+ * logic_switch    — 逻辑分支（条件判断）
+ * loop_map        — 循环映射（内部拆分）
+ *
+ * ── 结构节点 (1) ──
+ * loop_group      — 循环容器块
  */
 export type NodeType =
   | 'trigger_input'
@@ -47,7 +50,9 @@ export type NodeType =
   | 'export_file'
   // ── P2 引擎节点 ──
   | 'logic_switch'
-  | 'loop_map';
+  | 'loop_map'
+  // ── 结构节点 ──
+  | 'loop_group';
 
 /** 节点生命周期状态 */
 export type NodeStatus = 'pending' | 'running' | 'done' | 'error' | 'paused';
@@ -64,41 +69,48 @@ export interface AIStepNodeData {
   output_format?: string;
 }
 
+/** 循环容器块节点数据 */
+export interface LoopGroupNodeData {
+  label: string;
+  maxIterations: number;     // 1-100
+  intervalSeconds: number;   // ≥ 0.1s
+  description?: string;
+}
+
 /** 工作流节点（存储在 nodes_json JSONB 中） */
 export interface WorkflowNode {
   id: string;
   type: NodeType;
   position: { x: number; y: number };
-  data: AIStepNodeData;
+  data: AIStepNodeData | LoopGroupNodeData;
+  parentId?: string;    // 如果在循环容器内，指向容器 ID
+  extent?: 'parent';    // 限制拖拽不出容器
 }
 
 /**
- * 连线类型
- * sequential  — 顺序流: 做完 A → 接着做 B (实心手绘线)
- * conditional — 条件分支: 满足条件走此路径 (虚线+标签)
- * loop        — 循环迭代: 对集合中每项重复处理 (波浪线)
+ * 连线类型 — 唯一：顺序线
+ *
+ * 条件分支和循环不是"线的类型"，而是"节点结构"：
+ * - 条件分支 = logic_switch 节点 + 多条出边 + data.branch
+ * - 循环 = LoopGroupNode 容器块
  */
-export type EdgeType = 'sequential' | 'conditional' | 'loop';
+export type EdgeType = 'sequential';
 
-/** Handle 方位 ID (4 方位 × source/target = 8 个) */
+/** Handle 方位 ID (LEFT/TOP=target, RIGHT/BOTTOM=source) */
 export type HandlePosition =
-  | 'source-top'
   | 'source-right'
   | 'source-bottom'
-  | 'source-left'
-  | 'target-top'
-  | 'target-right'
-  | 'target-bottom'
-  | 'target-left';
+  | 'target-left'
+  | 'target-top';
 
 /** 连线附加数据 */
 export interface WorkflowEdgeData {
-  /** 连线标签文字 (条件线必填，其他可选) */
-  label?: string;
-  /** 条件分支名 (后端 executor 使用) */
+  /** 备注文字（不参与执行） */
+  note?: string;
+  /** 等待时间-秒（0-300，执行目标节点前等待） */
+  waitSeconds?: number;
+  /** 条件分支名（仅 logic_switch 出边使用，后端 executor 读取） */
   branch?: string;
-  /** 循环迭代次数上限 */
-  maxIterations?: number;
 }
 
 /** 工作流连线（存储在 edges_json JSONB 中） */
@@ -112,11 +124,11 @@ export interface WorkflowEdge {
   data?: WorkflowEdgeData;
 }
 
-/** 兼容旧数据 — 为缺失字段补充默认值 */
+/** 兼容旧数据 — 为缺失字段补充默认值，旧类型统一迁移为 sequential */
 export function normalizeEdge(edge: Partial<WorkflowEdge> & { id: string; source: string; target: string }): WorkflowEdge {
   return {
     ...edge,
-    type: edge.type || 'sequential',
+    type: 'sequential',
     sourceHandle: edge.sourceHandle || 'source-right',
     targetHandle: edge.targetHandle || 'target-left',
     data: edge.data || {},

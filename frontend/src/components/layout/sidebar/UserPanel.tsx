@@ -20,20 +20,38 @@ export default function UserPanel() {
       <div className="scrollbar-hide flex-1 overflow-y-auto">
         {/* Avatar + Name card */}
         <div className="border-b border-border px-4 py-5">
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary/30 to-primary/10 text-base font-bold text-primary ring-2 ring-primary/20 overflow-hidden">
-              {user?.avatar_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={user.avatar_url} alt="avatar" className="h-full w-full object-cover" />
-              ) : (
-                initials
-              )}
+          <div className="flex items-center gap-4">
+            <div className="relative">
+              <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary/30 to-primary/10 text-base font-bold text-primary overflow-hidden ${
+                user?.tier === 'Ultra' ? 'ring-2 ring-amber-500 ring-offset-2 ring-offset-background' :
+                user?.tier === 'Pro' ? 'ring-2 ring-slate-800 ring-offset-2 ring-offset-background' :
+                user?.tier === 'Plus' ? 'ring-2 ring-blue-500 ring-offset-2 ring-offset-background' :
+                'ring-1 ring-border shadow-sm'
+              }`}>
+                {user?.avatar_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={user.avatar_url} alt="avatar" className="h-full w-full object-cover" />
+                ) : (
+                  initials
+                )}
+              </div>
+              
+              {/* Tier Badge */}
+              <div className={`absolute -bottom-2 left-1/2 -translate-x-1/2 rounded-full px-2 py-[2px] text-[9px] font-bold tracking-wider shadow-sm z-10 whitespace-nowrap 
+                ${user?.tier === 'Ultra' ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white border border-amber-400' :
+                  user?.tier === 'Pro' ? 'bg-slate-900 text-white border border-slate-700' :
+                  user?.tier === 'Plus' ? 'bg-blue-500 text-white border border-blue-400' :
+                  'bg-slate-500 text-white border border-slate-600'
+                }
+              `}>
+                {user?.tier || 'Free'}
+              </div>
             </div>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-semibold text-foreground">
                 {user?.name || '用户'}
               </p>
-              <p className="truncate text-[11px] text-muted-foreground">
+              <p className="truncate text-[11px] text-muted-foreground mt-0.5">
                 {user?.email || '加载中...'}
               </p>
             </div>

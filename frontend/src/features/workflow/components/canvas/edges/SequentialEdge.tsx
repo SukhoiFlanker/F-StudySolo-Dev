@@ -1,12 +1,15 @@
 'use client';
 
-import { memo, useMemo } from 'react';
+import { memo, useMemo, useState, useCallback, useRef, useEffect } from 'react';
 import { BaseEdge, EdgeLabelRenderer, getBezierPath, type EdgeProps } from '@xyflow/react';
+import { useWorkflowStore } from '@/stores/use-workflow-store';
 
 /**
- * Sequential Edge — 顺序流连线
- * 实心手绘笔触 + 标准箭头
- * 选中态加粗 + 发光
+ * SequentialEdge — 唯一的连线类型
+ *
+ * 实心手绘笔触 + 标准箭头。
+ * 支持 data.note 备注显示和双击编辑。
+ * 从 logic_switch 出发时自动切换为 amber 虚线 + 分支标签。
  */
 function SequentialEdge({
   id,
@@ -20,18 +23,31 @@ function SequentialEdge({
   markerEnd,
   selected,
   data,
+  source,
 }: EdgeProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const edgeData = data as Record<string, unknown> | undefined;
+  const note = (edgeData?.note as string) || '';
+  const branch = edgeData?.branch as string | undefined;
+
+  // Check if source is a logic_switch node for branch-style rendering
+  const sourceNodeType = useWorkflowStore(
+    useCallback((s) => {
+      const node = s.nodes.find((n) => n.id === source);
+      return (node?.data as Record<string, unknown>)?.type as string | undefined
+        ?? node?.type;
+    }, [source])
+  );
+  const isBranchEdge = sourceNodeType === 'logic_switch';
+
   const [edgePath, labelX, labelY] = getBezierPath({
-    sourceX,
-    sourceY,
-    sourcePosition,
-    targetX,
-    targetY,
-    targetPosition,
+    sourceX, sourceY, sourcePosition,
+    targetX, targetY, targetPosition,
   });
 
   const filterId = `pencil-seq-${id}`;
-  const label = (data as Record<string, unknown>)?.label as string | undefined;
 
   const pencilFilter = useMemo(
     () => (
@@ -40,14 +56,14 @@ function SequentialEdge({
           <feTurbulence
             type="turbulence"
             baseFrequency="0.03"
-            numOctaves="3"
+            numOctaves={3}
             seed={Math.abs(id.split('').reduce((a, c) => a + c.charCodeAt(0), 0)) % 100}
             result="noise"
           />
           <feDisplacementMap
             in="SourceGraphic"
             in2="noise"
-            scale="1.2"
+            scale={1.2}
             xChannelSelector="R"
             yChannelSelector="G"
           />
@@ -57,6 +73,46 @@ function SequentialEdge({
     [filterId, id]
   );
 
+  // Color & stroke logic
+  const edgeColor = isBranchEdge
+    ? 'var(--edge-color-conditional, #d97706)'
+    : 'var(--edge-color-sequential, #78716c)';
+
+  const dashArray = isBranchEdge ? '8 5' : undefined;
+
+  // Double-click to edit note
+  const handleDoubleClick = useCallback(() => {
+    setIsEditing(true);
+  }, []);
+
+  const handleSave = useCallback(
+    (value: string) => {
+      setIsEditing(false);
+      const store = useWorkflowStore.getState();
+      store.takeSnapshot();
+      store.setEdges(
+        store.edges.map((e) =>
+          e.id === id
+            ? { ...e, data: { ...((e.data || {}) as Record<string, unknown>), note: value } }
+            : e
+        )
+      );
+    },
+    [id]
+  );
+
+  // Auto-focus input when editing starts
+  useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [isEditing]);
+
+  // Display text: branch label for logic_switch, note for others
+  const displayText = isBranchEdge ? (branch || '默认') : note;
+  const showLabel = displayText || isEditing;
+
   return (
     <>
       {pencilFilter}
@@ -65,9 +121,10 @@ function SequentialEdge({
       <path
         d={edgePath}
         fill="none"
-        stroke="var(--edge-color-sequential, #78716c)"
+        stroke={edgeColor}
         strokeWidth={selected ? 5 : 3.5}
         strokeOpacity={0.15}
+        strokeDasharray={dashArray}
         filter={`url(#${filterId})`}
       />
 
@@ -77,8 +134,9 @@ function SequentialEdge({
         path={edgePath}
         markerEnd={markerEnd}
         style={{
-          stroke: 'var(--edge-color-sequential, #78716c)',
+          stroke: edgeColor,
           strokeWidth: selected ? 3 : 2,
+          strokeDasharray: dashArray,
           filter: `url(#${filterId})`,
           transition: 'stroke-width 0.15s ease',
           ...style,
@@ -90,25 +148,39 @@ function SequentialEdge({
         <path
           d={edgePath}
           fill="none"
-          stroke="var(--edge-color-sequential, #78716c)"
+          stroke={edgeColor}
           strokeWidth={6}
           strokeOpacity={0.12}
           filter={`url(#${filterId})`}
         />
       )}
 
-      {/* Optional label */}
-      {label && (
+      {/* Note / Branch label */}
+      {showLabel && (
         <EdgeLabelRenderer>
           <div
-            className="edge-label-container"
+            className={`edge-label-container ${isBranchEdge ? 'edge-label-branch' : ''}`}
             style={{
               position: 'absolute',
               transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
               pointerEvents: 'all',
             }}
+            onDoubleClick={handleDoubleClick}
           >
-            {label}
+            {isEditing ? (
+              <input
+                ref={inputRef}
+                className="edge-label-input"
+                defaultValue={isBranchEdge ? (branch || '') : note}
+                onBlur={(e) => handleSave(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleSave((e.target as HTMLInputElement).value);
+                  if (e.key === 'Escape') setIsEditing(false);
+                }}
+              />
+            ) : (
+              <span className="text-[10px]">{displayText}</span>
+            )}
           </div>
         </EdgeLabelRenderer>
       )}

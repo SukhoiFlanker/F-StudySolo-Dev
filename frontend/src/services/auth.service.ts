@@ -19,6 +19,7 @@ export interface UserInfo {
   name?: string;
   avatar_url?: string;
   role?: string;
+  tier?: 'Free' | 'Plus' | 'Pro' | 'Ultra';
 }
 
 /** Send verification code to email. Requires captcha token. */

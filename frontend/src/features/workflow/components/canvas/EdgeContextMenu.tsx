@@ -1,9 +1,8 @@
 'use client';
 
 import { useEffect, useRef, useCallback } from 'react';
-import { Pencil, ArrowLeftRight, Trash2, GitBranch, Repeat, ArrowRight } from 'lucide-react';
+import { Pencil, ArrowLeftRight, Trash2 } from 'lucide-react';
 import { useWorkflowStore } from '@/stores/use-workflow-store';
-import type { EdgeType } from '@/types';
 
 interface EdgeContextMenuProps {
   x: number;
@@ -11,12 +10,6 @@ interface EdgeContextMenuProps {
   edgeId: string;
   onClose: () => void;
 }
-
-const EDGE_TYPE_MAP: { type: EdgeType; label: string; icon: React.ReactNode }[] = [
-  { type: 'sequential', label: '顺序流', icon: <ArrowRight size={13} /> },
-  { type: 'conditional', label: '条件分支', icon: <GitBranch size={13} /> },
-  { type: 'loop', label: '循环迭代', icon: <Repeat size={13} /> },
-];
 
 export default function EdgeContextMenu({ x, y, edgeId, onClose }: EdgeContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
@@ -43,18 +36,18 @@ export default function EdgeContextMenu({ x, y, edgeId, onClose }: EdgeContextMe
     return useWorkflowStore.getState().edges.find((e) => e.id === edgeId);
   }, [edgeId]);
 
-  const handleEditLabel = useCallback(() => {
+  const handleEditNote = useCallback(() => {
     const edge = getEdge();
     if (!edge) return;
-    const currentLabel = ((edge.data as Record<string, unknown>)?.label as string) || '';
-    const newLabel = prompt('编辑连线标签:', currentLabel);
-    if (newLabel !== null) {
+    const currentNote = ((edge.data as Record<string, unknown>)?.note as string) || '';
+    const newNote = prompt('编辑备注:', currentNote);
+    if (newNote !== null) {
       const edges = useWorkflowStore.getState().edges;
       useWorkflowStore.getState().takeSnapshot();
       useWorkflowStore.getState().setEdges(
         edges.map((e) =>
           e.id === edgeId
-            ? { ...e, data: { ...((e.data || {}) as Record<string, unknown>), label: newLabel } }
+            ? { ...e, data: { ...((e.data || {}) as Record<string, unknown>), note: newNote } }
             : e
         )
       );
@@ -62,31 +55,7 @@ export default function EdgeContextMenu({ x, y, edgeId, onClose }: EdgeContextMe
     onClose();
   }, [edgeId, getEdge, onClose]);
 
-  const handleChangeType = useCallback(
-    (newType: EdgeType) => {
-      const edges = useWorkflowStore.getState().edges;
-      useWorkflowStore.getState().takeSnapshot();
-      useWorkflowStore.getState().setEdges(
-        edges.map((e) => {
-          if (e.id !== edgeId) return e;
-          const edgeData = (e.data || {}) as Record<string, unknown>;
-          return {
-            ...e,
-            type: newType,
-            data: {
-              ...edgeData,
-              label: newType === 'conditional' ? (edgeData.label || '条件') : edgeData.label,
-            },
-          };
-        })
-      );
-      onClose();
-    },
-    [edgeId, onClose]
-  );
-
   const handleReverse = useCallback(() => {
-    // Handle mapping for direction reversal (LEFT/TOP=target, RIGHT/BOTTOM=source)
     const reverseHandleMap: Record<string, string> = {
       'source-right': 'target-left',
       'source-bottom': 'target-top',
@@ -118,9 +87,6 @@ export default function EdgeContextMenu({ x, y, edgeId, onClose }: EdgeContextMe
     onClose();
   }, [edgeId, onClose]);
 
-  const currentEdge = getEdge();
-  const currentType = (currentEdge?.type as EdgeType) || 'sequential';
-
   return (
     <div
       ref={menuRef}
@@ -132,30 +98,12 @@ export default function EdgeContextMenu({ x, y, edgeId, onClose }: EdgeContextMe
         zIndex: 1000,
       }}
     >
-      {/* Edit label */}
-      <button className="canvas-context-menu-item" onClick={handleEditLabel}>
+      {/* Edit note */}
+      <button className="canvas-context-menu-item" onClick={handleEditNote}>
         <Pencil size={13} className="canvas-context-menu-icon" />
-        <span>编辑标签</span>
+        <span>编辑备注</span>
         <span className="canvas-context-menu-shortcut">双击</span>
       </button>
-
-      <div className="canvas-context-menu-divider" />
-
-      {/* Change type */}
-      {EDGE_TYPE_MAP.map((option) => (
-        <button
-          key={option.type}
-          className={`canvas-context-menu-item ${currentType === option.type ? 'opacity-50' : ''}`}
-          onClick={() => handleChangeType(option.type)}
-          disabled={currentType === option.type}
-        >
-          <span className="canvas-context-menu-icon">{option.icon}</span>
-          <span>
-            {option.label}
-            {currentType === option.type && ' ✓'}
-          </span>
-        </button>
-      ))}
 
       <div className="canvas-context-menu-divider" />
 
