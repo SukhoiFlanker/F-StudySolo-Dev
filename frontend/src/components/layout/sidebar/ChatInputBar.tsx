@@ -6,14 +6,14 @@
  * 从 SidebarAIPanel 抽离, 保持单文件 ≤ 300 行。
  */
 
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useState, useEffect } from 'react';
 import { Loader2, ArrowRight, Square, Brain, MessageCircle, Wand2 } from 'lucide-react';
 import type { AIMode, ThinkingDepth } from './SidebarAIPanel';
 
-const MODE_CONFIG: Record<AIMode, { icon: typeof Brain; label: string; hint: string }> = {
-  plan: { icon: Brain, label: '规划', hint: '深度分析目标，规划学习路径' },
-  chat: { icon: MessageCircle, label: '对话', hint: '自由对话，提问讨论' },
-  create: { icon: Wand2, label: '创建', hint: '创建节点、复制节点、搭建工作流' },
+const MODE_CONFIG: Record<AIMode, { icon: typeof Brain; label: string; hint: string; desc: string }> = {
+  plan: { icon: Brain, label: '规划模式', hint: '深入分析目标并输出学习路径', desc: '不直接修改画布，仅提供深度分析和架构规划建议' },
+  chat: { icon: MessageCircle, label: '对话模式', hint: '自由提问，解答学术疑惑', desc: '纯文本学术对话，支持软引导切换操作模式' },
+  create: { icon: Wand2, label: '创建模式', hint: '创建、复制节点或搭建工作流', desc: '直接操作画布：支持复制节点、调整结构与连线' },
 };
 
 const DEPTH_CONFIG: Record<ThinkingDepth, { label: string; color: string }> = {
@@ -42,6 +42,18 @@ export function ChatInputBar({
   loading, streaming, error, setError, onSend,
 }: ChatInputBarProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleTextareaChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInput(e.target.value);
@@ -78,18 +90,46 @@ export function ChatInputBar({
         />
 
         <div className="flex items-center justify-between px-2 pb-2">
-          {/* Mode buttons */}
-          <div className="flex items-center gap-0.5">
-            {(Object.entries(MODE_CONFIG) as [AIMode, typeof MODE_CONFIG[AIMode]][]).map(([key, cfg]) => {
-              const Icon = cfg.icon;
-              const active = mode === key;
-              return (
-                <button key={key} type="button" onClick={() => setMode(key)} title={cfg.hint}
-                  className={`flex items-center gap-1 rounded-md px-1.5 py-1 text-[10px] font-medium transition-all ${active ? 'bg-primary/10 text-primary' : 'text-muted-foreground/50 hover:text-muted-foreground hover:bg-white/5'}`}>
-                  <Icon className="h-3 w-3" />{cfg.label}
-                </button>
-              );
-            })}
+          {/* Mode Dropdown (Antigravity Style) */}
+          <div className="flex items-center gap-1.5" ref={dropdownRef}>
+            <div className="relative">
+              <button 
+                type="button" 
+                onClick={() => setDropdownOpen(!dropdownOpen)}
+                className="flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-medium transition-all bg-white/40 hover:bg-white/60 border-[1px] border-border/40 hover:border-border/60 text-foreground/80 shadow-sm"
+              >
+                {(() => { const I = MODE_CONFIG[mode].icon; return <I className="h-3 w-3 text-primary/80" />; })()}
+                {MODE_CONFIG[mode].label}
+              </button>
+              
+              {dropdownOpen && (
+                <div className="absolute bottom-full left-0 mb-2 w-64 rounded-xl border-[1.5px] border-border/50 node-paper-bg shadow-lg overflow-hidden py-1 z-50 origin-bottom-left animate-in fade-in zoom-in-95 duration-100">
+                  <div className="px-3 py-1.5 border-b-[1px] border-border/30 mb-1">
+                    <span className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/70 font-sans">选择对话模式</span>
+                  </div>
+                  {(Object.entries(MODE_CONFIG) as [AIMode, typeof MODE_CONFIG[AIMode]][]).map(([key, cfg]) => {
+                    const active = mode === key;
+                    const Icon = cfg.icon;
+                    return (
+                      <button 
+                        key={key} 
+                        type="button" 
+                        onClick={() => { setMode(key); setDropdownOpen(false); }}
+                        className={`w-full text-left flex items-start gap-2.5 px-3 py-2 transition-colors ${active ? 'bg-primary/5' : 'hover:bg-muted/30'}`}
+                      >
+                        <div className={`mt-0.5 p-1 rounded-md ${active ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>
+                          <Icon className="h-3.5 w-3.5" />
+                        </div>
+                        <div className="flex-1">
+                          <div className={`text-[12px] font-semibold font-serif leading-tight ${active ? 'text-primary' : 'text-foreground/90'}`}>{cfg.label}</div>
+                          <div className="text-[10px] text-muted-foreground/80 font-serif leading-snug mt-0.5">{cfg.desc}</div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
 
             {mode !== 'chat' && (
               <>

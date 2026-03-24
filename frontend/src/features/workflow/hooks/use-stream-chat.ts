@@ -19,6 +19,7 @@ export interface StreamChatOptions {
   canvasContext: CanvasContext | null;
   history: ChatEntry[];
   intentHint?: string | null;
+  mode?: 'plan' | 'chat' | 'create';
   selectedModel: AIModelOption;
   thinkingDepth?: ThinkingDepth;
   onToken: (token: string) => void;
@@ -32,7 +33,7 @@ export function useStreamChat() {
 
   const send = useCallback(async (opts: StreamChatOptions) => {
     const {
-      userInput, canvasContext, history, intentHint,
+      userInput, canvasContext, history, intentHint, mode,
       selectedModel, thinkingDepth, onToken, onDone, onError,
     } = opts;
 
@@ -62,6 +63,7 @@ export function useStreamChat() {
         role: h.role, content: h.content, timestamp: h.timestamp,
       })),
       intent_hint: intentHint,
+      mode: mode ?? 'chat',
       selected_model: selectedModel.model,
       selected_platform: selectedModel.platform,
       thinking_level: thinkingDepth ?? 'balanced',
@@ -97,12 +99,14 @@ export function useStreamChat() {
         if (done) break;
 
         buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
+        // Handle both \r\n (SSE standard) and \n line endings
+        const lines = buffer.split(/\r?\n/);
         buffer = lines.pop() ?? '';
 
         for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const raw = line.slice(6).trim();
+          const trimmedLine = line.trim();
+          if (trimmedLine.startsWith('data:')) {
+            const raw = trimmedLine.slice(5).trim();
             if (raw === '[DONE]') { await reader.cancel(); break; }
             try {
               const parsed = JSON.parse(raw) as Record<string, unknown>;

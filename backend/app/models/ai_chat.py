@@ -53,6 +53,7 @@ class AIChatRequest(BaseModel):
     selected_model: str | None = None
     selected_platform: str | None = None
     thinking_level: Literal["fast", "balanced", "deep"] = "balanced"
+    mode: Literal["plan", "chat", "create"] = "chat"
 
 
 # ── Canvas Action ────────────────────────────────────────────────────

@@ -1,10 +1,18 @@
-"""JWT Bearer Token validation middleware for protected API routes."""
+"""JWT Bearer Token validation middleware for protected API routes.
+
+Uses Pure ASGI middleware to avoid response body buffering
+that breaks SSE / StreamingResponse.
+
+NOTE: BaseHTTPMiddleware wraps response body and consumes it fully
+before forwarding — this kills SSE streaming. Pure ASGI middleware
+passes the response through without buffering.
+"""
 
 import logging
 
 from fastapi import Request
 from fastapi.responses import JSONResponse
-from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.types import ASGIApp, Receive, Scope, Send
 
 from app.core.database import get_db
 
@@ -31,36 +39,55 @@ UNPROTECTED_PATHS = {
 }
 
 
-class JWTAuthMiddleware(BaseHTTPMiddleware):
-    """Validate JWT for all /api/* routes except the unprotected ones."""
+class JWTAuthMiddleware:
+    """Validate JWT for all /api/* routes except the unprotected ones.
 
-    async def dispatch(self, request: Request, call_next):
+    Implemented as a pure ASGI middleware (NOT BaseHTTPMiddleware) so that
+    streaming responses (SSE, chunked transfer) pass through without buffering.
+    """
+
+    def __init__(self, app: ASGIApp) -> None:
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        # Only process HTTP requests
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        request = Request(scope, receive)
         path = request.url.path
 
         # Always allow CORS preflight requests through
         if request.method == "OPTIONS":
-            return await call_next(request)
+            await self.app(scope, receive, send)
+            return
 
         # Admin paths are handled by AdminJWTMiddleware — skip here
         if path.startswith("/api/admin/"):
-            return await call_next(request)
+            await self.app(scope, receive, send)
+            return
 
         # Only protect /api/* routes
         if not path.startswith("/api/"):
-            return await call_next(request)
+            await self.app(scope, receive, send)
+            return
 
         # Skip unprotected paths
         if path in UNPROTECTED_PATHS:
-            return await call_next(request)
+            await self.app(scope, receive, send)
+            return
 
         # Extract token from Authorization header or cookie
         token = _extract_token(request)
         if not token:
             logger.debug("No token found for %s | cookies: %s", path, list(request.cookies.keys()))
-            return JSONResponse(
+            response = JSONResponse(
                 status_code=401,
                 content={"detail": "Token 无效或已过期"},
             )
+            await response(scope, receive, send)
+            return
 
         # Validate token via Supabase
         try:
@@ -68,21 +95,27 @@ class JWTAuthMiddleware(BaseHTTPMiddleware):
             result = await db.auth.get_user(token)
             if not result or not result.user:
                 logger.debug("Supabase returned no user for %s", path)
-                return JSONResponse(
+                response = JSONResponse(
                     status_code=401,
                     content={"detail": "Token 无效或已过期"},
                 )
+                await response(scope, receive, send)
+                return
             # Store user info on request state for downstream use
+            # Accessing request.state auto-initializes a State object in scope
             request.state.user = result.user
             logger.debug("Auth OK: user=%s for %s", result.user.id, path)
         except Exception as e:
             logger.warning("Supabase auth error for %s: %s", path, e)
-            return JSONResponse(
+            response = JSONResponse(
                 status_code=401,
                 content={"detail": "Token 无效或已过期"},
             )
+            await response(scope, receive, send)
+            return
 
-        return await call_next(request)
+        # Pass through to the next middleware/route — NO response buffering
+        await self.app(scope, receive, send)
 
 
 def _extract_token(request: Request) -> str | None:

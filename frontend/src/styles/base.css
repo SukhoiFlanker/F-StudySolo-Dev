@@ -94,3 +94,58 @@
   -ms-overflow-style: none !important;
   scrollbar-width: none !important;
 }
+
+/* ── AI Chat Panel: Streaming Cursor ──────────────────────────── */
+@keyframes cursor-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.ai-stream-cursor {
+  animation: cursor-blink 0.8s ease-in-out infinite;
+}
+
+/* ── AI Chat Panel: Prose styles for sidebar ──────────────────── */
+.prose-chat {
+  font-family: var(--font-serif), 'Noto Serif SC', serif;
+  font-size: 12px;
+  line-height: 1.7;
+  color: hsl(var(--foreground) / 0.85);
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.prose-chat p:first-child {
+  margin-top: 0;
+}
+
+.prose-chat img {
+  max-width: 100%;
+  border-radius: 8px;
+}
+
+/* ── KaTeX overrides for sidebar (smaller formulas) ───────────── */
+.prose-chat .katex {
+  font-size: 0.92em;
+}
+
+.prose-chat .katex-display {
+  margin: 0.5em 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 4px 0;
+}
+
+.prose-chat .katex-display > .katex {
+  font-size: 1em;
+}
+
+/* ── AI Chat Panel: code block tweaks ─────────────────────────── */
+.chat-markdown-body pre {
+  margin: 0;
+  background: transparent;
+}
+
+.chat-markdown-body code {
+  tab-size: 2;
+}

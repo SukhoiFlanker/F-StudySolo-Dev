@@ -12,13 +12,15 @@ import type { Node, Edge } from '@xyflow/react';
 import { useWorkflowStore } from '@/stores/use-workflow-store';
 
 export interface CanvasAction {
-  operation: 'ADD_NODE' | 'DELETE_NODE' | 'UPDATE_NODE' | 'ADD_EDGE' | 'DELETE_EDGE';
+  operation: 'ADD_NODE' | 'DELETE_NODE' | 'UPDATE_NODE' | 'ADD_EDGE' | 'DELETE_EDGE' | 'COPY_NODE';
   target_node_id?: string;
   payload: {
     type?: string;
     label?: string;
     position?: { x: number; y: number };
     anchor_node_id?: string;
+    source_node_id?: string;
+    new_label?: string;
     source_id?: string;
     target_id?: string;
     updates?: Record<string, string>;
@@ -141,6 +143,37 @@ export function useActionExecutor() {
                   data: { ...prevData, ...(updates.label ? { label: updates.label } : {}) },
                 };
               });
+              appliedCount++;
+              break;
+            }
+
+            // ── COPY_NODE ─────────────────────────────────────
+            case 'COPY_NODE': {
+              const { source_node_id, new_label, position } = action.payload;
+              if (!source_node_id) throw new Error('COPY_NODE 缺少 source_node_id');
+              
+              const sourceNode = nodes.find(n => n.id === source_node_id);
+              if (!sourceNode) throw new Error(`源节点 ${source_node_id} 不存在`);
+
+              const sourceData = sourceNode.data as Record<string, unknown>;
+              const newId = `copy-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
+
+              const copiedNode: Node = {
+                id: newId,
+                type: sourceNode.type,  // 保持与源节点一致的类型
+                position: position ?? {
+                  x: (sourceNode.position?.x ?? 120) + 60,
+                  y: (sourceNode.position?.y ?? 120) + 60,
+                },
+                data: {
+                  ...sourceData,
+                  label: new_label ?? `${sourceData.label} (副本)`,
+                  status: 'pending',   // 重置运行状态
+                  output: '',           // 清空输出
+                },
+              };
+
+              nodes = [...nodes, copiedNode];
               appliedCount++;
               break;
             }

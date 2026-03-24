@@ -1,48 +1,71 @@
-"""Admin JWT middleware — protects /api/admin/* routes (except /login and OPTIONS)."""
+"""Admin JWT middleware — protects /api/admin/* routes (except /login and OPTIONS).
+
+Uses Pure ASGI middleware to avoid response body buffering (same reason as auth.py).
+"""
+
+import logging
 
 from fastapi import Request
 from fastapi.responses import JSONResponse
 from jose import JWTError, jwt
-from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.types import ASGIApp, Receive, Scope, Send
 
 from app.core.config import get_settings
 from app.core.database import get_db
+
+logger = logging.getLogger(__name__)
 
 # Paths under /api/admin/ that are publicly accessible (no token required)
 _PUBLIC_ADMIN_PATHS = {"/api/admin/login"}
 
 
-class AdminJWTMiddleware(BaseHTTPMiddleware):
+class AdminJWTMiddleware:
     """Validate admin_token cookie for all /api/admin/* routes.
 
     - Skips /api/admin/login and OPTIONS requests.
-    - On valid token: attaches admin_id to request.state.admin_id.
+    - On valid token: attaches admin_id to scope state.
     - On invalid/expired token: returns 401.
     - On inactive account: returns 403.
+
+    Implemented as pure ASGI middleware to avoid BaseHTTPMiddleware
+    response buffering that breaks SSE streaming.
     """
 
-    async def dispatch(self, request: Request, call_next):
+    def __init__(self, app: ASGIApp) -> None:
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        request = Request(scope, receive)
         path = request.url.path
 
         # Only handle /api/admin/* paths
         if not path.startswith("/api/admin/"):
-            return await call_next(request)
+            await self.app(scope, receive, send)
+            return
 
         # Always allow CORS preflight
         if request.method == "OPTIONS":
-            return await call_next(request)
+            await self.app(scope, receive, send)
+            return
 
         # Allow public admin paths (login)
         if path in _PUBLIC_ADMIN_PATHS:
-            return await call_next(request)
+            await self.app(scope, receive, send)
+            return
 
         # Extract admin_token cookie
         token = request.cookies.get("admin_token")
         if not token:
-            return JSONResponse(
+            response = JSONResponse(
                 status_code=401,
                 content={"detail": "管理员未认证"},
             )
+            await response(scope, receive, send)
+            return
 
         # Validate JWT
         try:
@@ -51,23 +74,29 @@ class AdminJWTMiddleware(BaseHTTPMiddleware):
 
             # Verify token type claim
             if payload.get("type") != "admin":
-                return JSONResponse(
+                response = JSONResponse(
                     status_code=401,
                     content={"detail": "Token 类型无效"},
                 )
+                await response(scope, receive, send)
+                return
 
             admin_id: str | None = payload.get("sub")
             if not admin_id:
-                return JSONResponse(
+                response = JSONResponse(
                     status_code=401,
                     content={"detail": "Token 缺少 sub 字段"},
                 )
+                await response(scope, receive, send)
+                return
 
         except JWTError:
-            return JSONResponse(
+            response = JSONResponse(
                 status_code=401,
                 content={"detail": "Token 无效或已过期"},
             )
+            await response(scope, receive, send)
+            return
 
         # Optional: verify account is still active in DB
         try:
@@ -81,23 +110,26 @@ class AdminJWTMiddleware(BaseHTTPMiddleware):
             )
             account = result.data if result else None
             if not account:
-                return JSONResponse(
+                response = JSONResponse(
                     status_code=401,
                     content={"detail": "管理员账号不存在"},
                 )
+                await response(scope, receive, send)
+                return
             if not account.get("is_active", True):
-                return JSONResponse(
+                response = JSONResponse(
                     status_code=403,
                     content={"detail": "管理员账号已被禁用"},
                 )
+                await response(scope, receive, send)
+                return
         except Exception as e:
-            # Log but don't block — JWT is already validated
-            import logging
-            logging.getLogger(__name__).warning(
+            logger.warning(
                 "AdminJWTMiddleware: DB check failed for admin_id=%s: %s", admin_id, e
             )
 
         # Attach admin_id to request state for downstream handlers
         request.state.admin_id = admin_id
 
-        return await call_next(request)
+        # Pass through — NO response buffering
+        await self.app(scope, receive, send)

@@ -171,8 +171,14 @@ async def ai_chat(
             body.selected_platform, body.selected_model, modify_msgs,
         )
         try:
-            parsed = _extract_json_obj(raw)
-            actions = [CanvasAction(**a) for a in parsed.get("actions", [])]
+            actions_data = parsed.get("tool_calls") or parsed.get("actions", [])
+            formatted_actions = []
+            for act in actions_data:
+                op = act.get("tool", act.get("operation", "")).upper()
+                payload = act.get("params", act.get("payload", {}))
+                target_id = payload.get("target_node_id") or act.get("target_node_id")
+                formatted_actions.append({"operation": op, "target_node_id": target_id, "payload": payload})
+            actions = [CanvasAction(**a) for a in formatted_actions]
             response_text = parsed.get("response", "修改已完成。")
         except (json.JSONDecodeError, KeyError):
             actions = None
