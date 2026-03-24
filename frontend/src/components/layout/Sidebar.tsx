@@ -128,16 +128,16 @@ export default function Sidebar({ workflows }: SidebarProps) {
         key={panel}
         type="button"
         onClick={() => toggleSidebarPanel(panel)}
-        className={`relative flex h-10 w-10 items-center justify-center rounded-lg transition-colors ${
+        className={`relative flex h-10 w-10 mx-auto items-center justify-center rounded-md transition-all border-2 ${
           isActive
-            ? 'bg-white/8 text-foreground'
-            : 'text-muted-foreground hover:bg-white/5 hover:text-foreground'
+            ? 'bg-stone-200 dark:bg-stone-800 text-stone-900 dark:text-stone-100 border-stone-800 dark:border-stone-400 shadow-[2px_2px_0px_rgba(28,25,23,1)] dark:shadow-[2px_2px_0px_rgba(168,162,158,1)]'
+            : 'border-transparent text-stone-500 hover:bg-stone-100 dark:hover:bg-zinc-800 hover:text-stone-800 dark:hover:text-stone-200 hover:border-dashed hover:border-stone-300 dark:hover:border-stone-700'
         }`}
         title={label}
       >
-        <Icon className="h-[18px] w-[18px]" />
+        <Icon className={`h-[18px] w-[18px] ${isActive ? 'stroke-[2.5]' : 'stroke-[2]'}`} />
         {isActive && (
-          <span className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-r bg-primary" />
+          <span className="absolute -left-1.5 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r bg-stone-800 dark:bg-stone-400" />
         )}
       </button>
     );
@@ -173,11 +173,11 @@ export default function Sidebar({ workflows }: SidebarProps) {
             {/* Upgrade button */}
             <Link
               href="/upgrade"
-              className="group relative flex h-10 w-10 items-center justify-center rounded-lg text-amber-500 transition-all hover:bg-amber-500/10 hover:text-amber-400"
+              className="group relative flex h-10 w-10 mx-auto items-center justify-center rounded-md text-amber-600 dark:text-amber-500 transition-all border-2 border-transparent hover:border-dashed hover:border-amber-300 dark:hover:border-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950"
               title="升级会员"
             >
-              <div className="absolute inset-0 rounded-lg bg-amber-500/10 opacity-0 transition-opacity group-hover:animate-pulse group-hover:opacity-100" />
-              <Crown className="h-[18px] w-[18px]" />
+              <div className="absolute inset-0 rounded-md bg-amber-500/10 opacity-0 transition-opacity group-hover:animate-pulse group-hover:opacity-100" />
+              <Crown className="h-[18px] w-[18px] stroke-[2] group-hover:stroke-[2.5]" />
             </Link>
 
             {LOWER_PANELS.map(({ panel, icon, label }) =>
@@ -189,10 +189,10 @@ export default function Sidebar({ workflows }: SidebarProps) {
               href="https://docs.1037solo.com/#/docs/studysolo-intro"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex h-10 w-10 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
+              className="flex h-10 w-10 mx-auto items-center justify-center rounded-md text-stone-500 border-2 border-transparent transition-all hover:bg-stone-100 dark:hover:bg-zinc-800 hover:text-stone-800 dark:hover:text-stone-200 hover:border-dashed hover:border-stone-300 dark:hover:border-stone-700"
               title="使用手册"
             >
-              <BookOpenText className="h-[18px] w-[18px]" />
+              <BookOpenText className="h-[18px] w-[18px] stroke-[2] hover:stroke-[2.5]" />
             </a>
 
             {/* Settings — opens sidebar panel */}
@@ -200,10 +200,10 @@ export default function Sidebar({ workflows }: SidebarProps) {
 
             <button
               onClick={() => void logoutAndRedirect()}
-              className="flex h-10 w-10 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
+              className="flex h-10 w-10 mx-auto items-center justify-center rounded-md text-stone-500 border-2 border-transparent transition-all hover:bg-rose-50 dark:hover:bg-rose-950/30 hover:text-rose-600 dark:hover:text-rose-400 hover:border-dashed hover:border-rose-300 dark:hover:border-rose-800"
               title="退出登录"
             >
-              <LogOut className="h-[18px] w-[18px]" />
+              <LogOut className="h-[18px] w-[18px] stroke-[2] hover:stroke-[2.5]" />
             </button>
           </div>
         </div>
@@ -217,8 +217,8 @@ export default function Sidebar({ workflows }: SidebarProps) {
             >
               {/* Panel header */}
               {activeSidebarPanel !== 'ai-chat' && (
-                <div className="shrink-0 border-b border-border px-3 py-3 flex items-center justify-between">
-                  <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground font-serif">
+                <div className="shrink-0 border-b-2 border-dashed border-stone-300 dark:border-stone-700 px-3 py-3 flex items-center justify-between">
+                  <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-stone-800 dark:text-stone-400 font-serif">
                     {getPanelLabel(activeSidebarPanel!)}
                   </span>
 
@@ -227,10 +227,10 @@ export default function Sidebar({ workflows }: SidebarProps) {
                     <button
                       type="button"
                       onClick={toggleRightPanelDock}
-                      className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
+                      className="flex h-7 w-7 items-center justify-center rounded-sm border-2 border-transparent text-stone-500 transition-all hover:border-stone-800 dark:hover:border-stone-400 hover:bg-stone-200 dark:hover:bg-zinc-800 hover:text-stone-900 shadow-none hover:shadow-[1px_1px_0px_rgba(28,25,23,1)] dark:hover:shadow-[1px_1px_0px_rgba(168,162,158,1)] hover:-translate-y-[1px]"
                       title="移回右侧"
                     >
-                      <PanelRightDashed className="h-3.5 w-3.5" />
+                      <PanelRightDashed className="h-4 w-4 stroke-[2]" />
                     </button>
                   )}
                 </div>

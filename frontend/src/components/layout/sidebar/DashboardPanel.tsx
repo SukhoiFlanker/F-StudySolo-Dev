@@ -27,29 +27,29 @@ function StatCard({
   subtext?: string;
 }) {
   return (
-    <div className="rounded-xl border border-border/50 bg-black/5 p-3 dark:bg-white/3">
+    <div className="rounded-md border-2 border-stone-800 dark:border-stone-400 bg-stone-50/80 dark:bg-zinc-900/80 p-3 shadow-[2px_2px_0px_rgba(28,25,23,1)] dark:shadow-[2px_2px_0px_rgba(168,162,158,1)] node-paper-bg transition-all hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_rgba(28,25,23,1)] dark:hover:shadow-[3px_3px_0px_rgba(168,162,158,1)]">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-          <Icon className="h-3 w-3" />
+        <div className="flex items-center gap-1.5 text-[10px] font-bold tracking-widest font-mono text-stone-600 dark:text-stone-400 uppercase">
+          <Icon className="h-3.5 w-3.5 stroke-[2.5]" />
           {label}
         </div>
         {trend !== undefined && (
           <span
-            className={`flex items-center gap-0.5 text-[10px] font-medium ${
-              trend >= 0 ? 'text-emerald-400' : 'text-rose-400'
+            className={`flex items-center gap-0.5 text-[10px] font-bold ${
+              trend >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
             }`}
           >
             {trend >= 0 ? (
-              <ArrowUpRight className="h-2.5 w-2.5" />
+              <ArrowUpRight className="h-2.5 w-2.5 stroke-[3]" />
             ) : (
-              <ArrowDownRight className="h-2.5 w-2.5" />
+              <ArrowDownRight className="h-2.5 w-2.5 stroke-[3]" />
             )}
             {Math.abs(trend)}%
           </span>
         )}
       </div>
-      <p className="mt-1.5 text-lg font-semibold text-foreground">{value}</p>
-      {subtext ? <p className="mt-0.5 text-[10px] text-muted-foreground/60">{subtext}</p> : null}
+      <p className="mt-1.5 text-lg font-bold font-serif text-stone-800 dark:text-stone-200">{value}</p>
+      {subtext ? <p className="mt-0.5 text-[10px] font-serif text-stone-500">{subtext}</p> : null}
     </div>
   );
 }
@@ -57,19 +57,19 @@ function StatCard({
 function UsageBar({ used, total, label }: { used: number; total: number; label: string }) {
   const pct = Math.min(100, (used / total) * 100);
   return (
-    <div className="rounded-xl border border-border/50 bg-black/5 p-3 dark:bg-white/3">
-      <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+    <div className="rounded-md border-2 border-stone-800 dark:border-stone-400 bg-stone-50/80 dark:bg-zinc-900/80 p-3 shadow-[2px_2px_0px_rgba(28,25,23,1)] dark:shadow-[2px_2px_0px_rgba(168,162,158,1)] node-paper-bg transition-all hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_rgba(28,25,23,1)] dark:hover:shadow-[3px_3px_0px_rgba(168,162,158,1)]">
+      <div className="flex items-center justify-between font-bold font-mono tracking-widest uppercase text-[10px] text-stone-600 dark:text-stone-400">
         <span>{label}</span>
         <span>{pct.toFixed(1)}%</span>
       </div>
-      <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-white/8">
+      <div className="mt-2 h-2.5 w-full overflow-hidden rounded-sm border-2 border-stone-800 dark:border-stone-600 bg-stone-200 dark:bg-zinc-800">
         <div
-          className="h-full rounded-full bg-gradient-to-r from-primary to-primary/60 transition-all duration-500"
+          className="h-full rounded-sm border-r-2 border-stone-800 dark:border-stone-600 bg-stone-800 dark:bg-stone-400 transition-all duration-500"
           style={{ width: `${pct}%` }}
         />
       </div>
-      <p className="mt-1.5 text-[10px] text-muted-foreground/60">
-        {used.toLocaleString()} / {total.toLocaleString()}
+      <p className="mt-1.5 flex items-center gap-1 text-[10px] font-mono tracking-wider font-bold text-stone-500">
+        {used.toLocaleString()} <span className="text-[9px] opacity-70">/</span> {total.toLocaleString()}
       </p>
     </div>
   );

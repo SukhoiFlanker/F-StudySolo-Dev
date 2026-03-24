@@ -22,11 +22,11 @@ export default function UserPanel() {
         <div className="border-b border-border px-4 py-5">
           <div className="flex items-center gap-4">
             <div className="relative">
-              <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary/30 to-primary/10 text-base font-bold text-primary overflow-hidden ${
-                user?.tier === 'Ultra' ? 'ring-2 ring-amber-500 ring-offset-2 ring-offset-background' :
-                user?.tier === 'Pro' ? 'ring-2 ring-slate-800 ring-offset-2 ring-offset-background' :
-                user?.tier === 'Plus' ? 'ring-2 ring-blue-500 ring-offset-2 ring-offset-background' :
-                'ring-1 ring-border shadow-sm'
+              <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-md text-base font-bold text-stone-800 dark:text-stone-200 overflow-hidden shadow-[3px_3px_0px_rgba(28,25,23,1)] dark:shadow-[3px_3px_0px_rgba(168,162,158,1)] border-2 font-serif node-paper-bg ${
+                user?.tier === 'Ultra' ? 'border-amber-600 bg-amber-50' :
+                user?.tier === 'Pro' ? 'border-stone-800 bg-stone-200' :
+                user?.tier === 'Plus' ? 'border-emerald-700 bg-emerald-50' :
+                'border-stone-800 bg-stone-50'
               }`}>
                 {user?.avatar_url ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -37,21 +37,21 @@ export default function UserPanel() {
               </div>
               
               {/* Tier Badge */}
-              <div className={`absolute -bottom-2 left-1/2 -translate-x-1/2 rounded-full px-2 py-[2px] text-[9px] font-bold tracking-wider shadow-sm z-10 whitespace-nowrap 
-                ${user?.tier === 'Ultra' ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white border border-amber-400' :
-                  user?.tier === 'Pro' ? 'bg-slate-900 text-white border border-slate-700' :
-                  user?.tier === 'Plus' ? 'bg-blue-500 text-white border border-blue-400' :
-                  'bg-slate-500 text-white border border-slate-600'
+              <div className={`absolute -bottom-2.5 left-1/2 -translate-x-1/2 rounded-sm px-1.5 py-[1px] text-[9px] font-bold uppercase tracking-widest shadow-[1px_1px_0px_rgba(28,25,23,1)] dark:shadow-[1px_1px_0px_rgba(168,162,158,1)] z-10 whitespace-nowrap border-[1.5px] border-stone-800 dark:border-stone-400 font-mono
+                ${user?.tier === 'Ultra' ? 'bg-amber-100 text-amber-900 border-amber-700' :
+                  user?.tier === 'Pro' ? 'bg-stone-200 text-stone-900 border-stone-800' :
+                  user?.tier === 'Plus' ? 'bg-emerald-100 text-emerald-900 border-emerald-700' :
+                  'bg-stone-100 text-stone-700 border-stone-700'
                 }
               `}>
                 {user?.tier || 'Free'}
               </div>
             </div>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-semibold text-foreground">
+            <div className="min-w-0 flex-1 pl-2">
+              <p className="truncate text-sm font-bold font-serif text-foreground">
                 {user?.name || '用户'}
               </p>
-              <p className="truncate text-[11px] text-muted-foreground mt-0.5">
+              <p className="truncate text-[11px] font-mono text-muted-foreground mt-0.5 opacity-80">
                 {user?.email || '加载中...'}
               </p>
             </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { Copy, Eye, EyeOff, ExternalLink, ChevronRight, CheckCircle2, Plus, Unplug, BrainCircuit, User } from 'lucide-react';
+import { Copy, Eye, EyeOff, ExternalLink, ChevronRight, CheckCircle2, Plus, Unplug, BrainCircuit, User, Plug } from 'lucide-react';
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 
@@ -43,11 +43,11 @@ const getTierBorder = (tier: string) => {
 
 const getTierCardStyle = (tier: string) => {
   switch(tier) {
-    case 'Free': return 'bg-white/60 dark:bg-black/40 text-foreground border-border/60 hover:border-border';
-    case 'Pro': return 'bg-slate-50/80 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800/80 text-foreground hover:border-slate-300 dark:hover:border-slate-700';
-    case 'Plus': return 'bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200/60 dark:border-emerald-900/50 text-emerald-900 dark:text-emerald-100 hover:border-emerald-300/60 dark:hover:border-emerald-800/50';
-    case 'Ultra': return 'bg-amber-50/50 dark:bg-amber-950/20 border-amber-200/60 dark:border-amber-900/50 text-amber-900 dark:text-amber-100 hover:border-amber-300/60 dark:hover:border-amber-800/50';
-    default: return 'bg-background border-border text-foreground';
+    case 'Free': return 'bg-stone-50 dark:bg-stone-900 border-stone-800 dark:border-stone-400 text-foreground';
+    case 'Pro': return 'bg-stone-200 dark:bg-stone-800 border-stone-900 dark:border-stone-300 text-foreground';
+    case 'Plus': return 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-800 dark:border-emerald-600 text-emerald-950 dark:text-emerald-50';
+    case 'Ultra': return 'bg-amber-50 dark:bg-amber-950/40 border-amber-800 dark:border-amber-600 text-amber-950 dark:text-amber-50';
+    default: return 'bg-stone-50 border-stone-800 text-foreground';
   }
 }
 
@@ -132,16 +132,13 @@ export default function WalletPanel() {
           
           <div 
             onClick={() => router.push('/upgrade')}
-            className={`relative flex flex-col rounded-xl border-[1.5px] p-4 cursor-pointer transition-all duration-300 hover:scale-[1.01] hover:shadow-sm active:scale-[0.99] group ${getTierCardStyle(USER_TIER)}`}
+            className={`relative flex flex-col rounded-md border-2 p-4 cursor-pointer transition-all duration-300 hover:-translate-y-[2px] shadow-[2px_2px_0px_rgba(28,25,23,0.1)] hover:shadow-[4px_4px_0px_rgba(28,25,23,1)] dark:hover:shadow-[4px_4px_0px_rgba(168,162,158,1)] group node-paper-bg ${getTierCardStyle(USER_TIER)}`}
           >
-            {/* 纸张纹理感背景 (使用伪元素或细微内阴影) */}
-            <div className="absolute inset-0 rounded-xl shadow-[inset_0_0_20px_rgba(0,0,0,0.01)] dark:shadow-[inset_0_0_20px_rgba(255,255,255,0.02)] pointer-events-none" />
-
             <div className="flex items-center gap-3 relative z-10">
-              <div className={`relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-background border-[2px] border-dashed ${getTierBorder(USER_TIER)}`}>
+              <div className={`relative flex h-11 w-11 shrink-0 items-center justify-center bg-background border-2 border-dashed ${getTierBorder(USER_TIER)}`}>
                 <User className="h-4.5 w-4.5 stroke-[1.5]" />
                 {/* 排名指示点 - 手绘墨点感 */}
-                <div className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-[1.5px] border-background bg-current" />
+                <div className="absolute -bottom-1 -right-1 h-3.5 w-3.5 border-2 border-background bg-current" />
               </div>
               <div className="flex flex-col flex-1 pl-1">
                 <span className="text-sm font-serif font-bold opacity-90 tracking-wide">学习记录者</span>
@@ -164,7 +161,7 @@ export default function WalletPanel() {
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); /* 充值逻辑 */ }}
-                className="rounded-lg text-[11px] font-serif font-bold tracking-widest px-3 py-1.5 border-[1.5px] border-current/30 hover:bg-current/5 transition-colors"
+                className="rounded-sm text-[11px] font-mono font-bold tracking-widest px-3 py-1.5 border-2 border-current shadow-[2px_2px_0px_currentColor] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_currentColor] transition-all bg-background text-foreground"
               >
                 前往充值
               </button>
@@ -194,7 +191,7 @@ export default function WalletPanel() {
             </span>
           </div>
           
-          <div className="border-[1.5px] border-border/60 bg-white/60 dark:bg-black/20 rounded-xl overflow-hidden shadow-sm">
+          <div className="border-2 border-stone-800 dark:border-stone-400 bg-stone-50/60 dark:bg-zinc-900/60 node-paper-bg rounded-md overflow-hidden shadow-[2px_2px_0px_rgba(28,25,23,1)] dark:shadow-[2px_2px_0px_rgba(168,162,158,1)]">
             {EXTERNAL_PROVIDERS.map((item, idx) => (
               <ExternalApiItem key={idx} item={item} />
             ))}
@@ -225,6 +222,30 @@ export default function WalletPanel() {
             <ExternalLink className="h-3 w-3 stroke-[2]" />
             查阅 API 接入文档
           </a>
+        </div>
+
+        {/* --- 第四部分：应用能力与 MCP --- */}
+        <div className="space-y-2 pb-6 pt-4 border-t-2 border-dashed border-stone-300 dark:border-stone-700">
+          <div className="flex items-center justify-between px-1 mb-1">
+            <span className="text-[11px] font-bold tracking-[0.1em] text-stone-600 dark:text-stone-400 font-serif uppercase">
+              MCP 集成配置
+            </span>
+            <Plug className="h-3.5 w-3.5 text-stone-600 dark:text-stone-400 stroke-[1.5]" />
+          </div>
+          <p className="text-[11px] text-stone-500 leading-relaxed px-1 font-serif mt-2">
+            集成 Model Context Protocol (MCP) 以扩展节点执行能力，支持接入外部本地数据与系统级 API。
+          </p>
+          <div className="relative mt-2 overflow-hidden rounded-md border-2 border-stone-800 dark:border-stone-400 bg-stone-50/80 dark:bg-zinc-900/80 shadow-[2px_2px_0px_rgba(28,25,23,1)] dark:shadow-[2px_2px_0px_rgba(168,162,158,1)] font-mono text-[11px] node-paper-bg">
+            <div className="flex items-center justify-between px-2.5 py-3 border-b-2 border-dashed border-stone-800 dark:border-stone-400">
+               <span className="font-semibold text-stone-800 dark:text-stone-200 text-xs">本地 MCP 服务器</span>
+               <button className="flex h-6 items-center justify-center rounded-sm border-2 border-stone-800 dark:border-stone-400 bg-stone-200 dark:bg-stone-700 px-3 text-[10px] font-bold text-stone-800 dark:text-stone-200 shadow-[2px_2px_0px_rgba(28,25,23,1)] dark:shadow-[2px_2px_0px_rgba(168,162,158,1)] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_rgba(28,25,23,1)] dark:hover:shadow-[1px_1px_0px_rgba(168,162,158,1)] transition-all active:scale-95">
+                 配置
+               </button>
+            </div>
+            <div className="p-3 text-stone-500 dark:text-stone-400 tracking-wide">
+              <span>状态: <span className="font-bold border-b border-stone-400 border-dashed">未连接</span></span>
+            </div>
+          </div>
         </div>
       </div>
     </div>

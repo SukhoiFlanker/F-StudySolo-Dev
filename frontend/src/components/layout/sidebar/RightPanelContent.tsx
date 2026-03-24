@@ -6,6 +6,7 @@ import { usePanelStore } from '@/stores/use-panel-store';
 import { CollapsibleSection } from '../CollapsibleSection';
 import type { AIStepNodeData } from '@/types';
 import {
+  getNodeTheme,
   getNodePreview,
   getNodeTitle,
   getNodeTypeMeta,
@@ -20,12 +21,12 @@ function getNodeData(node: Node | null | undefined) {
 function StatusItem({ count, status }: { count: number; status: keyof typeof STATUS_META }) {
   const meta = STATUS_META[status];
   return (
-    <div className="rounded-2xl border border-white/8 bg-black/10 px-3 py-2">
-      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-        <span className={`inline-block h-2.5 w-2.5 rounded-full ${meta.dotClassName}`} />
+    <div className="rounded-md border border-stone-200 dark:border-stone-800 bg-stone-50/80 dark:bg-stone-900/80 px-3 py-2 shadow-sm font-mono">
+      <div className="flex items-center gap-2 text-xs text-muted-foreground font-semibold">
+        <span className={`inline-block h-2 w-2 rounded-sm ${meta.dotClassName}`} />
         {meta.label}
       </div>
-      <p className="mt-2 text-xl font-semibold text-foreground">{count}</p>
+      <p className="mt-1.5 text-lg font-bold text-foreground">{count}</p>
     </div>
   );
 }
@@ -66,8 +67,7 @@ export default function RightPanelContent() {
     : null;
   const selectedEdges = selectedNode ? getEdgeSummary(selectedNode, edges) : null;
 
-  const isSectionCollapsed = usePanelStore((s) => s.isSectionCollapsed);
-  void isSectionCollapsed; // consumed indirectly by CollapsibleSection
+  // Removed redundant isSectionCollapsed logic
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
@@ -91,7 +91,7 @@ export default function RightPanelContent() {
             id="right-focus"
             title="当前焦点"
             badge={
-              <span className={`rounded-full px-2.5 py-1 text-[10px] font-medium ${selectedStatus.badgeClassName}`}>
+              <span className={`rounded-sm px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide shadow-sm ${selectedStatus.badgeClassName}`}>
                 {selectedStatus.label}
               </span>
             }
@@ -101,20 +101,20 @@ export default function RightPanelContent() {
               <p className="mt-1 text-xs text-muted-foreground">{selectedMeta.description}</p>
             </div>
 
-            <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-muted-foreground">
-              <div className="rounded-2xl border border-white/8 bg-background/40 px-3 py-2">
-                <p>进入连接</p>
-                <p className="mt-1 text-base font-semibold text-foreground">{selectedEdges.incoming}</p>
+            <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-muted-foreground font-mono">
+              <div className="rounded-md border border-stone-200 dark:border-stone-800 bg-stone-50/80 dark:bg-stone-900/80 px-3 py-2">
+                <p className="text-[10px] uppercase font-semibold">进入连接</p>
+                <p className="mt-1 text-sm font-bold text-foreground">{selectedEdges.incoming}</p>
               </div>
-              <div className="rounded-2xl border border-white/8 bg-background/40 px-3 py-2">
-                <p>输出连接</p>
-                <p className="mt-1 text-base font-semibold text-foreground">{selectedEdges.outgoing}</p>
+              <div className="rounded-md border border-stone-200 dark:border-stone-800 bg-stone-50/80 dark:bg-stone-900/80 px-3 py-2">
+                <p className="text-[10px] uppercase font-semibold">输出连接</p>
+                <p className="mt-1 text-sm font-bold text-foreground">{selectedEdges.outgoing}</p>
               </div>
             </div>
 
-            <div className="mt-3 rounded-2xl border border-white/8 bg-background/40 px-3 py-3">
-              <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">输出预览</p>
-              <p className="mt-2 text-sm leading-6 text-foreground">
+            <div className="mt-3 rounded-md border border-stone-200 dark:border-stone-800 bg-stone-50/80 dark:bg-stone-900/80 px-3 py-3 shadow-[inset_0_1px_3px_rgba(0,0,0,0.02)]">
+              <p className="font-mono text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">输出预览</p>
+              <p className="mt-2 text-sm leading-6 text-foreground font-serif">
                 {getNodePreview(getNodeData(selectedNode)?.output, '该步骤还没有生成可展示内容')}
               </p>
             </div>
@@ -148,6 +148,7 @@ export default function RightPanelContent() {
               const nodeData = getNodeData(node);
               const meta = getNodeTypeMeta(nodeData?.type ?? node.type);
               const status = getStatusMeta(nodeData?.status);
+              const nodeTheme = getNodeTheme(nodeData?.type ?? node.type ?? 'chat_response');
               const isSelected = node.id === selectedNode?.id;
               const edgeSummary = getEdgeSummary(node, edges);
 
@@ -156,29 +157,30 @@ export default function RightPanelContent() {
                   key={node.id}
                   type="button"
                   onClick={() => setSelectedNodeId(node.id)}
-                  className={`w-full rounded-3xl border px-4 py-3 text-left transition-all ${
+                  className={`group w-full rounded-md px-4 py-3 text-left transition-all ${
                     isSelected
-                      ? 'border-primary/40 bg-primary/10 shadow-[0_0_24px_rgba(99,102,241,0.12)]'
-                      : 'border-white/8 bg-black/10 hover:border-primary/25 hover:bg-black/15'
+                      ? 'node-paper-bg bg-stone-50 dark:bg-zinc-900 border-2 border-stone-800 dark:border-stone-400 shadow-[3px_3px_0px_rgba(28,25,23,1)] dark:shadow-[3px_3px_0px_rgba(168,162,158,1)]'
+                      : 'node-paper-bg bg-stone-50/90 dark:bg-zinc-900/90 border border-stone-300 dark:border-stone-700 hover:border-stone-800 dark:hover:border-stone-400 opacity-90 hover:opacity-100 shadow-[1px_1px_0px_rgba(28,25,23,0.2)] hover:shadow-[3px_3px_0px_rgba(28,25,23,1)] dark:hover:shadow-[3px_3px_0px_rgba(168,162,158,1)]'
                   }`}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ring-1 ${meta.accentClassName}`}>
-                        <meta.icon className="h-4.5 w-4.5 text-stone-900" />
+                      <div className={`relative flex h-9 w-9 shrink-0 items-center justify-center rounded-sm bg-background shadow-sm transition-transform group-hover:scale-105 ${nodeTheme.borderClass} ${nodeTheme.headerTextColor}`}>
+                         <div className={`absolute inset-0 pointer-events-none ${nodeTheme.innerBorderClass} m-[1px]`} />
+                        <meta.icon className="z-10 h-4 w-4 stroke-[2.5]" />
                       </div>
                       <div className="min-w-0">
                         <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">Step {index + 1}</p>
                         <p className="truncate text-sm font-medium text-foreground">{getNodeTitle(node)}</p>
                       </div>
                     </div>
-                    <span className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-medium ${status.badgeClassName}`}>
+                    <span className={`shrink-0 rounded-sm px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider shadow-sm ${status.badgeClassName}`}>
                       {status.label}
                     </span>
                   </div>
 
-                  <p className="mt-2 text-xs text-muted-foreground">{meta.description}</p>
-                  <p className="mt-2 line-clamp-3 text-sm leading-6 text-foreground/90">
+                  <p className="mt-2 text-xs text-muted-foreground font-mono">{meta.description}</p>
+                  <p className="mt-2 line-clamp-3 text-sm leading-6 text-foreground/90 font-serif">
                     {getNodePreview(nodeData?.output)}
                   </p>
 

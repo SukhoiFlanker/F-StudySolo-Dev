@@ -48,13 +48,13 @@ export default function SettingsPanel() {
               <button
                 key={opt.value}
                 onClick={() => handleChange('外观模式', () => setTheme(opt.value as ThemeMode))}
-                className={`flex flex-1 flex-col items-center gap-1 rounded-lg border px-1.5 py-2 text-[10px] transition-all ${
+                className={`flex flex-1 flex-col items-center gap-1 rounded-sm border-2 px-1.5 py-2 text-[10px] font-bold font-serif transition-all shadow-[2px_2px_0px_rgba(28,25,23,1)] dark:shadow-[2px_2px_0px_rgba(168,162,158,1)] hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_rgba(28,25,23,1)] dark:hover:shadow-[3px_3px_0px_rgba(168,162,158,1)] active:translate-y-[1px] active:shadow-[1px_1px_0px_rgba(28,25,23,1)] ${
                   theme === opt.value
-                    ? 'border-primary bg-primary/10 text-foreground'
-                    : 'border-border/50 text-muted-foreground hover:border-primary/30'
+                    ? 'border-stone-800 dark:border-stone-300 bg-stone-200 dark:bg-stone-800 text-stone-900 dark:text-stone-100'
+                    : 'border-stone-400 dark:border-stone-600 bg-stone-50 dark:bg-zinc-900 text-stone-600 dark:text-stone-400 node-paper-bg'
                 }`}
               >
-                <opt.icon className={`h-4 w-4 ${theme === opt.value ? 'text-primary' : ''}`} />
+                <opt.icon className={`h-4 w-4 stroke-[2.5] ${theme === opt.value ? 'text-stone-800 dark:text-stone-200' : ''}`} />
                 {opt.label}
               </button>
             ))}
@@ -71,15 +71,14 @@ export default function SettingsPanel() {
                 className="group flex flex-col items-center gap-1"
               >
                 <div
-                  className={`h-7 w-7 rounded-full transition-all ${
-                    accentColor === opt.value ? 'scale-110 ring-2 ring-offset-1 ring-offset-background' : 'hover:scale-105'
+                  className={`h-7 w-7 rounded-sm border-2 transition-all ${
+                    accentColor === opt.value ? 'scale-110 border-stone-800 dark:border-stone-200 shadow-[3px_3px_0px_rgba(28,25,23,1)] dark:shadow-[3px_3px_0px_rgba(168,162,158,1)]' : 'border-stone-800 dark:border-stone-600 hover:-translate-y-[1px] hover:shadow-[2px_2px_0px_rgba(28,25,23,1)] shadow-none'
                   }`}
                   style={{
                     backgroundColor: opt.color,
-                    ...(accentColor === opt.value ? { boxShadow: `0 0 12px ${opt.color}50` } : {}),
                   }}
                 />
-                <span className={`text-[9px] ${accentColor === opt.value ? 'font-medium text-foreground' : 'text-muted-foreground'}`}>
+                <span className={`text-[9px] font-mono tracking-wider font-bold mt-1 ${accentColor === opt.value ? 'text-stone-800 dark:text-stone-200' : 'text-stone-500'}`}>
                   {opt.label}
                 </span>
               </button>
@@ -89,15 +88,15 @@ export default function SettingsPanel() {
 
         {/* Font size */}
         <Section title="字体大小">
-          <div className="flex gap-1 rounded-lg border border-border/50 bg-white/3 p-0.5">
+          <div className="flex gap-1 rounded-sm border-2 border-stone-800 dark:border-stone-400 bg-stone-100 dark:bg-zinc-900 p-1 shadow-[2px_2px_0px_rgba(28,25,23,1)] dark:shadow-[2px_2px_0px_rgba(168,162,158,1)] node-paper-bg">
             {FONT_OPTIONS.map((opt) => (
               <button
                 key={opt.value}
                 onClick={() => handleChange('字体大小', () => setFontSize(opt.value as FontSize))}
-                className={`flex-1 rounded-md py-1.5 text-[10px] transition-all ${
+                className={`flex-1 rounded-[2px] py-1.5 text-[10px] font-bold font-serif transition-colors ${
                   fontSize === opt.value
-                    ? 'bg-primary font-medium text-white shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'
+                    ? 'bg-stone-800 text-stone-50 dark:bg-stone-300 dark:text-stone-900 shadow-none'
+                    : 'text-stone-600 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-200'
                 }`}
               >
                 {opt.label}
@@ -125,13 +124,13 @@ export default function SettingsPanel() {
               <button
                 key={opt.value}
                 onClick={() => handleChange('菜单栏位置', () => setSidebarPosition(opt.value))}
-                className={`flex flex-1 flex-col items-center gap-1 rounded-lg border px-1.5 py-2 text-[10px] transition-all ${
+                className={`flex flex-1 flex-col items-center gap-1 rounded-sm border-2 px-1.5 py-2 text-[10px] font-bold font-serif transition-all shadow-[2px_2px_0px_rgba(28,25,23,1)] dark:shadow-[2px_2px_0px_rgba(168,162,158,1)] hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_rgba(28,25,23,1)] dark:hover:shadow-[3px_3px_0px_rgba(168,162,158,1)] ${
                   sidebarPosition === opt.value
-                    ? 'border-primary bg-primary/10 text-foreground'
-                    : 'border-border/50 text-muted-foreground hover:border-primary/30'
+                    ? 'border-stone-800 dark:border-stone-300 bg-stone-200 dark:bg-stone-800 text-stone-900 dark:text-stone-100'
+                    : 'border-stone-400 dark:border-stone-600 bg-stone-50 dark:bg-zinc-900 text-stone-600 dark:text-stone-400 node-paper-bg'
                 }`}
               >
-                <opt.icon className={`h-4 w-4 ${sidebarPosition === opt.value ? 'text-primary' : ''}`} />
+                <opt.icon className={`h-4 w-4 stroke-[2.5] ${sidebarPosition === opt.value ? 'text-stone-800 dark:text-stone-200' : ''}`} />
                 {opt.label}
               </button>
             ))}
@@ -149,8 +148,8 @@ export default function SettingsPanel() {
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="mb-4">
-      <p className="mb-2 text-[10px] font-medium uppercase tracking-widest text-muted-foreground/70">
+    <div className="mb-5 pb-5 border-b-[1.5px] border-dashed border-stone-300 dark:border-stone-700 last:border-0 last:pb-0">
+      <p className="mb-3 text-[11px] font-bold font-mono uppercase tracking-[0.2em] text-stone-800 dark:text-stone-400">
         {title}
       </p>
       {children}
@@ -171,17 +170,17 @@ function Toggle({
     <button
       type="button"
       onClick={() => onChange(!checked)}
-      className="flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-xs text-foreground transition-colors hover:bg-white/5"
+      className="flex w-full items-center justify-between rounded-sm px-2 py-2 text-xs font-serif font-bold text-stone-700 dark:text-stone-300 transition-colors hover:bg-stone-200/50 dark:hover:bg-zinc-800/50"
     >
       {label}
       <div
-        className={`relative h-4 w-7 rounded-full transition-colors ${
-          checked ? 'bg-primary' : 'bg-muted-foreground/30'
+        className={`relative h-5 w-9 rounded-sm border-2 border-stone-800 dark:border-stone-400 transition-colors shadow-[1px_1px_0px_rgba(28,25,23,1)] ${
+          checked ? 'bg-stone-800 dark:bg-stone-300' : 'bg-stone-200 dark:bg-zinc-800'
         }`}
       >
         <div
-          className={`absolute top-0.5 h-3 w-3 rounded-full bg-white shadow-sm transition-transform ${
-            checked ? 'translate-x-3.5' : 'translate-x-0.5'
+          className={`absolute top-[1px] h-3.5 w-3.5 rounded-sm border-[1.5px] bg-stone-50 transition-transform ${
+            checked ? 'translate-x-[16px] border-stone-800' : 'translate-x-[2px] border-stone-400 dark:border-stone-600'
           }`}
         />
       </div>

@@ -49,40 +49,40 @@ export default function PluginsPanel() {
           {MOCK_PLUGINS.map((plugin) => (
             <div
               key={plugin.id}
-              className="rounded-xl border border-border/50 bg-black/5 p-3 transition-all hover:border-primary/20 dark:bg-white/3"
+              className="rounded-md border-2 border-stone-800 dark:border-stone-400 bg-stone-50/90 dark:bg-zinc-900/90 p-3 shadow-[2px_2px_0px_rgba(28,25,23,0.15)] transition-all hover:-translate-y-[1px] hover:shadow-[3px_3px_0px_rgba(28,25,23,1)] dark:hover:shadow-[3px_3px_0px_rgba(168,162,158,1)] node-paper-bg"
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="flex items-center gap-2">
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                    <Puzzle className="h-3.5 w-3.5" />
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-sm border-2 border-stone-800 dark:border-stone-400 bg-stone-200 dark:bg-zinc-800 shadow-[1px_1px_0px_rgba(28,25,23,1)] dark:shadow-[1px_1px_0px_rgba(168,162,158,1)] text-stone-800 dark:text-stone-300">
+                    <Puzzle className="h-3.5 w-3.5 stroke-[2.5]" />
                   </div>
                   <div className="min-w-0">
-                    <p className="truncate text-xs font-medium text-foreground">{plugin.name}</p>
-                    <p className="text-[10px] text-muted-foreground/60">v{plugin.version} · {plugin.author}</p>
+                    <p className="truncate text-xs font-bold font-serif text-stone-800 dark:text-stone-200">{plugin.name}</p>
+                    <p className="text-[10px] font-mono tracking-wider text-stone-500">v{plugin.version} <span className="opacity-50">·</span> {plugin.author}</p>
                   </div>
                 </div>
                 <button
                   type="button"
-                  className={`flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-medium transition-colors ${
+                  className={`flex shrink-0 items-center gap-1.5 rounded-sm px-2.5 py-1 text-[10px] font-bold font-mono tracking-widest border-2 shadow-[2px_2px_0px_rgba(28,25,23,1)] transition-all hover:translate-y-[1px] hover:shadow-[1px_1px_0px_rgba(28,25,23,1)] active:translate-y-[2px] active:shadow-none ${
                     plugin.installed
-                      ? 'bg-emerald-500/10 text-emerald-400'
-                      : 'bg-white/5 text-muted-foreground hover:bg-primary/10 hover:text-primary'
+                      ? 'border-emerald-700 bg-emerald-100 dark:bg-emerald-950 text-emerald-900 dark:text-emerald-400'
+                      : 'border-stone-800 dark:border-stone-400 bg-stone-100 dark:bg-zinc-800 text-stone-800 dark:text-stone-200'
                   }`}
                 >
                   {plugin.installed ? (
                     <>
-                      <Check className="h-2.5 w-2.5" />
+                      <Check className="h-2.5 w-2.5 stroke-[3]" />
                       已安装
                     </>
                   ) : (
                     <>
-                      <Download className="h-2.5 w-2.5" />
+                      <Download className="h-2.5 w-2.5 stroke-[2.5]" />
                       安装
                     </>
                   )}
                 </button>
               </div>
-              <p className="mt-1.5 text-[10px] leading-snug text-muted-foreground">{plugin.description}</p>
+              <p className="mt-2 pt-2 border-t-[1.5px] border-dashed border-stone-300 dark:border-stone-700 text-[10px] font-serif leading-snug text-stone-600 dark:text-stone-400">{plugin.description}</p>
             </div>
           ))}
         </div>

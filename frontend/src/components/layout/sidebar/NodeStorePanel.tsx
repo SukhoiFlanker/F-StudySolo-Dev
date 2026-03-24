@@ -1,9 +1,9 @@
 'use client';
 
 import { useCallback, useMemo, useState, useRef } from 'react';
-import { GripVertical, Search, ChevronDown, ChevronRight, X, ChevronsUpDown, Zap, Bot, PenTool, Database, Shuffle, LayoutGrid } from 'lucide-react';
+import { GripVertical, Search, ChevronDown, ChevronRight, X, ChevronsUpDown, LibraryBig, BrainCircuit, NotebookPen, FileTerminal, Network, LayoutGrid } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { NODE_TYPE_META } from '@/features/workflow/constants/workflow-meta';
+import { NODE_TYPE_META, getNodeTheme } from '@/features/workflow/constants/workflow-meta';
 import type { NodeType } from '@/types';
 import { createPortal } from 'react-dom';
 
@@ -12,32 +12,32 @@ const NODE_CATEGORIES: { id: string; label: string; icon: LucideIcon; types: Nod
   {
     id: 'trigger',
     label: '输入 & 触发',
-    icon: Zap,
+    icon: FileTerminal,
     types: ['trigger_input'],
   },
   {
     id: 'ai',
     label: 'AI 处理',
-    icon: Bot,
+    icon: BrainCircuit,
     types: ['ai_analyzer', 'ai_planner', 'content_extract', 'merge_polish'],
   },
   {
     id: 'content',
     label: '内容生成',
-    icon: PenTool,
+    icon: NotebookPen,
     types: ['outline_gen', 'summary', 'flashcard', 'quiz_gen', 'mind_map', 'chat_response'],
   },
   {
     id: 'data',
     label: '数据 & 集成',
-    icon: Database,
+    icon: LibraryBig,
     types: ['knowledge_base', 'web_search', 'write_db', 'export_file'],
   },
   {
     id: 'logic',
     label: '逻辑控制',
-    icon: Shuffle,
-    types: ['compare', 'logic_switch', 'loop_map'],
+    icon: Network,
+    types: ['compare', 'logic_switch', 'loop_map', 'loop_group'],
   },
 ];
 
@@ -75,6 +75,7 @@ function NodeTooltip({
 }) {
   const meta = NODE_TYPE_META[nodeType];
   const extended = NODE_EXTENDED_INFO[nodeType];
+  const nodeTheme = getNodeTheme(nodeType);
 
   const style: React.CSSProperties = {
     position: 'fixed',
@@ -91,9 +92,10 @@ function NodeTooltip({
     >
       <div className="mb-2 flex items-center gap-2">
         <div
-          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ring-1 ${meta.accentClassName}`}
+          className={`relative flex h-7 w-7 shrink-0 items-center justify-center rounded-sm bg-background shadow-sm ${nodeTheme.borderClass} ${nodeTheme.headerTextColor}`}
         >
-          <meta.icon className="h-3.5 w-3.5 text-stone-900" />
+          <div className={`absolute inset-0 pointer-events-none ${nodeTheme.innerBorderClass} m-[1px]`} />
+          <meta.icon className="z-10 h-3.5 w-3.5 stroke-[2.5]" />
         </div>
         <div>
           <p className="text-xs font-semibold text-foreground">{meta.label}</p>
@@ -196,6 +198,7 @@ function NodeStoreItem({ nodeType }: { nodeType: NodeType }) {
   }, []);
 
   const anchorRect = itemRef.current?.getBoundingClientRect();
+  const nodeTheme = getNodeTheme(nodeType);
 
   return (
     <>
@@ -210,9 +213,10 @@ function NodeStoreItem({ nodeType }: { nodeType: NodeType }) {
         className="group flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-white/5 active:scale-[0.98]"
       >
         <div
-          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ring-1 ${meta.accentClassName}`}
+          className={`relative flex h-6 w-6 shrink-0 items-center justify-center rounded-sm bg-background shadow-[0_1px_2px_rgba(0,0,0,0.1)] transition-transform group-hover:scale-110 ${nodeTheme.borderClass} ${nodeTheme.headerTextColor}`}
         >
-          <meta.icon className="h-3 w-3 text-stone-900" />
+          <div className={`absolute inset-0 pointer-events-none ${nodeTheme.innerBorderClass} m-[1px]`} />
+          <meta.icon className="z-10 h-3 w-3 stroke-[2.5]" />
         </div>
         <div className="min-w-0 flex-1">
           <p className="truncate text-[11px] font-medium text-foreground">{meta.label}</p>

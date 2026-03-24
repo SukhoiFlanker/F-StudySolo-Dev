@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import Link from 'next/link';
 import { formatMonthDay } from '@/utils/date';
@@ -19,10 +19,10 @@ export function SidebarWorkflowItem({
     <Link
       href={`/workspace/${workflow.id}`}
       onContextMenu={(event) => onContextMenu(event, workflow.id)}
-      className={`group relative mx-2 my-0.5 flex items-center gap-3 rounded-lg px-3 py-2.5 transition-all duration-200 ${
+      className={`group relative mx-2 my-1 flex items-center gap-3 rounded-md px-3 py-2.5 transition-all duration-200 border-2 ${
         active
-          ? 'glass-active text-foreground'
-          : 'text-muted-foreground hover:bg-white/5 hover:text-foreground'
+          ? 'bg-stone-200 dark:bg-stone-800 border-stone-800 dark:border-stone-400 text-stone-900 dark:text-stone-100 shadow-[2px_2px_0px_rgba(28,25,23,1)] dark:shadow-[2px_2px_0px_rgba(168,162,158,1)] -translate-y-[1px]'
+          : 'border-transparent text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-zinc-800 hover:text-stone-900 dark:hover:text-stone-200 hover:border-dashed hover:border-stone-400 dark:hover:border-stone-600'
       }`}
     >
       <span className="relative shrink-0">
@@ -40,12 +40,13 @@ export function SidebarWorkflowItem({
             height="13"
             rx="2.5"
             stroke="currentColor"
-            strokeWidth="1.2"
+            strokeWidth="1.5"
+            style={{ strokeLinecap: 'round', strokeLinejoin: 'round' }}
           />
           <path
             d="M4.5 5.5h7M4.5 8h5M4.5 10.5h6"
             stroke="currentColor"
-            strokeWidth="1.2"
+            strokeWidth="1.5"
             strokeLinecap="round"
           />
         </svg>
@@ -55,8 +56,8 @@ export function SidebarWorkflowItem({
       </span>
 
       <div className="hidden min-w-0 flex-1 lg:block">
-        <p className="truncate text-sm leading-tight">{workflow.name}</p>
-        <p className="mt-0.5 text-[11px] text-muted-foreground">
+        <p className="truncate text-sm font-bold font-serif leading-tight">{workflow.name}</p>
+        <p className="mt-0.5 text-[10px] font-mono tracking-widest text-stone-500">
           {formatMonthDay(workflow.updated_at, 'zh-CN')}
         </p>
       </div>

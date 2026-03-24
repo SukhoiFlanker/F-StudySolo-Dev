@@ -293,8 +293,8 @@ export function SidebarAIPanel() {
           /* ─── Empty State ─── */
           <div className="flex h-full flex-col items-center justify-center px-6 text-center">
             <div className="relative mb-5">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 ring-1 ring-primary/10">
-                <Sparkles className="h-5 w-5 text-primary/80" />
+              <div className="flex h-12 w-12 items-center justify-center rounded-md border-2 border-stone-800 dark:border-stone-400 bg-stone-50 dark:bg-zinc-900 shadow-[3px_3px_0px_rgba(28,25,23,1)] dark:shadow-[3px_3px_0px_rgba(168,162,158,1)] node-paper-bg">
+                <Sparkles className="h-5 w-5 text-stone-800 dark:text-stone-300 stroke-[2.5]" />
               </div>
             </div>
             <h3 className="text-[13px] font-semibold text-foreground/90 font-serif">准备就绪</h3>
@@ -302,9 +302,9 @@ export function SidebarAIPanel() {
               描述你的学习或工作目标，我将为你构建专属工作流。
             </p>
             {lastPrompt ? (
-              <div className="mt-4 flex items-center gap-1.5 rounded-lg bg-white/3 px-2.5 py-1.5 border border-white/5">
-                <History className="h-3 w-3 text-muted-foreground/40" />
-                <span className="text-[10px] text-muted-foreground/40 truncate max-w-[180px]">
+              <div className="mt-4 flex items-center gap-1.5 rounded-sm bg-stone-50 dark:bg-zinc-900 px-2.5 py-1.5 border border-stone-300 dark:border-stone-700 shadow-sm">
+                <History className="h-3 w-3 text-stone-500 dark:text-stone-400" />
+                <span className="text-[10px] text-stone-600 dark:text-stone-400 truncate max-w-[180px] font-mono">
                   {lastPrompt.slice(0, 40)}{lastPrompt.length > 40 ? '...' : ''}
                 </span>
               </div>
@@ -321,10 +321,10 @@ export function SidebarAIPanel() {
                 }`}
               >
                 <div
-                  className={`rounded-2xl px-3.5 py-2.5 text-[13px] leading-relaxed ${
+                  className={`rounded-md border border-stone-800 dark:border-stone-400 px-3.5 py-2.5 text-[13px] leading-relaxed font-serif shadow-[2px_2px_0px_rgba(28,25,23,1)] dark:shadow-[2px_2px_0px_rgba(168,162,158,1)] ${
                     entry.role === 'user'
-                      ? 'bg-muted/40 text-foreground/90 rounded-br-sm'
-                      : 'bg-transparent text-foreground/90 pr-2'
+                      ? 'bg-stone-100 dark:bg-stone-800 text-stone-900 dark:text-stone-100'
+                      : 'bg-stone-50 dark:bg-zinc-900 text-stone-800 dark:text-stone-200 node-paper-bg'
                   }`}
                 >
                   {entry.content}
@@ -333,11 +333,11 @@ export function SidebarAIPanel() {
             ))}
 
             {loading && (
-              <div className="mr-auto flex max-w-[85%] items-center gap-2 rounded-2xl px-3.5 py-2.5">
-                <div className="flex gap-1">
-                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-primary/60 [animation-delay:0ms]" />
-                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-primary/60 [animation-delay:150ms]" />
-                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-primary/60 [animation-delay:300ms]" />
+              <div className="mr-auto flex max-w-[85%] items-center gap-2 rounded-md border border-stone-800 dark:border-stone-400 bg-stone-50 dark:bg-zinc-900 shadow-[2px_2px_0px_rgba(28,25,23,1)] dark:shadow-[2px_2px_0px_rgba(168,162,158,1)] px-3.5 py-2.5 node-paper-bg">
+                <div className="flex gap-1.5">
+                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-stone-800 dark:bg-stone-300 [animation-delay:0ms]" />
+                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-stone-800 dark:bg-stone-300 [animation-delay:150ms]" />
+                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-stone-800 dark:bg-stone-300 [animation-delay:300ms]" />
                 </div>
               </div>
             )}
@@ -359,7 +359,7 @@ export function SidebarAIPanel() {
         ) : null}
 
         {/* Unified Input Box (Replicating Reference Design) */}
-        <div className="flex flex-col rounded-[14px] border border-border/40 bg-muted/20 focus-within:border-primary/30 focus-within:bg-muted/30 transition-all">
+        <div className="flex flex-col rounded-md border-2 border-stone-800 dark:border-stone-400 bg-stone-50 dark:bg-zinc-900 shadow-[2px_2px_0px_rgba(28,25,23,1)] dark:shadow-[2px_2px_0px_rgba(168,162,158,1)] focus-within:translate-y-[1px] focus-within:shadow-[1px_1px_0px_rgba(28,25,23,1)] dark:focus-within:shadow-[1px_1px_0px_rgba(168,162,158,1)] transition-all node-paper-bg">
           
           <textarea
             ref={textareaRef}
@@ -467,7 +467,7 @@ export function SidebarAIPanel() {
               <button
                 onClick={() => void handleGenerate()}
                 disabled={loading || !input.trim()}
-                className="flex h-7 w-7 items-center justify-center rounded-full bg-[#007AFF] text-white transition-all hover:bg-[#007AFF]/90 hover:scale-105 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:scale-100"
+                className="flex h-7 w-7 items-center justify-center rounded-sm border-2 border-stone-800 bg-stone-800 text-stone-50 shadow-[1px_1px_0px_rgba(28,25,23,1)] transition-all hover:bg-stone-700 hover:-translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0"
                 title="发送"
               >
                 {loading ? (
