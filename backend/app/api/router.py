@@ -15,6 +15,8 @@ from app.api.admin_workflows import router as admin_workflows_router
 from app.api.auth import router as auth_router
 from app.api.workflow import router as workflow_router
 from app.api.ai import router as ai_router
+from app.api.ai_chat import router as ai_chat_router
+from app.api.ai_chat_stream import stream_router as ai_chat_stream_router
 from app.api.nodes import router as nodes_router
 from app.api.knowledge import router as knowledge_router
 from app.api.exports import router as exports_router
@@ -24,6 +26,8 @@ router = APIRouter()
 router.include_router(auth_router, prefix="/auth", tags=["auth"])
 router.include_router(workflow_router, prefix="/workflow", tags=["workflow"])
 router.include_router(ai_router, prefix="/ai", tags=["ai"])
+router.include_router(ai_chat_router, prefix="/ai", tags=["ai-chat"])
+router.include_router(ai_chat_stream_router, prefix="/ai", tags=["ai-chat-stream"])
 router.include_router(nodes_router, prefix="/nodes", tags=["nodes"])
 router.include_router(knowledge_router, prefix="/knowledge", tags=["knowledge"])
 router.include_router(exports_router, prefix="/exports", tags=["exports"])
