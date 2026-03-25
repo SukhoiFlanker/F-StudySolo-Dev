@@ -19,7 +19,7 @@ from app.prompts import (
     get_create_prompt,
     get_intent_prompt,
 )
-from app.services.ai_router import call_llm, AIRouterError
+from app.services.ai_router import call_llm, call_llm_direct, AIRouterError
 from app.api.ai_chat import _build_canvas_summary, _call_with_model, _extract_json_obj
 
 logger = logging.getLogger(__name__)
@@ -127,7 +127,7 @@ async def _chat_stream_generator(body: AIChatRequest):
         system_content = get_plan_prompt(canvas_summary, body.thinking_level)
     else:
         intent = "CHAT"
-        system_content = get_chat_prompt(canvas_summary)
+        system_content = get_chat_prompt(canvas_summary, body.thinking_level)
 
     stream_msgs = [
         {"role": "system", "content": system_content},
@@ -135,12 +135,20 @@ async def _chat_stream_generator(body: AIChatRequest):
         {"role": "user", "content": body.user_input},
     ]
 
+    # 均衡/深度思考 → 强制路由到 deepseek-reasoner (CoT 推理)
+    force_thinking = body.thinking_level in ("balanced", "deep")
+
     try:
         yield {"data": json.dumps({"intent": intent}, ensure_ascii=False)}
 
-        token_iter: AsyncIterator[str] = await call_llm(
-            "chat_response", stream_msgs, stream=True,
-        )
+        if force_thinking:
+            token_iter: AsyncIterator[str] = await call_llm_direct(
+                "deepseek", "deepseek-reasoner", stream_msgs, stream=True,
+            )
+        else:
+            token_iter = await call_llm(
+                "chat_response", stream_msgs, stream=True,
+            )
 
         full = ""
         async for token in token_iter:

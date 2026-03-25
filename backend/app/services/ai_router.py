@@ -113,6 +113,38 @@ def _format_exhausted_error(chain_id: str, errors: list[str]) -> str:
     return f"All fallback options for chain '{chain_id}' exhausted. Errors: {' | '.join(errors)}"
 
 
+async def call_llm_direct(
+    platform_name: str,
+    model_name: str,
+    messages: list[dict],
+    stream: bool = False,
+) -> str | AsyncIterator[str]:
+    """Call a specific platform/model directly, bypassing node_routes.
+
+    Used for forced routing (e.g. thinking modes → deepseek-reasoner).
+    Falls back to the default call_llm('chat_response') if the target is unavailable.
+    """
+    if not _is_platform_configured(platform_name):
+        logger.warning("Direct call target '%s' not configured, falling back to chat_response route", platform_name)
+        return await call_llm("chat_response", messages, stream=stream)
+
+    client, _ = _get_client(platform_name)
+
+    if stream:
+        return _stream_tokens(client, model_name, messages)
+
+    try:
+        response = await client.chat.completions.create(
+            model=model_name,
+            messages=messages,
+            stream=False,
+        )
+        return response.choices[0].message.content or ""
+    except (APITimeoutError, APIError) as e:
+        logger.warning("Direct call to '%s/%s' failed: %s, falling back", platform_name, model_name, e)
+        return await call_llm("chat_response", messages, stream=stream)
+
+
 async def call_llm(
     node_type: str,
     messages: list[dict],
@@ -171,16 +203,37 @@ async def _stream_tokens(
     model: str,
     messages: list[dict],
 ) -> AsyncIterator[str]:
-    """Yield tokens from a streaming chat completion."""
+    """Yield tokens from a streaming chat completion.
+
+    For models with extended thinking (e.g. DeepSeek R1), the reasoning
+    process arrives via `delta.reasoning_content`. We wrap it in <think>
+    tags so the frontend can parse and display it in a collapsible card.
+    """
     stream = await client.chat.completions.create(
         model=model,
         messages=messages,
         stream=True,
     )
+    in_thinking = False
     async for chunk in stream:
-        delta = chunk.choices[0].delta.content
-        if delta:
-            yield delta
+        delta = chunk.choices[0].delta
+        # DeepSeek R1: reasoning process via reasoning_content
+        reasoning = getattr(delta, "reasoning_content", None)
+        if reasoning:
+            if not in_thinking:
+                yield "<think>"
+                in_thinking = True
+            yield reasoning
+        # Final answer via content
+        content = delta.content
+        if content:
+            if in_thinking:
+                yield "</think>"
+                in_thinking = False
+            yield content
+    # Ensure the think tag is closed if stream ends mid-reasoning
+    if in_thinking:
+        yield "</think>"
 
 
 async def _stream_with_fallback(

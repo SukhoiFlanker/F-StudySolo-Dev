@@ -21,6 +21,8 @@ export interface AIModelOption {
   isPremium: boolean;
   /** 模型简介 */
   description: string;
+  /** 是否支持深度思考 (DeepSeek R1 的 reasoning_content) */
+  supportsThinking?: boolean;
 }
 
 export const AI_MODEL_OPTIONS: AIModelOption[] = [
@@ -42,6 +44,7 @@ export const AI_MODEL_OPTIONS: AIModelOption[] = [
     brandColor: '#4D6BFE',
     isPremium: true,
     description: '顶级深度推理模型',
+    supportsThinking: true,
   },
   // ── 火山引擎 (豆包) ──────────────────────────────
   {

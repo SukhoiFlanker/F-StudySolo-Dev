@@ -25,9 +25,9 @@ _VAR_PATTERN = re.compile(r"\{\{(\w+)\}\}")
 
 # 思考深度 → 人类可读指令
 DEPTH_LABELS: dict[str, str] = {
-    "fast": "快速模式: 请简洁直接，不展开细节。",
-    "balanced": "均衡模式: 请给出完整但有条理的回答。",
-    "deep": "深度模式: 请从多角度深入分析，给出专业级回答。",
+    "fast": "",  # 快速模式不添加思考指令
+    "balanced": "均衡模式: 请给出完整有条理的回答，必要时展示推理过程。",
+    "deep": "深度模式: 请充分利用你的推理能力，从多角度深入剖析，给出学术级、带有完整推导链的专业回答。在给出最终结论前，请先详细展示你的思考过程。",
 }
 
 
@@ -77,10 +77,13 @@ def get_plan_prompt(canvas_context: str, thinking_depth: str = "balanced") -> st
     return f"{identity}\n\n{plan}"
 
 
-def get_chat_prompt(canvas_context: str) -> str:
+def get_chat_prompt(canvas_context: str, thinking_depth: str = "fast") -> str:
     """Assemble Chat mode system prompt: identity + mode_chat."""
     identity = load_prompt("identity")
+    depth_label = DEPTH_LABELS.get(thinking_depth, "")
     chat = load_prompt("mode_chat", canvas_context=canvas_context)
+    if depth_label:
+        return f"{identity}\n\n{chat}\n\n{depth_label}"
     return f"{identity}\n\n{chat}"
 
 
@@ -114,6 +117,6 @@ def get_modify_system_prompt(canvas_context_str: str) -> str:
     return get_create_prompt(canvas_context_str)
 
 
-def get_chat_system_prompt(canvas_context_str: str) -> str:
+def get_chat_system_prompt(canvas_context_str: str, thinking_depth: str = "fast") -> str:
     """Legacy: 映射到新 get_chat_prompt."""
-    return get_chat_prompt(canvas_context_str)
+    return get_chat_prompt(canvas_context_str, thinking_depth)

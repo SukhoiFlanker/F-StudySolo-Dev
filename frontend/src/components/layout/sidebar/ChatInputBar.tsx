@@ -7,8 +7,9 @@
  */
 
 import { useCallback, useRef, useState, useEffect } from 'react';
-import { Loader2, ArrowRight, Square, Brain, MessageCircle, Wand2 } from 'lucide-react';
+import { Loader2, ArrowRight, Square, Brain, Route, MessageCircle, Wand2 } from 'lucide-react';
 import type { AIMode, ThinkingDepth } from './SidebarAIPanel';
+import type { AIModelOption } from '@/features/workflow/constants/ai-models';
 
 const MODE_CONFIG: Record<AIMode, { icon: typeof Brain; label: string; hint: string; desc: string }> = {
   plan: { icon: Brain, label: '规划模式', hint: '深入分析目标并输出学习路径', desc: '不直接修改画布，仅提供深度分析和架构规划建议' },
@@ -29,6 +30,7 @@ interface ChatInputBarProps {
   setMode: (m: AIMode) => void;
   thinkingDepth: ThinkingDepth;
   setThinkingDepth: (d: ThinkingDepth) => void;
+  selectedModel: AIModelOption;
   loading: boolean;
   streaming: boolean;
   error: string | null;
@@ -38,7 +40,7 @@ interface ChatInputBarProps {
 
 export function ChatInputBar({
   input, setInput, mode, setMode,
-  thinkingDepth, setThinkingDepth,
+  thinkingDepth, setThinkingDepth, selectedModel,
   loading, streaming, error, setError, onSend,
 }: ChatInputBarProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -131,13 +133,13 @@ export function ChatInputBar({
               )}
             </div>
 
-            {mode !== 'chat' && (
+            {selectedModel.supportsThinking && (
               <>
                 <div className="h-3 w-px bg-border/30 mx-1" />
                 <button type="button" onClick={cycleDepth}
                   className={`flex items-center gap-1 rounded-md px-1.5 py-1 text-[10px] font-medium transition-all hover:bg-white/5 ${DEPTH_CONFIG[thinkingDepth].color}`}
                   title={`思考深度: ${DEPTH_CONFIG[thinkingDepth].label}`}>
-                  <Brain className="h-3 w-3" />{DEPTH_CONFIG[thinkingDepth].label}
+                  <Route className="h-3 w-3" />{DEPTH_CONFIG[thinkingDepth].label}
                 </button>
               </>
             )}

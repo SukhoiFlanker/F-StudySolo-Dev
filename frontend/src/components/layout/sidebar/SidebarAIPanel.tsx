@@ -172,7 +172,7 @@ export function SidebarAIPanel() {
       <ChatMessages history={history} loading={loading} streaming={streaming} streamingMessageId={streamingMessageId} lastPrompt={lastPrompt} scrollRef={scrollRef} />
 
       {/* ═══ INPUT ═══ */}
-      <ChatInputBar input={input} setInput={setInput} mode={mode} setMode={setMode} thinkingDepth={thinkingDepth} setThinkingDepth={setThinkingDepth} loading={loading} streaming={streaming} error={error} setError={setError} onSend={() => void handleSend()} />
+      <ChatInputBar input={input} setInput={setInput} mode={mode} setMode={setMode} thinkingDepth={thinkingDepth} setThinkingDepth={setThinkingDepth} selectedModel={selectedModel} loading={loading} streaming={streaming} error={error} setError={setError} onSend={() => void handleSend()} />
     </div>
   );
 }

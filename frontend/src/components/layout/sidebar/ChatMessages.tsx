@@ -26,6 +26,8 @@ import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
 import { useState, useCallback } from 'react';
 import { PlanCard } from './PlanCard';
+import { ThinkingCard } from './ThinkingCard';
+import { parseThinking } from '@/features/workflow/utils/parse-thinking';
 
 interface HistoryEntry {
   id: string;
@@ -62,10 +64,19 @@ function CopyButton({ text }: { text: string }) {
   );
 }
 
-/* ── Streaming cursor ── */
-function StreamCursor() {
+/* ── Streaming indicator (replaces old cursor bar) ── */
+function StreamingIndicator() {
   return (
-    <span className="ai-stream-cursor ml-0.5 inline-block h-[14px] w-[2px] translate-y-[2px] rounded-full bg-primary/70" />
+    <div className="flex items-center gap-1.5 mt-2 pb-0.5">
+      <span className="flex gap-[3px]">
+        <span className="h-1 w-1 rounded-full bg-primary/50 animate-bounce [animation-delay:0ms]" />
+        <span className="h-1 w-1 rounded-full bg-primary/40 animate-bounce [animation-delay:150ms]" />
+        <span className="h-1 w-1 rounded-full bg-primary/30 animate-bounce [animation-delay:300ms]" />
+      </span>
+      <span className="text-[10px] text-muted-foreground/50 font-sans tracking-wider">
+        Generating...
+      </span>
+    </div>
   );
 }
 
@@ -78,15 +89,21 @@ const AIMessage = memo(function AIMessage({
   isStreaming: boolean;
 }) {
   const content = entry.content;
+  const { thinking, answer, hasThinking } = parseThinking(content);
 
-  // Plan XML detection
-  if (content.includes('<plan>')) {
-    return <PlanCard rawContent={content} />;
+  // Plan XML detection (applied on answer, not thinking)
+  if (answer.includes('<plan>')) {
+    return <PlanCard rawContent={answer} />;
   }
 
   // Strip SUGGEST_MODE markers, capture for nudge
-  const cleanContent = content.replace(/\[SUGGEST_MODE:(\w+)\]/g, '');
-  const suggestMatch = content.match(/\[SUGGEST_MODE:(\w+)\]/);
+  const cleanContent = answer.replace(/\[SUGGEST_MODE:(\w+)\]/g, '');
+  const suggestMatch = answer.match(/\[SUGGEST_MODE:(\w+)\]/);
+
+  // Determine streaming sub-phase
+  const isThinkingPhase = isStreaming && hasThinking && !cleanContent.trim();
+  const isGeneratingPhase = isStreaming && cleanContent.trim().length > 0;
+  const isWaitingFirstToken = isStreaming && !hasThinking && !cleanContent.trim();
 
   return (
     <div className="ai-msg-root">
@@ -102,7 +119,7 @@ const AIMessage = memo(function AIMessage({
 
       {/* Rich Markdown content — NO bubble */}
       <div className="chat-markdown-body pl-0.5">
-        {isStreaming && !cleanContent.trim() ? (
+        {isWaitingFirstToken ? (
           /* ── Waiting for first token: magic wand loader ── */
           <div className="flex items-center gap-2.5 py-1">
             <div className="analyze">
@@ -114,7 +131,6 @@ const AIMessage = memo(function AIMessage({
                 xmlns="http://www.w3.org/2000/svg"
               >
                 <rect height="24" width="24" fill="none" />
-                {/* Clipboard board */}
                 <path
                   className="board"
                   strokeLinecap="round"
@@ -122,17 +138,14 @@ const AIMessage = memo(function AIMessage({
                   stroke="#9ca3af"
                   d="M19.25 9.25V5.25C19.25 4.42157 18.5784 3.75 17.75 3.75H6.25C5.42157 3.75 4.75 4.42157 4.75 5.25V18.75C4.75 19.5784 5.42157 20.25 6.25 20.25H12.25"
                 />
-                {/* Star 2 (small sparkle) */}
                 <path
                   className="star-2"
                   d="M9.18748 11.5066C9.12305 11.3324 8.87677 11.3324 8.81234 11.5066L8.49165 12.3732C8.47139 12.428 8.42823 12.4711 8.37348 12.4914L7.50681 12.8121C7.33269 12.8765 7.33269 13.1228 7.50681 13.1872L8.37348 13.5079C8.42823 13.5282 8.47139 13.5714 8.49165 13.6261L8.81234 14.4928C8.87677 14.6669 9.12305 14.6669 9.18748 14.4928L9.50818 13.6261C9.52844 13.5714 9.5716 13.5282 9.62634 13.5079L10.493 13.1872C10.6671 13.1228 10.6671 12.8765 10.493 12.8121L9.62634 12.4914C9.5716 12.4711 9.52844 12.428 9.50818 12.3732L9.18748 11.5066Z"
                 />
-                {/* Star 1 (large sparkle) */}
                 <path
                   className="star-1"
                   d="M11.7345 6.63394C11.654 6.41629 11.3461 6.41629 11.2656 6.63394L10.8647 7.71728C10.8394 7.78571 10.7855 7.83966 10.717 7.86498L9.6337 8.26585C9.41605 8.34639 9.41605 8.65424 9.6337 8.73478L10.717 9.13565C10.7855 9.16097 10.8394 9.21493 10.8647 9.28335L11.2656 10.3667C11.3461 10.5843 11.654 10.5843 11.7345 10.3667L12.1354 9.28335C12.1607 9.21493 12.2147 9.16097 12.2831 9.13565L13.3664 8.73478C13.5841 8.65424 13.5841 8.34639 13.3664 8.26585L12.2831 7.86498C12.2147 7.83966 12.1607 7.78571 12.1354 7.71728L11.7345 6.63394Z"
                 />
-                {/* Pen / wand stick */}
                 <path
                   className="stick"
                   strokeLinecap="round"
@@ -146,29 +159,53 @@ const AIMessage = memo(function AIMessage({
               正在思考…
             </span>
           </div>
-        ) : isStreaming ? (
-          /* ── Streaming in progress: markdown + cursor ── */
-          <div className="prose-chat">
-            <ReactMarkdown
-              remarkPlugins={[remarkGfm, remarkMath]}
-              rehypePlugins={[rehypeKatex]}
-              components={markdownComponents}
-            >
-              {cleanContent}
-            </ReactMarkdown>
-            <StreamCursor />
-          </div>
         ) : (
-          /* ── Finished: static markdown ── */
-          <div className="prose-chat">
-            <ReactMarkdown
-              remarkPlugins={[remarkGfm, remarkMath]}
-              rehypePlugins={[rehypeKatex]}
-              components={markdownComponents}
-            >
-              {cleanContent}
-            </ReactMarkdown>
-          </div>
+          <>
+            {/* ThinkingCard — shown above the answer */}
+            {hasThinking && (
+              <ThinkingCard
+                thinking={thinking}
+                isStreaming={isThinkingPhase}
+              />
+            )}
+
+            {/* Main answer markdown */}
+            {cleanContent.trim() ? (
+              <div className="prose-chat">
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm, remarkMath]}
+                  rehypePlugins={[rehypeKatex]}
+                  components={markdownComponents}
+                >
+                  {cleanContent}
+                </ReactMarkdown>
+                {isGeneratingPhase && <StreamingIndicator />}
+              </div>
+            ) : isThinkingPhase ? (
+              /* Still thinking, no answer yet */
+              <div className="flex items-center gap-1.5 mt-1">
+                <span className="flex gap-[3px]">
+                  <span className="h-1 w-1 rounded-full bg-primary/50 animate-bounce [animation-delay:0ms]" />
+                  <span className="h-1 w-1 rounded-full bg-primary/40 animate-bounce [animation-delay:150ms]" />
+                  <span className="h-1 w-1 rounded-full bg-primary/30 animate-bounce [animation-delay:300ms]" />
+                </span>
+                <span className="text-[10px] text-muted-foreground/50 font-sans tracking-wider">
+                  Thinking...
+                </span>
+              </div>
+            ) : !isStreaming ? (
+              /* Finished: static markdown */
+              <div className="prose-chat">
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm, remarkMath]}
+                  rehypePlugins={[rehypeKatex]}
+                  components={markdownComponents}
+                >
+                  {cleanContent}
+                </ReactMarkdown>
+              </div>
+            ) : null}
+          </>
         )}
       </div>
 

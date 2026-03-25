@@ -53,6 +53,16 @@
   border: 1px solid rgba(196, 198, 207, 0.15);
 }
 
+/* ── Autofill Override ── */
+.autofill-ivory:-webkit-autofill,
+.autofill-ivory:-webkit-autofill:hover,
+.autofill-ivory:-webkit-autofill:focus,
+.autofill-ivory:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px #FAF9F5 inset !important;
+  -webkit-text-fill-color: #002045 !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
 /* ── Selection Color ── */
 .admin-selection::selection {
   background-color: #1A365D;
