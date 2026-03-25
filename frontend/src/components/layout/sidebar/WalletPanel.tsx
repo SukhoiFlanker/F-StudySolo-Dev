@@ -1,8 +1,9 @@
 'use client';
 
 import { Copy, Eye, EyeOff, ExternalLink, ChevronRight, CheckCircle2, Plus, Unplug, BrainCircuit, User, Plug } from 'lucide-react';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { getUser, getTierLabel, type UserInfo, type TierType } from '@/services/auth.service';
 
 /** -------- 模拟数据 -------- */
 interface ApiKeyInfo {
@@ -28,25 +29,22 @@ const MOCK_BILLING = {
   monthlyLimit: 50.00,
 };
 
-const USER_TIER = 'Plus'; // 可选 'Free', 'Pro', 'Plus', 'Ultra'
-
-/** -------- 样式工具 (手绘/高级笔记风) -------- */
-const getTierBorder = (tier: string) => {
+const getTierBorder = (tier: TierType) => {
   switch(tier) {
-    case 'Free': return 'border-muted-foreground/40 text-muted-foreground';
-    case 'Pro': return 'border-slate-500/60 text-slate-700 dark:text-slate-300';
-    case 'Plus': return 'border-emerald-500/60 text-emerald-700 dark:text-emerald-400';
-    case 'Ultra': return 'border-amber-500/70 text-amber-700 dark:text-amber-500';
+    case 'free': return 'border-muted-foreground/40 text-muted-foreground';
+    case 'pro': return 'border-slate-500/60 text-slate-700 dark:text-slate-300';
+    case 'pro_plus': return 'border-emerald-500/60 text-emerald-700 dark:text-emerald-400';
+    case 'ultra': return 'border-amber-500/70 text-amber-700 dark:text-amber-500';
     default: return 'border-border/50 text-foreground';
   }
 };
 
-const getTierCardStyle = (tier: string) => {
+const getTierCardStyle = (tier: TierType) => {
   switch(tier) {
-    case 'Free': return 'node-paper-bg border-border/50 text-foreground';
-    case 'Pro': return 'node-paper-bg border-slate-300 dark:border-slate-800 text-foreground';
-    case 'Plus': return 'node-paper-bg border-emerald-300 dark:border-emerald-900/40 text-emerald-950 dark:text-emerald-50';
-    case 'Ultra': return 'node-paper-bg border-amber-300 dark:border-amber-900/40 text-amber-950 dark:text-amber-50';
+    case 'free': return 'node-paper-bg border-border/50 text-foreground';
+    case 'pro': return 'node-paper-bg border-slate-300 dark:border-slate-800 text-foreground';
+    case 'pro_plus': return 'node-paper-bg border-emerald-300 dark:border-emerald-900/40 text-emerald-950 dark:text-emerald-50';
+    case 'ultra': return 'node-paper-bg border-amber-300 dark:border-amber-900/40 text-amber-950 dark:text-amber-50';
     default: return 'node-paper-bg border-border/50 text-foreground';
   }
 }
@@ -116,6 +114,12 @@ function InternalApiKeyDisplay() {
 /** -------- 主容器 -------- */
 export default function WalletPanel() {
   const router = useRouter();
+  const [user, setUser] = useState<UserInfo | null>(null);
+  const userTier: TierType = user?.tier ?? 'free';
+
+  useEffect(() => {
+    getUser().then(setUser).catch(() => null);
+  }, []);
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-background">
@@ -131,19 +135,19 @@ export default function WalletPanel() {
           
           <div 
             onClick={() => router.push('/upgrade')}
-            className={`relative flex flex-col rounded-xl border-[1.5px] p-4 cursor-pointer transition-all duration-300 hover:-translate-y-0.5 shadow-sm hover:shadow-md group ${getTierCardStyle(USER_TIER)}`}
+            className={`relative flex flex-col rounded-xl border-[1.5px] p-4 cursor-pointer transition-all duration-300 hover:-translate-y-0.5 shadow-sm hover:shadow-md group ${getTierCardStyle(userTier)}`}
           >
             <div className="flex items-center gap-3 relative z-10">
-              <div className={`node-paper-bg relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border-[1.5px] border-dashed ${getTierBorder(USER_TIER)}`}>
+              <div className={`node-paper-bg relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border-[1.5px] border-dashed ${getTierBorder(userTier)}`}>
                 <User className="h-[18px] w-[18px] stroke-[1.5]" />
                 {/* 排名指示点 - 手绘墨点感 */}
                 <div className="absolute -bottom-1 -right-1 h-3 w-3 rounded-full border-[1.5px] border-background bg-current" />
               </div>
               <div className="flex flex-col flex-1 pl-1">
-                <span className="text-sm font-serif font-semibold opacity-90 tracking-wide">学习记录者</span>
+                <span className="text-sm font-serif font-semibold opacity-90 tracking-wide">{user?.name || '学习记录者'}</span>
                 <div className="flex items-center gap-1.5 font-mono text-[10px] mt-0.5 opacity-70">
                   <span className="uppercase">等级:</span>
-                  <span className="font-bold border border-current/20 px-1 py-0.5 rounded-sm leading-none tracking-widest">{USER_TIER}</span>
+                  <span className="font-bold border border-current/20 px-1 py-0.5 rounded-sm leading-none tracking-widest">{getTierLabel(userTier)}</span>
                 </div>
               </div>
               <ChevronRight className="h-4 w-4 opacity-40 transition-transform group-hover:translate-x-1 group-hover:opacity-100" />

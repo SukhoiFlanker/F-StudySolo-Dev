@@ -9,20 +9,20 @@ Endpoints:
 
 import logging
 from datetime import date, datetime, timedelta, timezone
-from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel
 from supabase._async.client import AsyncClient
 
 from app.core.database import get_db
+from app.models.user import TierType
 from app.services.audit_logger import get_client_info, queue_audit_log
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["admin-users"])
 
-TierType = Literal["free", "pro", "pro_plus", "ultra"]
+
 
 # ---------------------------------------------------------------------------
 # Pydantic response models

@@ -1,6 +1,11 @@
 """Pydantic models for user authentication."""
 
+from typing import Literal
+
 from pydantic import BaseModel, EmailStr
+
+# Canonical tier values — single source of truth (matches DB CHECK constraint)
+TierType = Literal["free", "pro", "pro_plus", "ultra"]
 
 
 class UserRegister(BaseModel):
@@ -54,4 +59,5 @@ class UserInfo(BaseModel):
     email: str
     name: str | None = None
     avatar_url: str | None = None
-    role: str = "user"
+    role: str = "user"          # System role (user/admin) — from JWT
+    tier: TierType = "free"     # Subscription tier — from user_profiles table

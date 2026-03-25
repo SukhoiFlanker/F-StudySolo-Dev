@@ -7,10 +7,12 @@ import {
   DEFAULT_MODEL,
   groupModelsByProvider,
 } from '@/features/workflow/constants/ai-models';
+import { isPaidTier, type TierType } from '@/services/auth.service';
 
 interface ModelSelectorProps {
   value: AIModelOption;
   onChange: (model: AIModelOption) => void;
+  userTier?: TierType;
 }
 
 /**
@@ -19,9 +21,10 @@ interface ModelSelectorProps {
  * 免费模型直接可选, 会员模型显示 Crown 标记。
  * 品牌色点标识不同供应商。
  */
-export function ModelSelector({ value, onChange }: ModelSelectorProps) {
+export function ModelSelector({ value, onChange, userTier }: ModelSelectorProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const canUsePremium = isPaidTier(userTier);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -36,7 +39,7 @@ export function ModelSelector({ value, onChange }: ModelSelectorProps) {
   const groups = groupModelsByProvider();
 
   const handleSelect = (model: AIModelOption) => {
-    if (model.isPremium) return; // 会员模型暂不可选
+    if (model.isPremium && !canUsePremium) return;
     onChange(model);
     setOpen(false);
   };
@@ -91,9 +94,9 @@ export function ModelSelector({ value, onChange }: ModelSelectorProps) {
                       key={`${model.platform}-${model.model}`}
                       type="button"
                       onClick={() => handleSelect(model)}
-                      disabled={model.isPremium}
+                      disabled={model.isPremium && !canUsePremium}
                       className={`group flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left transition-all ${
-                        model.isPremium
+                        model.isPremium && !canUsePremium
                           ? 'cursor-not-allowed opacity-60'
                           : 'hover:bg-white/5'
                       } ${

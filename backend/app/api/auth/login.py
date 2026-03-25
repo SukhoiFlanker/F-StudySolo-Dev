@@ -32,6 +32,7 @@ async def login(
     body: UserLogin,
     response: Response,
     anon_db: AsyncClient = Depends(get_anon_supabase_client),
+    db: AsyncClient = Depends(get_supabase_client),
 ):
     """Validate credentials via Supabase Auth and set HttpOnly cookies."""
     try:
@@ -71,15 +72,30 @@ async def login(
     )
 
     user_meta = user.user_metadata or {}
+
+    # Query user_profiles for tier
+    try:
+        profile = (
+            await db.from_("user_profiles")
+            .select("tier, nickname, avatar_url")
+            .eq("id", str(user.id))
+            .maybe_single()
+            .execute()
+        )
+        row = profile.data or {}
+    except Exception:
+        row = {}
+
     return {
         "access_token": session.access_token,
         "refresh_token": session.refresh_token,
         "user": UserInfo(
             id=str(user.id),
             email=user.email or "",
-            name=user_meta.get("name") or user_meta.get("full_name"),
-            avatar_url=user_meta.get("avatar_url"),
+            name=row.get("nickname") or user_meta.get("name") or user_meta.get("full_name"),
+            avatar_url=row.get("avatar_url") or user_meta.get("avatar_url"),
             role=user_meta.get("role", "user"),
+            tier=row.get("tier", "free"),
         ),
     }
 
@@ -149,6 +165,7 @@ async def sync_session(
     body: SyncSessionRequest,
     response: Response,
     anon_db: AsyncClient = Depends(get_anon_supabase_client),
+    db: AsyncClient = Depends(get_supabase_client),
 ):
     """Restore backend cookies from a browser-persisted Supabase session."""
     try:
@@ -175,6 +192,20 @@ async def sync_session(
     )
 
     user_meta = user.user_metadata or {}
+
+    # Query user_profiles for tier
+    try:
+        profile = (
+            await db.from_("user_profiles")
+            .select("tier, nickname, avatar_url")
+            .eq("id", str(user.id))
+            .maybe_single()
+            .execute()
+        )
+        row = profile.data or {}
+    except Exception:
+        row = {}
+
     return {
         "message": "登录状态已恢复",
         "access_token": session.access_token,
@@ -182,9 +213,10 @@ async def sync_session(
         "user": UserInfo(
             id=str(user.id),
             email=user.email or "",
-            name=user_meta.get("name") or user_meta.get("full_name"),
-            avatar_url=user_meta.get("avatar_url"),
+            name=row.get("nickname") or user_meta.get("name") or user_meta.get("full_name"),
+            avatar_url=row.get("avatar_url") or user_meta.get("avatar_url"),
             role=user_meta.get("role", "user"),
+            tier=row.get("tier", "free"),
         ),
     }
 
@@ -295,5 +327,6 @@ async def me(
         email=current_user.get("email") or row.get("email", ""),
         name=row.get("nickname"),
         avatar_url=row.get("avatar_url"),
-        role=row.get("tier", current_user.get("role", "user")),
+        role=current_user.get("role", "user"),
+        tier=row.get("tier", "free"),
     )

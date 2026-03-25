@@ -5,12 +5,31 @@ export { initCrossTabSync };
 export interface LoginResult {
   access_token: string;
   refresh_token: string;
-  user: { id: string; email: string; name?: string; avatar_url?: string; role?: string };
+  user: { id: string; email: string; name?: string; avatar_url?: string; role?: string; tier?: string };
 }
 
 export interface RegisterResult {
   message: string;
   confirmed: boolean;
+}
+
+// Canonical tier values — matches DB CHECK constraint (snake_case)
+export type TierType = 'free' | 'pro' | 'pro_plus' | 'ultra';
+
+// Display labels for UI rendering
+export const TIER_DISPLAY_LABELS: Record<TierType, string> = {
+  free: 'Free',
+  pro: 'Pro',
+  pro_plus: 'Pro+',
+  ultra: 'Ultra',
+};
+
+export function getTierLabel(tier: TierType | undefined): string {
+  return TIER_DISPLAY_LABELS[tier ?? 'free'];
+}
+
+export function isPaidTier(tier: TierType | undefined): boolean {
+  return tier !== undefined && tier !== 'free';
 }
 
 export interface UserInfo {
@@ -19,7 +38,7 @@ export interface UserInfo {
   name?: string;
   avatar_url?: string;
   role?: string;
-  tier?: 'Free' | 'Plus' | 'Pro' | 'Ultra';
+  tier?: TierType;
 }
 
 /** Send verification code to email. Requires captcha token. */

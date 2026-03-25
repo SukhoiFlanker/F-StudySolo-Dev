@@ -43,6 +43,7 @@ interface ChatMessagesProps {
   streamingMessageId: string | null;
   lastPrompt: string;
   scrollRef: React.RefObject<HTMLDivElement | null>;
+  onModeSwitch?: (mode: string) => void;
 }
 
 /* ── Inline code copy button ── */
@@ -84,9 +85,11 @@ function StreamingIndicator() {
 const AIMessage = memo(function AIMessage({
   entry,
   isStreaming,
+  onModeSwitch,
 }: {
   entry: HistoryEntry;
   isStreaming: boolean;
+  onModeSwitch?: (mode: string) => void;
 }) {
   const content = entry.content;
   const { thinking, answer, hasThinking } = parseThinking(content);
@@ -221,7 +224,7 @@ const AIMessage = memo(function AIMessage({
             className="mt-2.5 flex items-center justify-between rounded-lg bg-muted/15 px-2.5 py-1.5 border border-border/30"
           >
             <span className="text-[10px] text-muted-foreground/80 font-sans">💡 建议切换到「{modeMap[m] || m}」模式</span>
-            <button className="flex items-center gap-1 text-[10px] font-medium text-primary/80 hover:text-primary transition-colors">
+            <button onClick={() => onModeSwitch?.(m)} className="flex items-center gap-1 text-[10px] font-medium text-primary/80 hover:text-primary transition-colors">
               进入 {modeMap[m] || m} <Navigation className="h-2.5 w-2.5 ml-0.5 opacity-70" />
             </button>
           </motion.div>
@@ -386,7 +389,7 @@ function EmptyState({ lastPrompt, scrollRef }: { lastPrompt: string; scrollRef: 
 }
 
 /* ── Main Component ── */
-export function ChatMessages({ history, loading, streaming, streamingMessageId, lastPrompt, scrollRef }: ChatMessagesProps) {
+export function ChatMessages({ history, loading, streaming, streamingMessageId, lastPrompt, scrollRef, onModeSwitch }: ChatMessagesProps) {
   const endRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom on new content
@@ -417,6 +420,7 @@ export function ChatMessages({ history, loading, streaming, streamingMessageId, 
                 <AIMessage
                   entry={entry}
                   isStreaming={streaming && entry.id === streamingMessageId}
+                  onModeSwitch={onModeSwitch}
                 />
               )}
             </motion.div>

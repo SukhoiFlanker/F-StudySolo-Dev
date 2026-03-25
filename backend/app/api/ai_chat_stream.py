@@ -32,9 +32,33 @@ _DEPTH_INSTRUCTIONS: dict[str, str] = {
     "deep": "请深入思考, 从多角度详细分析, 给出专业级回答。",
 }
 
+# Premium models require paid tier (free users cannot access)
+PREMIUM_MODELS = {
+    "deepseek-reasoner",
+    "doubao-pro-256k",
+    "qwen-max",
+    "glm-4",
+    "moonshot-v1-128k",
+}
 
-async def _chat_stream_generator(body: AIChatRequest):
+
+async def _chat_stream_generator(
+    body: AIChatRequest, current_user: dict
+):
     """SSE 事件生成器 — CHAT 意图流式, 其他意图单次 JSON。"""
+
+    # ── Tier-based model access control ─────────────────────────
+    selected_model = getattr(body, "selected_model", None)
+    user_tier = current_user.get("tier", "free")
+    if selected_model and selected_model in PREMIUM_MODELS and user_tier == "free":
+        yield {
+            "data": json.dumps(
+                {"error": "该模型需要升级会员使用", "done": True},
+                ensure_ascii=False,
+            )
+        }
+        return
+
     canvas_summary = _build_canvas_summary(body.canvas_context)
     has_canvas = bool(body.canvas_context and body.canvas_context.nodes)
     depth_instruction = _DEPTH_INSTRUCTIONS.get(body.thinking_level, "")
@@ -174,4 +198,4 @@ async def ai_chat_stream(
     current_user: dict = Depends(get_current_user),
 ):
     """SSE 流式 AI 对话."""
-    return EventSourceResponse(_chat_stream_generator(body))
+    return EventSourceResponse(_chat_stream_generator(body, current_user))

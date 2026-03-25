@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Mail, UserCheck, Shield, ExternalLink, ChevronRight } from 'lucide-react';
-import { getUser, type UserInfo } from '@/services/auth.service';
+import { getUser, getTierLabel, type UserInfo } from '@/services/auth.service';
 
 export default function UserPanel() {
   const [user, setUser] = useState<UserInfo | null>(null);
@@ -23,9 +23,9 @@ export default function UserPanel() {
           <div className="flex items-center gap-4">
             <div className="relative">
               <div className={`node-paper-bg flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-base font-semibold text-foreground overflow-hidden shadow-sm border-[1.5px] ${
-                user?.tier === 'Ultra' ? 'border-amber-400 text-amber-900 dark:text-amber-200' :
-                user?.tier === 'Pro' ? 'border-slate-400 text-slate-900 dark:text-slate-200' :
-                user?.tier === 'Plus' ? 'border-emerald-400 text-emerald-900 dark:text-emerald-200' :
+                user?.tier === 'ultra' ? 'border-amber-400 text-amber-900 dark:text-amber-200' :
+                user?.tier === 'pro' ? 'border-slate-400 text-slate-900 dark:text-slate-200' :
+                user?.tier === 'pro_plus' ? 'border-emerald-400 text-emerald-900 dark:text-emerald-200' :
                 'border-border/50 text-foreground'
               }`}>
                 {user?.avatar_url ? (
@@ -38,13 +38,13 @@ export default function UserPanel() {
               
               {/* Tier Badge */}
               <div className={`absolute -bottom-2 left-1/2 -translate-x-1/2 rounded px-1.5 py-[1px] text-[9px] font-medium uppercase tracking-widest shadow-sm z-10 whitespace-nowrap border-[1.5px] font-mono node-paper-bg
-                ${user?.tier === 'Ultra' ? 'text-amber-900 dark:text-amber-200 border-amber-300' :
-                  user?.tier === 'Pro' ? 'text-slate-900 dark:text-slate-200 border-slate-300' :
-                  user?.tier === 'Plus' ? 'text-emerald-900 dark:text-emerald-200 border-emerald-300' :
+                ${user?.tier === 'ultra' ? 'text-amber-900 dark:text-amber-200 border-amber-300' :
+                  user?.tier === 'pro' ? 'text-slate-900 dark:text-slate-200 border-slate-300' :
+                  user?.tier === 'pro_plus' ? 'text-emerald-900 dark:text-emerald-200 border-emerald-300' :
                   'text-foreground border-border/50'
                 }
               `}>
-                {user?.tier || 'Free'}
+                {getTierLabel(user?.tier)}
               </div>
             </div>
             <div className="min-w-0 flex-1 pl-2">

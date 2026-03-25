@@ -12,6 +12,7 @@ import { useActionExecutor, type CanvasAction } from '@/features/workflow/hooks/
 import { useConversationStore } from '@/features/workflow/hooks/use-conversation-store';
 import { useStreamChat } from '@/features/workflow/hooks/use-stream-chat';
 import { type AIModelOption, DEFAULT_MODEL } from '@/features/workflow/constants/ai-models';
+import { getUser, type TierType } from '@/services/auth.service';
 import type { Edge, Node } from '@xyflow/react';
 
 // ── Exported types (consumed by ChatInputBar & useStreamChat) ────
@@ -34,6 +35,7 @@ export function SidebarAIPanel() {
   const [selectedModel, setSelectedModel] = useState<AIModelOption>(DEFAULT_MODEL);
   const [mode, setMode] = useState<AIMode>('chat');
   const [thinkingDepth, setThinkingDepth] = useState<ThinkingDepth>('balanced');
+  const [userTier, setUserTier] = useState<TierType>('free');
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const historyDropdownRef = useRef<HTMLDivElement>(null);
@@ -48,6 +50,7 @@ export function SidebarAIPanel() {
 
   useEffect(() => { if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight; }, [history]);
   useEffect(() => { function h(e: MouseEvent) { if (historyDropdownRef.current && !historyDropdownRef.current.contains(e.target as HTMLElement)) setShowHistoryDropdown(false); if (moreMenuRef.current && !moreMenuRef.current.contains(e.target as HTMLElement)) setShowMoreMenu(false); } document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h); }, []);
+  useEffect(() => { getUser().then((u) => setUserTier(u.tier ?? 'free')).catch(() => null); }, []);
 
   const pushMsg = useCallback((role: 'user' | 'assistant', content: string) => {
     const entry: ChatEntry = { id: crypto.randomUUID(), role, content, timestamp: Date.now() };
@@ -134,7 +137,7 @@ export function SidebarAIPanel() {
       <div className="shrink-0 flex items-center justify-between px-3 py-3 border-b border-border/50">
         <div className="flex items-center gap-2">
           <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground font-serif">AI 对话</span>
-          <ModelSelector value={selectedModel} onChange={setSelectedModel} />
+          <ModelSelector value={selectedModel} onChange={setSelectedModel} userTier={userTier} />
         </div>
         <div className="flex items-center gap-1">
           <div className="relative" ref={historyDropdownRef}>
@@ -169,7 +172,7 @@ export function SidebarAIPanel() {
       </div>
 
       {/* ═══ MESSAGES ═══ */}
-      <ChatMessages history={history} loading={loading} streaming={streaming} streamingMessageId={streamingMessageId} lastPrompt={lastPrompt} scrollRef={scrollRef} />
+      <ChatMessages history={history} loading={loading} streaming={streaming} streamingMessageId={streamingMessageId} lastPrompt={lastPrompt} scrollRef={scrollRef} onModeSwitch={(m) => setMode(m as AIMode)} />
 
       {/* ═══ INPUT ═══ */}
       <ChatInputBar input={input} setInput={setInput} mode={mode} setMode={setMode} thinkingDepth={thinkingDepth} setThinkingDepth={setThinkingDepth} selectedModel={selectedModel} loading={loading} streaming={streaming} error={error} setError={setError} onSend={() => void handleSend()} />
