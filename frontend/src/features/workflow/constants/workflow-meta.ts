@@ -51,6 +51,11 @@ export const STATUS_META: Record<NodeStatus, StatusMeta> = {
     badgeClassName: 'border border-sky-500 text-sky-600 dark:border-sky-400 dark:text-sky-400 bg-transparent shadow-[1px_1px_0px_rgba(14,165,233,0.2)]',
     dotClassName: 'bg-sky-500 shadow-[0_0_8px_rgba(14,165,233,0.6)]',
   },
+  waiting: {
+    label: '等待中',
+    badgeClassName: 'border border-amber-500 text-amber-700 dark:border-amber-400 dark:text-amber-300 bg-amber-50/50 dark:bg-amber-950/20 shadow-[1px_1px_0px_rgba(245,158,11,0.2)]',
+    dotClassName: 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]',
+  },
   done: {
     label: '已完成',
     badgeClassName: 'border border-emerald-600 text-emerald-700 dark:border-emerald-500 dark:text-emerald-400 bg-emerald-50/50 dark:bg-emerald-950/20 shadow-[1px_1px_0px_rgba(5,150,105,0.2)]',
@@ -65,6 +70,11 @@ export const STATUS_META: Record<NodeStatus, StatusMeta> = {
     label: '已暂停',
     badgeClassName: 'border border-amber-500 text-amber-600 dark:border-amber-400 dark:text-amber-400 border-dotted bg-transparent',
     dotClassName: 'bg-amber-500',
+  },
+  skipped: {
+    label: '已跳过',
+    badgeClassName: 'border border-stone-400 text-stone-600 dark:border-stone-500 dark:text-stone-300 border-dashed bg-transparent',
+    dotClassName: 'bg-stone-400',
   },
 };
 
@@ -267,7 +277,15 @@ export function getNodeTheme(nodeType: string) {
     };
   }
   // 7. CONTROL_FLOW (逻辑控制) - 琥珀色警告线质感
-  if (['logic_switch', 'loop_map', 'loop_group'].includes(nodeType)) {
+  if (nodeType === 'logic_switch') {
+    return {
+      category: 'CONTROL_FLOW_BRANCH',
+      borderClass: 'border-[2.5px] border-amber-500 dark:border-amber-400 shadow-[0_0_0_2px_rgba(245,158,11,0.08)] bg-[linear-gradient(135deg,rgba(245,158,11,0.06),transparent_55%)]',
+      innerBorderClass: 'border-[1px] border-dashed border-amber-500/55 dark:border-amber-400/50',
+      headerTextColor: 'text-amber-700 dark:text-amber-300',
+    };
+  }
+  if (['loop_map', 'loop_group'].includes(nodeType)) {
     return {
       category: 'CONTROL_FLOW',
       borderClass: 'border-2 border-amber-600 dark:border-amber-500',

@@ -8,8 +8,10 @@ import NodeMarkdownOutput from '../nodes/NodeMarkdownOutput';
 const STATUS_BADGE: Record<string, { label: string; className: string }> = {
   pending: { label: '待执行', className: 'bg-gray-500/20 text-gray-300' },
   running: { label: '执行中', className: 'bg-blue-500/20 text-blue-300' },
+  waiting: { label: '等待中', className: 'bg-amber-500/20 text-amber-200' },
   done: { label: '已完成', className: 'bg-green-500/20 text-green-300' },
   error: { label: '错误', className: 'bg-red-500/20 text-red-300' },
+  skipped: { label: '已跳过', className: 'bg-stone-500/20 text-stone-300' },
   paused: { label: '已暂停', className: 'bg-yellow-500/20 text-yellow-300' },
 };
 
@@ -29,7 +31,7 @@ export default function BottomDrawer({ open, onClose, nodeId, nodeData }: Bottom
   const liveNode = useWorkflowStore((state) => (nodeId ? state.nodes.find((node) => node.id === nodeId) : null));
   const liveData = (liveNode?.data as unknown as AIStepNodeData | undefined) ?? nodeData;
 
-  const isStreaming = liveData?.status === 'running';
+  const isStreaming = liveData?.status === 'running' || liveData?.status === 'waiting';
   const output = liveData?.output ?? '';
   const label = liveData?.label ?? '';
   const status = liveData?.status ?? 'pending';

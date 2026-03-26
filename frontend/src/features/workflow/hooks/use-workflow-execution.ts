@@ -71,6 +71,18 @@ export function useWorkflowExecution() {
           } catch { /* ignore malformed SSE */ }
         });
 
+        es.addEventListener('loop_iteration', (e) => {
+          try {
+            const data = JSON.parse(e.data) as Extract<WorkflowSSEEvent, { type: 'loop_iteration' }>;
+            setSelectedNodeId(data.group_id);
+            updateNodeData(data.group_id, {
+              currentIteration: data.iteration,
+              totalIterations: data.total,
+              status: 'running',
+            });
+          } catch { /* ignore malformed SSE */ }
+        });
+
         es.addEventListener('workflow_done', (e) => {
           try {
             const data = JSON.parse(e.data) as Extract<WorkflowSSEEvent, { type: 'workflow_done' }>;

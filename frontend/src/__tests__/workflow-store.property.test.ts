@@ -53,7 +53,7 @@ describe('Property 6: Zustand Store 状态一致性', () => {
     });
   });
 
-  it('setCurrentWorkflow injects nodes/edges exactly and sets currentWorkflowId', () => {
+  it('setCurrentWorkflow normalizes edges and sets currentWorkflowId', () => {
     fc.assert(
       fc.property(
         arbWorkflowId,
@@ -64,9 +64,19 @@ describe('Property 6: Zustand Store 状态一致性', () => {
 
           const state = useWorkflowStore.getState();
 
-          // nodes and edges must exactly match injected data
           expect(state.nodes).toEqual(nodes);
-          expect(state.edges).toEqual(edges);
+          expect(state.edges).toHaveLength(edges.length);
+          state.edges.forEach((edge, index) => {
+            expect(edge.id).toBe(edges[index].id);
+            expect(edge.source).toBe(edges[index].source);
+            expect(edge.target).toBe(edges[index].target);
+            expect(edge.type).toBe('sequential');
+            expect(edge.sourceHandle).toBe('source-right');
+            expect(edge.targetHandle).toBe('target-left');
+            expect(edge.data).toEqual({});
+          });
+
+          expect(state.nodes).toEqual(nodes);
 
           // currentWorkflowId must be set correctly
           expect(state.currentWorkflowId).toBe(workflowId);
@@ -77,6 +87,74 @@ describe('Property 6: Zustand Store 状态一致性', () => {
       ),
       { numRuns: 100 }
     );
+  });
+
+  it('setCurrentWorkflow filters legacy loop_region nodes', () => {
+    const nodes = [
+      {
+        id: 'node-1',
+        type: 'summary',
+        position: { x: 0, y: 0 },
+        data: { label: 'A', system_prompt: '', model_route: '', status: 'pending', output: '' },
+      },
+      {
+        id: 'legacy-loop',
+        type: 'loop_region',
+        position: { x: 10, y: 10 },
+        data: {},
+      },
+    ] as unknown as Node[];
+
+    useWorkflowStore.getState().setCurrentWorkflow('wf-1', nodes, []);
+
+    const state = useWorkflowStore.getState();
+    expect(state.nodes).toHaveLength(1);
+    expect(state.nodes[0]?.id).toBe('node-1');
+  });
+
+  it('onConnect assigns branch labels for logic_switch edges', () => {
+    useWorkflowStore.setState({
+      nodes: [
+        {
+          id: 'switch-1',
+          type: 'logic_switch',
+          position: { x: 0, y: 0 },
+          data: { label: '分支', system_prompt: '', model_route: '', status: 'pending', output: '', type: 'logic_switch' },
+        },
+        {
+          id: 'node-a',
+          type: 'summary',
+          position: { x: 100, y: 0 },
+          data: { label: 'A', system_prompt: '', model_route: '', status: 'pending', output: '' },
+        },
+        {
+          id: 'node-b',
+          type: 'summary',
+          position: { x: 200, y: 0 },
+          data: { label: 'B', system_prompt: '', model_route: '', status: 'pending', output: '' },
+        },
+      ] as unknown as Node[],
+      edges: [],
+      currentWorkflowId: null,
+      isDirty: false,
+    });
+
+    useWorkflowStore.getState().onConnect({
+      source: 'switch-1',
+      target: 'node-a',
+      sourceHandle: null,
+      targetHandle: null,
+    });
+    useWorkflowStore.getState().onConnect({
+      source: 'switch-1',
+      target: 'node-b',
+      sourceHandle: null,
+      targetHandle: null,
+    });
+
+    const [first, second] = useWorkflowStore.getState().edges;
+    expect((first?.data as { branch?: string } | undefined)?.branch).toBe('A');
+    expect((second?.data as { branch?: string } | undefined)?.branch).toBe('B');
   });
 
   it('setNodes marks isDirty and stores nodes correctly', () => {

@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from supabase import AsyncClient
 
 from app.core.database import get_db
-from app.core.deps import get_current_user, get_supabase_client
+from app.core.deps import check_workflow_access, get_current_user, get_supabase_client
 from app.models.workflow import WorkflowContent, WorkflowCreate, WorkflowMeta, WorkflowUpdate
 
 logger = logging.getLogger(__name__)
@@ -117,12 +117,15 @@ async def get_workflow_content(
     current_user: dict = Depends(get_current_user),
     db: AsyncClient = Depends(get_supabase_client),
 ):
-    """Return full nodes/edges JSON for a workflow."""
+    """Return full nodes/edges JSON for a workflow.
+
+    Access: owner + editor + viewer (viewer sees read-only in frontend).
+    """
+    await check_workflow_access(workflow_id, current_user["id"], "viewer", db)
     result = (
         await db.from_("ss_workflows")
         .select(_CONTENT_COLS)
         .eq("id", workflow_id)
-        .eq("user_id", current_user["id"])
         .single()
         .execute()
     )
@@ -139,17 +142,25 @@ async def update_workflow(
     db: AsyncClient = Depends(get_supabase_client),
     service_db: AsyncClient = Depends(get_db),
 ):
-    """Update a workflow (used for auto-save)."""
+    """Update a workflow (used for auto-save).
+
+    Access: owner + editor can save content.
+    Owner-only fields (is_public) are guarded separately.
+    """
     updates = body.model_dump(exclude_none=True)
     if not updates:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="无更新内容")
 
     user_id = current_user["id"]
+
+    # is_public toggle is owner-only
+    required = "owner" if "is_public" in updates else "editor"
+    await check_workflow_access(workflow_id, user_id, required, db)
+
     update_result = (
         await db.from_("ss_workflows")
         .update(updates)
         .eq("id", workflow_id)
-        .eq("user_id", user_id)
         .execute()
     )
 
@@ -160,7 +171,6 @@ async def update_workflow(
         await db.from_("ss_workflows")
         .select(_META_COLS)
         .eq("id", workflow_id)
-        .eq("user_id", user_id)
         .single()
         .execute()
     )
@@ -190,15 +200,14 @@ async def delete_workflow(
     current_user: dict = Depends(get_current_user),
     db: AsyncClient = Depends(get_supabase_client),
 ):
-    """Delete a workflow owned by the current user."""
+    """Delete a workflow. Access: owner only."""
+    await check_workflow_access(workflow_id, current_user["id"], "owner", db)
     result = (
         await db.from_("ss_workflows")
         .delete()
         .eq("id", workflow_id)
-        .eq("user_id", current_user["id"])
         .execute()
     )
-    # If RLS filtered it out, data will be empty — treat as not found
     if result.data is not None and len(result.data) == 0:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="工作流不存在")
     return {"success": True}

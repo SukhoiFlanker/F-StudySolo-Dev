@@ -26,6 +26,9 @@ function LoopGroupNode({ id, data, selected }: NodeProps) {
   const maxIterations = groupData.maxIterations ?? 3;
   const intervalSeconds = groupData.intervalSeconds ?? 0;
   const label = groupData.label || '循环块';
+  const currentIteration = groupData.currentIteration as number | undefined;
+  const totalIterations = groupData.totalIterations as number | undefined;
+  const status = groupData.status as string | undefined;
 
   const [isEditingParams, setIsEditingParams] = useState(false);
   const [editIter, setEditIter] = useState(String(maxIterations));
@@ -73,7 +76,7 @@ function LoopGroupNode({ id, data, selected }: NodeProps) {
       />
 
       {/* Container body */}
-      <div className="loop-group-container">
+      <div className={`loop-group-container ${status === 'running' ? 'loop-group-container-running' : ''}`}>
         {/* Header bar */}
         <div className="loop-group-header">
           <div className="flex items-center gap-1.5">
@@ -81,6 +84,11 @@ function LoopGroupNode({ id, data, selected }: NodeProps) {
             <span className="text-[11px] font-mono font-bold text-emerald-600 dark:text-emerald-400">
               {label}
             </span>
+            {typeof currentIteration === 'number' && typeof totalIterations === 'number' && (
+              <span className="rounded-sm border border-emerald-500/25 bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-mono text-emerald-700 dark:text-emerald-300">
+                第 {currentIteration}/{totalIterations} 轮
+              </span>
+            )}
           </div>
 
           <div className="flex items-center gap-2">
@@ -136,7 +144,11 @@ function LoopGroupNode({ id, data, selected }: NodeProps) {
         </div>
 
         {/* Empty body for child nodes */}
-        <div className="loop-group-body" />
+        <div className="loop-group-body">
+          <div className="pointer-events-none text-[10px] font-mono uppercase tracking-[0.18em] text-emerald-700/45 dark:text-emerald-300/40">
+            Drag nodes into this loop container
+          </div>
+        </div>
       </div>
 
       {/* Source handle (output) */}

@@ -399,6 +399,12 @@ async def execute_workflow(
 
     # 3. Execute level by level
     for level in levels:
+        for nid in level:
+            if nid in skipped_nodes:
+                yield sse_event("node_status", {"node_id": nid, "status": "skipped"})
+            elif nid in failed_nodes:
+                yield sse_event("node_status", {"node_id": nid, "status": "pending"})
+
         # Filter out failed/skipped nodes in this level
         active_nodes = [
             nid for nid in level
@@ -406,12 +412,6 @@ async def execute_workflow(
         ]
 
         if not active_nodes:
-            # Emit pending status for skipped nodes in this level
-            for nid in level:
-                if nid in skipped_nodes:
-                    yield sse_event("node_status", {"node_id": nid, "status": "skipped"})
-                elif nid in failed_nodes:
-                    yield sse_event("node_status", {"node_id": nid, "status": "pending"})
             continue
 
         if len(active_nodes) == 1:

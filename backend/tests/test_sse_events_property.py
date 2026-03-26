@@ -3,21 +3,27 @@ Property 16: SSE 事件类型合规性
 Feature: studysolo-mvp, Property 16: SSE 事件类型合规性
 
 For any SSE event emitted during workflow execution, the event type
-must be one of: node_status, node_token, node_done, workflow_done.
+must be one of: node_status, node_token, node_done, loop_iteration,
+workflow_done, save_error.
 
 Validates: Requirements 6.6
 """
 
 import json
-import re
 
-import pytest
-from hypothesis import given, settings
+from hypothesis import assume, given, settings
 from hypothesis import strategies as st
 
 from app.engine.events import sse_event as _sse_event
 
-VALID_EVENT_TYPES = {"node_status", "node_token", "node_done", "workflow_done"}
+VALID_EVENT_TYPES = {
+    "node_status",
+    "node_token",
+    "node_done",
+    "loop_iteration",
+    "workflow_done",
+    "save_error",
+}
 
 _event_type_strategy = st.sampled_from(list(VALID_EVENT_TYPES))
 _data_strategy = st.fixed_dictionaries({
@@ -58,8 +64,15 @@ def test_sse_event_type_is_in_valid_set(event_type):
 
 
 def test_sse_event_types_cover_all_required():
-    """The valid event type set must contain all 4 required types."""
-    required = {"node_status", "node_token", "node_done", "workflow_done"}
+    """The valid event type set must contain the current executor event set."""
+    required = {
+        "node_status",
+        "node_token",
+        "node_done",
+        "loop_iteration",
+        "workflow_done",
+        "save_error",
+    }
     assert required == VALID_EVENT_TYPES
 
 
@@ -89,3 +102,22 @@ def test_workflow_done_event_structure(workflow_id, status):
     parsed = json.loads(data_line[len("data: "):])
     assert parsed["workflow_id"] == workflow_id
     assert parsed["status"] == status
+
+
+@given(
+    group_id=st.uuids().map(str),
+    iteration=st.integers(min_value=1, max_value=10),
+    total=st.integers(min_value=1, max_value=10),
+)
+@settings(max_examples=100)
+def test_loop_iteration_event_structure(group_id, iteration, total):
+    assume(total >= iteration)
+    result = _sse_event(
+        "loop_iteration",
+        {"group_id": group_id, "iteration": iteration, "total": total},
+    )
+    data_line = [line for line in result.split("\n") if line.startswith("data: ")][0]
+    parsed = json.loads(data_line[len("data: "):])
+    assert parsed["group_id"] == group_id
+    assert parsed["iteration"] == iteration
+    assert parsed["total"] == total

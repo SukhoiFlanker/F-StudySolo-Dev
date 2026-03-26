@@ -1,8 +1,10 @@
 'use client';
 
 import { useEffect, useRef, useCallback } from 'react';
-import { Pencil, ArrowLeftRight, Trash2 } from 'lucide-react';
+import { Pencil, ArrowLeftRight, Trash2, Clock3 } from 'lucide-react';
 import { useWorkflowStore } from '@/stores/use-workflow-store';
+import { deleteEdge, reverseEdge, updateEdgeNote, updateEdgeWaitSeconds } from '@/features/workflow/utils/edge-actions';
+import { normalizeWaitSeconds } from '@/features/workflow/utils/edge-display';
 
 interface EdgeContextMenuProps {
   x: number;
@@ -42,48 +44,35 @@ export default function EdgeContextMenu({ x, y, edgeId, onClose }: EdgeContextMe
     const currentNote = ((edge.data as Record<string, unknown>)?.note as string) || '';
     const newNote = prompt('编辑备注:', currentNote);
     if (newNote !== null) {
-      const edges = useWorkflowStore.getState().edges;
-      useWorkflowStore.getState().takeSnapshot();
-      useWorkflowStore.getState().setEdges(
-        edges.map((e) =>
-          e.id === edgeId
-            ? { ...e, data: { ...((e.data || {}) as Record<string, unknown>), note: newNote } }
-            : e
-        )
-      );
+      updateEdgeNote(edgeId, newNote);
+    }
+    onClose();
+  }, [edgeId, getEdge, onClose]);
+
+  const handleSetWaitSeconds = useCallback(() => {
+    const edge = getEdge();
+    if (!edge) return;
+    const currentWait = normalizeWaitSeconds((edge.data as Record<string, unknown> | undefined)?.waitSeconds);
+    const input = prompt('设置等待时间（秒，0-300，可输入 0 清除）:', String(currentWait));
+    if (input === null) {
+      onClose();
+      return;
+    }
+
+    const parsed = Number(input.trim());
+    if (Number.isFinite(parsed)) {
+      updateEdgeWaitSeconds(edgeId, normalizeWaitSeconds(parsed));
     }
     onClose();
   }, [edgeId, getEdge, onClose]);
 
   const handleReverse = useCallback(() => {
-    const reverseHandleMap: Record<string, string> = {
-      'source-right': 'target-left',
-      'source-bottom': 'target-top',
-      'target-left': 'source-right',
-      'target-top': 'source-bottom',
-    };
-
-    const edges = useWorkflowStore.getState().edges;
-    useWorkflowStore.getState().takeSnapshot();
-    useWorkflowStore.getState().setEdges(
-      edges.map((e) => {
-        if (e.id !== edgeId) return e;
-        return {
-          ...e,
-          source: e.target,
-          target: e.source,
-          sourceHandle: reverseHandleMap[e.targetHandle ?? ''] ?? 'source-right',
-          targetHandle: reverseHandleMap[e.sourceHandle ?? ''] ?? 'target-left',
-        };
-      })
-    );
+    reverseEdge(edgeId);
     onClose();
   }, [edgeId, onClose]);
 
   const handleDelete = useCallback(() => {
-    useWorkflowStore.getState().takeSnapshot();
-    const edges = useWorkflowStore.getState().edges;
-    useWorkflowStore.getState().setEdges(edges.filter((e) => e.id !== edgeId));
+    deleteEdge(edgeId);
     onClose();
   }, [edgeId, onClose]);
 
@@ -103,6 +92,11 @@ export default function EdgeContextMenu({ x, y, edgeId, onClose }: EdgeContextMe
         <Pencil size={13} className="canvas-context-menu-icon" />
         <span>编辑备注</span>
         <span className="canvas-context-menu-shortcut">双击</span>
+      </button>
+
+      <button className="canvas-context-menu-item" onClick={handleSetWaitSeconds}>
+        <Clock3 size={13} className="canvas-context-menu-icon" />
+        <span>设置等待时间</span>
       </button>
 
       <div className="canvas-context-menu-divider" />

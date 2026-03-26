@@ -1,9 +1,10 @@
 import { create } from 'zustand';
 import { addEdge, applyEdgeChanges, applyNodeChanges } from '@xyflow/react';
 import type { Connection, Edge, EdgeChange, Node, NodeChange } from '@xyflow/react';
-import type { AIStepNodeData } from '@/types';
+import type { WorkflowNodeData } from '@/types';
+import { isLegacyLoopRegionNode, normalizeEdge } from '@/types';
 
-type NodeData = AIStepNodeData;
+type NodeData = WorkflowNodeData & Record<string, unknown>;
 
 /** Click-to-connect 状态 */
 export interface ClickConnectState {
@@ -285,17 +286,11 @@ export const useWorkflowStore = create<WorkflowStore>((set) => ({
     }),
 
   setCurrentWorkflow: (id, nodes, edges, dirty = false) => {
-    const deduped = deduplicateNodes(nodes);
+    const deduped = deduplicateNodes(nodes.filter((node) => !isLegacyLoopRegionNode(node as never)));
     set({
       currentWorkflowId: id,
       nodes: deduped,
-      edges: edges.map((e) => ({
-        ...e,
-        type: 'sequential' as const,
-        sourceHandle: (e as { sourceHandle?: string }).sourceHandle || 'source-right',
-        targetHandle: (e as { targetHandle?: string }).targetHandle || 'target-left',
-        data: (e as { data?: Record<string, unknown> }).data || {},
-      })),
+      edges: edges.map((edge) => normalizeEdge(edge as never) as unknown as Edge),
       selectedNodeId: resolveSelectedNodeId(deduped, null),
       isDirty: dirty,
     });

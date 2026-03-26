@@ -16,10 +16,21 @@ function AIStepNode({ data, selected, type, id }: NodeProps) {
   const nodeType = nodeData.type ?? type ?? 'chat_response';
   const typeMeta = getNodeTypeMeta(nodeType);
   const statusMeta = getStatusMeta(status);
-  const preview = getNodePreview(output, status === 'running' ? '正在持续生成内容...' : '等待上游节点触发');
+  const preview = getNodePreview(
+    output,
+    status === 'running'
+      ? '正在持续生成内容...'
+      : status === 'waiting'
+        ? '等待上游边上的延迟时间结束...'
+        : status === 'skipped'
+          ? '该节点被分支逻辑跳过'
+          : '等待上游节点触发',
+  );
   const [copied, setCopied] = useState(false);
-  const isActive = status === 'running' || selected;
+  const isActive = status === 'running' || status === 'waiting' || selected;
   const nodeTheme = getNodeTheme(nodeType);
+  const isLogicSwitch = nodeType === 'logic_switch';
+  const statusBadge = status === 'running' ? '(ACTIVE)' : status === 'waiting' ? '(WAIT)' : '';
   
   const cardShadow = isActive ? 'ring-2 ring-primary/40 shadow-xl shadow-primary/10 scale-[1.02]' : '';
 
@@ -88,7 +99,12 @@ function AIStepNode({ data, selected, type, id }: NodeProps) {
         <div className="flex items-center justify-between mb-5">
           <div className={`flex items-center gap-2 text-[11px] font-mono tracking-wider uppercase font-bold ${nodeTheme.headerTextColor}`}>
             <typeMeta.icon className="h-3.5 w-3.5" />
-            #{id.slice(0, 3)}_{nodeTheme.category} {status === 'running' ? '(ACTIVE)' : ''}
+            #{id.slice(0, 3)}_{nodeTheme.category} {statusBadge}
+            {isLogicSwitch && (
+              <span className="rounded-sm border border-amber-500/40 bg-amber-500/10 px-1.5 py-0.5 text-[9px] tracking-[0.18em] text-amber-700 dark:text-amber-300">
+                BRANCH
+              </span>
+            )}
           </div>
           {model_route && (
             <span className="truncate rounded bg-black/5 dark:bg-white/10 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider text-black/50 dark:text-white/50">
@@ -105,6 +121,11 @@ function AIStepNode({ data, selected, type, id }: NodeProps) {
           <p className="text-[13px] text-black/60 dark:text-white/60 font-serif leading-relaxed line-clamp-2">
             {typeMeta.description}
           </p>
+          {isLogicSwitch && (
+            <div className="mt-3 inline-flex items-center gap-1 rounded-sm border border-dashed border-amber-500/40 bg-amber-500/5 px-2 py-1 text-[10px] font-mono uppercase tracking-wider text-amber-700 dark:text-amber-300">
+              ⑂ 从右侧或底部拖出分支
+            </div>
+          )}
         </div>
 
         {/* Divider */}
@@ -120,6 +141,16 @@ function AIStepNode({ data, selected, type, id }: NodeProps) {
               </div>
               <div className="h-1.5 w-full bg-black/5 dark:bg-white/10 overflow-hidden mt-3">
                 <div className="h-full bg-current w-2/3 animate-pulse" />
+              </div>
+              <div className="mt-3 font-serif text-sm text-black/70 dark:text-white/70 italic line-clamp-2 normal-case font-normal">
+                {preview}
+              </div>
+            </div>
+          ) : status === 'waiting' ? (
+            <div className={`font-mono text-xs ${nodeTheme.headerTextColor}`}>
+              <div className="flex items-center gap-2 mb-2 font-bold tracking-widest uppercase">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                PROCESS: WAITING
               </div>
               <div className="mt-3 font-serif text-sm text-black/70 dark:text-white/70 italic line-clamp-2 normal-case font-normal">
                 {preview}

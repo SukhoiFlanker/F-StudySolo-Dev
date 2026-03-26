@@ -3,6 +3,7 @@
 import { ArrowLeft, Save, Loader2, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 import RightPanel from '@/components/layout/RightPanel';
+import CollaborationPopover from '@/components/workflow/CollaborationPopover';
 import { useWorkflowStore } from '@/stores/use-workflow-store';
 import { useSettingsStore } from '@/stores/use-settings-store';
 
@@ -10,6 +11,7 @@ interface WorkflowPageShellProps {
   workflowId?: string;
   workflowName: string;
   isPublic?: boolean;
+  isOwner?: boolean;
   children: React.ReactNode;
 }
 
@@ -17,6 +19,7 @@ export default function WorkflowPageShell({
   workflowId,
   workflowName,
   isPublic = false,
+  isOwner = false,
   children,
 }: WorkflowPageShellProps) {
   const isDirty = useWorkflowStore((s) => s.isDirty);
@@ -52,6 +55,13 @@ export default function WorkflowPageShell({
               <ExternalLink className="h-3 w-3" />
               <span className="hidden sm:inline">公开链接</span>
             </a>
+          )}
+
+          {/* Collaboration — owner only */}
+          {isOwner && workflowId && (
+            <div className="relative">
+              <CollaborationPopover workflowId={workflowId} isPublic={isPublic} />
+            </div>
           )}
 
           {/* Save status indicator */}

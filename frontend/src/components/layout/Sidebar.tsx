@@ -35,6 +35,8 @@ import WalletPanel from './sidebar/WalletPanel';
 import PluginsPanel from './sidebar/PluginsPanel';
 import UserPanel from './sidebar/UserPanel';
 import SettingsPanel from './sidebar/SettingsPanel';
+import SharedWorkflowsPanel from './sidebar/SharedWorkflowsPanel';
+import InvitationList from './sidebar/InvitationList';
 import RightPanelContent from './sidebar/RightPanelContent';
 import ResizableHandle from './ResizableHandle';
 import type { LucideIcon } from 'lucide-react';
@@ -250,6 +252,7 @@ export default function Sidebar({ workflows }: SidebarProps) {
               {activeSidebarPanel === 'workflows' && (
                 <div className="flex flex-1 flex-col overflow-hidden">
                   <nav className="scrollbar-hide flex-1 overflow-y-auto py-2">
+                    <InvitationList />
                     <SidebarWorkflowsPanel 
                       workflows={workflows} 
                       isWorkflowActive={isWorkflowActive} 
@@ -258,6 +261,7 @@ export default function Sidebar({ workflows }: SidebarProps) {
                       handleRenameSubmit={handleRenameSubmit}
                       setEditingWorkflowId={setEditingWorkflowId}
                     />
+                    <SharedWorkflowsPanel />
                   </nav>
                 </div>
               )}

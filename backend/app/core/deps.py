@@ -120,3 +120,60 @@ async def get_optional_user(
         return None
 
 
+# ---------------------------------------------------------------------------
+# Workflow access control (3-tier: owner > editor > viewer)
+# ---------------------------------------------------------------------------
+
+_ROLE_LEVEL = {"viewer": 1, "editor": 2, "owner": 3}
+
+
+async def check_workflow_access(
+    workflow_id: str,
+    user_id: str,
+    required_role: str,
+    db: AsyncClient,
+) -> dict:
+    """Unified workflow permission check.
+
+    Returns: {"workflow": {...}, "access_role": "owner"|"editor"|"viewer"}
+    Raises:
+        404 if workflow does not exist
+        403 if user lacks the required role level
+    """
+    wf_result = (
+        await db.from_("ss_workflows")
+        .select("id,user_id,name,is_public")
+        .eq("id", workflow_id)
+        .maybe_single()
+        .execute()
+    )
+    if not wf_result.data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="工作流不存在",
+        )
+
+    wf = wf_result.data
+
+    # Determine access role
+    if wf["user_id"] == user_id:
+        access_role = "owner"
+    else:
+        collab = (
+            await db.from_("ss_workflow_collaborators")
+            .select("role")
+            .eq("workflow_id", workflow_id)
+            .eq("user_id", user_id)
+            .eq("status", "accepted")
+            .maybe_single()
+            .execute()
+        )
+        access_role = collab.data["role"] if collab.data else None
+
+    if access_role is None or _ROLE_LEVEL.get(access_role, 0) < _ROLE_LEVEL[required_role]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="无权访问此工作流",
+        )
+
+    return {"workflow": wf, "access_role": access_role}

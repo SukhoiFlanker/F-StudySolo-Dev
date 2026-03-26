@@ -3,6 +3,8 @@
 import { memo, useMemo, useState, useCallback, useRef, useEffect } from 'react';
 import { BaseEdge, EdgeLabelRenderer, getBezierPath, type EdgeProps } from '@xyflow/react';
 import { useWorkflowStore } from '@/stores/use-workflow-store';
+import { updateEdgeBranch, updateEdgeNote, updateEdgeWaitSeconds } from '@/features/workflow/utils/edge-actions';
+import { buildEdgeDisplayState, normalizeWaitSeconds } from '@/features/workflow/utils/edge-display';
 
 /**
  * SequentialEdge — 唯一的连线类型
@@ -88,18 +90,27 @@ function SequentialEdge({
   const handleSave = useCallback(
     (value: string) => {
       setIsEditing(false);
-      const store = useWorkflowStore.getState();
-      store.takeSnapshot();
-      store.setEdges(
-        store.edges.map((e) =>
-          e.id === id
-            ? { ...e, data: { ...((e.data || {}) as Record<string, unknown>), note: value } }
-            : e
-        )
-      );
+      if (isBranchEdge) {
+        updateEdgeBranch(id, value);
+        return;
+      }
+      updateEdgeNote(id, value);
     },
-    [id]
+    [id, isBranchEdge]
   );
+
+  const handleWaitClick = useCallback(() => {
+    const currentWait = normalizeWaitSeconds(edgeData?.waitSeconds);
+    const input = prompt('设置等待时间（秒，0-300，可输入 0 清除）:', String(currentWait));
+    if (input === null) {
+      return;
+    }
+
+    const parsed = Number(input.trim());
+    if (Number.isFinite(parsed)) {
+      updateEdgeWaitSeconds(id, normalizeWaitSeconds(parsed));
+    }
+  }, [edgeData?.waitSeconds, id]);
 
   // Auto-focus input when editing starts
   useEffect(() => {
@@ -109,9 +120,15 @@ function SequentialEdge({
     }
   }, [isEditing]);
 
-  // Display text: branch label for logic_switch, note for others
-  const displayText = isBranchEdge ? (branch || '默认') : note;
-  const showLabel = displayText || isEditing;
+  const display = buildEdgeDisplayState(
+    {
+      note,
+      branch,
+      waitSeconds: normalizeWaitSeconds(edgeData?.waitSeconds),
+    },
+    isBranchEdge,
+  );
+  const showLabel = Boolean(display.primaryLabel || display.waitLabel || isEditing);
 
   return (
     <>
@@ -171,7 +188,7 @@ function SequentialEdge({
               <input
                 ref={inputRef}
                 className="edge-label-input"
-                defaultValue={isBranchEdge ? (branch || '') : note}
+                defaultValue={display.primaryLabel}
                 onBlur={(e) => handleSave(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') handleSave((e.target as HTMLInputElement).value);
@@ -179,7 +196,21 @@ function SequentialEdge({
                 }}
               />
             ) : (
-              <span className="text-[10px]">{displayText}</span>
+              <div className="flex items-center gap-1.5">
+                {display.primaryLabel && <span className="text-[10px]">{display.primaryLabel}</span>}
+                {display.waitLabel && (
+                  <button
+                    type="button"
+                    className="edge-wait-badge"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      handleWaitClick();
+                    }}
+                  >
+                    {display.waitLabel}
+                  </button>
+                )}
+              </div>
             )}
           </div>
         </EdgeLabelRenderer>
