@@ -1,5 +1,5 @@
 ﻿import type { UserDetailResponse, TierValue } from '@/types/admin';
-import { KpiCard, formatDateTime } from '@/features/admin/shared';
+import { AdminSelect, KpiCard, formatDateTime } from '@/features/admin/shared';
 import { InfoRow, StatusBadgeWithDot, TierBadge, TIER_OPTIONS } from './user-shared';
 
 interface UserDetailPanelsProps {
@@ -89,17 +89,12 @@ export function UserDetailPanels({
             当前等级：<TierBadge tier={user.tier} />
           </p>
           <div className="flex gap-3">
-            <select
+            <AdminSelect
               value={selectedTier}
+              options={TIER_OPTIONS}
               onChange={(event) => onSelectTier(event.target.value as TierValue)}
-              className="flex-1 bg-[#f4f4f0] border border-[#c4c6cf] rounded-none px-3 py-2.5 text-[#002045] text-sm focus:outline-none focus:border-[#002045] transition cursor-pointer shadow-sm"
-            >
-              {TIER_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+              className="flex-1"
+            />
             <button
               onClick={onApplyTier}
               disabled={roleLoading || selectedTier === user.tier}

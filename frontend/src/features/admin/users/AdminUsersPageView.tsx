@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { getUsers } from '@/services/admin.service';
 import type { PaginatedUserList, StatusFilter, TierFilter, UserListItem } from '@/types/admin';
-import { EmptyState, PageHeader, buildPaginationParams } from '@/features/admin/shared';
+import { AdminSelect, EmptyState, PageHeader, buildPaginationParams } from '@/features/admin/shared';
 import { UserQuickPanel } from './UserQuickPanel';
 import { UsersTable } from './UsersTable';
 
@@ -73,34 +73,22 @@ export function AdminUsersPageView() {
             placeholder="按邮箱搜索用户"
             className="rounded-none border border-[#c4c6cf] bg-[#f4f4f0] px-3 py-2 text-sm text-[#002045] shadow-sm focus:border-[#002045] focus:outline-none"
           />
-          <select
+          <AdminSelect
             value={tierFilter}
+            options={TIER_OPTIONS}
             onChange={(event) => {
               setTierFilter(event.target.value as TierFilter);
               setPage(1);
             }}
-            className="rounded-none border border-[#c4c6cf] bg-[#f4f4f0] px-3 py-2 text-sm text-[#002045] shadow-sm focus:border-[#002045] focus:outline-none"
-          >
-            {TIER_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-          <select
+          />
+          <AdminSelect
             value={statusFilter}
+            options={STATUS_OPTIONS}
             onChange={(event) => {
               setStatusFilter(event.target.value as StatusFilter);
               setPage(1);
             }}
-            className="rounded-none border border-[#c4c6cf] bg-[#f4f4f0] px-3 py-2 text-sm text-[#002045] shadow-sm focus:border-[#002045] focus:outline-none"
-          >
-            {STATUS_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+          />
           <button
             onClick={() => {
               setSearch(searchInput.trim());

@@ -8,7 +8,7 @@ import type {
   RevenueStats,
   TierStats,
 } from '@/types/admin';
-import { EmptyState, KpiCard, PageHeader, Pagination, formatDate } from '@/features/admin/shared';
+import { AdminSelect, EmptyState, KpiCard, PageHeader, Pagination, formatDate } from '@/features/admin/shared';
 import { TierBadge } from '@/features/admin/users/user-shared';
 
 const TIER_OPTIONS: { value: TierFilter; label: string }[] = [
@@ -94,20 +94,14 @@ export function AdminMembersPageView() {
             <h2 className="font-serif text-xl font-bold text-[#002045]">付费会员列表</h2>
             <p className="mt-2 text-sm text-[#74777f]">按会员等级筛选付费用户。</p>
           </div>
-          <select
+          <AdminSelect
             value={tierFilter}
+            options={TIER_OPTIONS}
             onChange={(event) => {
               setTierFilter(event.target.value as TierFilter);
               setPage(1);
             }}
-            className="rounded-none border border-[#c4c6cf] bg-[#f4f4f0] px-3 py-2 text-sm text-[#002045] shadow-sm focus:border-[#002045] focus:outline-none"
-          >
-            {TIER_OPTIONS.map((option) => (
-              <option key={option.value || 'all'} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+          />
         </div>
 
         <div className="mt-5 overflow-x-auto">

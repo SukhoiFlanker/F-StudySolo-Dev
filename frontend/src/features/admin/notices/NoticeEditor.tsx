@@ -3,6 +3,7 @@
 import { useCallback, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { AdminSelect } from '@/features/admin/shared';
 
 export type NoticeType = 'system' | 'feature' | 'promotion' | 'education' | 'changelog' | 'maintenance';
 export type NoticeStatus = 'draft' | 'published' | 'archived';
@@ -103,24 +104,20 @@ export default function NoticeEditor({
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="mb-1.5 block text-xs font-medium tracking-wider text-[#002045]">公告类型</label>
-          <select value={type} onChange={(event) => setType(event.target.value as NoticeType)} className={inputClass}>
-            {TYPE_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+          <AdminSelect
+            value={type}
+            options={TYPE_OPTIONS}
+            onChange={(event) => setType(event.target.value as NoticeType)}
+          />
         </div>
 
         <div>
           <label className="mb-1.5 block text-xs font-medium tracking-wider text-[#002045]">状态</label>
-          <select value={status} onChange={(event) => setStatus(event.target.value as NoticeStatus)} className={inputClass}>
-            {STATUS_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+          <AdminSelect
+            value={status}
+            options={STATUS_OPTIONS}
+            onChange={(event) => setStatus(event.target.value as NoticeStatus)}
+          />
         </div>
       </div>
 

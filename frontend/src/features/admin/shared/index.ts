@@ -24,6 +24,7 @@ export type { BadgeStyle, BadgeMap } from './badges';
 
 // Shared UI components
 export {
+  AdminSelect,
   PageHeader,
   KpiCard,
   TableSkeletonRows,
@@ -32,6 +33,7 @@ export {
   ToastStack,
   EmptyState,
 } from './components';
+export type { AdminSelectOption } from './components';
 
 // Layout components
 export { AdminSidebar } from './AdminSidebar';

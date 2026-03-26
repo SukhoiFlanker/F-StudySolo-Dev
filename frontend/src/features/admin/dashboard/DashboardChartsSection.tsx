@@ -1,3 +1,5 @@
+'use client';
+
 import {
   Bar,
   CartesianGrid,
@@ -9,6 +11,8 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+import { motion } from 'framer-motion';
+import type { ReactNode } from 'react';
 import type { DashboardCharts, DashboardTimeRange } from '@/types/admin';
 
 interface DashboardChartsSectionProps {
@@ -17,7 +21,11 @@ interface DashboardChartsSectionProps {
   onTimeRangeChange: (value: DashboardTimeRange) => void;
 }
 
-const TIME_RANGE_OPTIONS: DashboardTimeRange[] = ['7d', '30d', '90d'];
+const TIME_RANGE_OPTIONS: { value: DashboardTimeRange; label: string }[] = [
+  { value: '7d', label: '近 7 天' },
+  { value: '30d', label: '近 30 天' },
+  { value: '90d', label: '近 90 天' },
+];
 
 const tooltipStyle = {
   backgroundColor: '#f4f4f0',
@@ -26,6 +34,48 @@ const tooltipStyle = {
   color: '#002045',
 };
 
+function ChartShell({
+  title,
+  description,
+  action,
+  children,
+}: {
+  title: string;
+  description: string;
+  action?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <motion.section
+      initial={{ opacity: 0, y: 18 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.2 }}
+      transition={{ duration: 0.35, ease: 'easeOut' }}
+      className="relative overflow-hidden border border-[#c4c6cf] bg-[#f4f4f0] p-6 shadow-sm"
+    >
+      <div
+        className="pointer-events-none absolute inset-0 opacity-40"
+        style={{
+          backgroundImage:
+            'repeating-linear-gradient(45deg, rgba(0,32,69,0.035), rgba(0,32,69,0.035) 1px, transparent 1px, transparent 16px)',
+        }}
+      />
+      <div className="relative z-10">
+        <div className="mb-6 flex items-start justify-between gap-4">
+          <div>
+            <h2 className="font-serif text-xl font-bold text-[#002045]">{title}</h2>
+            <p className="mt-2 font-mono text-[10px] tracking-[0.16em] text-[#74777f]">
+              {description}
+            </p>
+          </div>
+          {action}
+        </div>
+        {children}
+      </div>
+    </motion.section>
+  );
+}
+
 export function DashboardChartsSection({
   charts,
   timeRange,
@@ -33,31 +83,27 @@ export function DashboardChartsSection({
 }: DashboardChartsSectionProps) {
   return (
     <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-      <section className="rounded-none border border-[#c4c6cf] bg-[#f4f4f0] p-6 shadow-sm">
-        <div className="mb-6 flex items-center justify-between gap-4">
-          <div>
-            <h2 className="font-serif text-xl font-bold text-[#002045]">用户增长趋势</h2>
-            <p className="mt-2 font-mono text-[10px] tracking-widest text-[#74777f]">
-              注册用户与教育邮箱注册趋势
-            </p>
-          </div>
+      <ChartShell
+        title="用户增长趋势"
+        description="注册用户与教育邮箱注册趋势"
+        action={
           <div className="flex gap-2">
             {TIME_RANGE_OPTIONS.map((option) => (
               <button
-                key={option}
-                onClick={() => onTimeRangeChange(option)}
-                className={`rounded-none border px-3 py-1.5 font-mono text-[10px] tracking-widest shadow-sm ${
-                  option === timeRange
+                key={option.value}
+                onClick={() => onTimeRangeChange(option.value)}
+                className={`border px-3 py-1.5 font-mono text-[10px] tracking-[0.16em] shadow-sm ${
+                  option.value === timeRange
                     ? 'border-[#002045] bg-[#002045] text-white'
-                    : 'border-[#c4c6cf] bg-[#f4f4f0] text-[#002045]'
+                    : 'border-[#c4c6cf] bg-[#f4f4f0] text-[#002045] hover:bg-[#ebe9df]'
                 }`}
               >
-                {option}
+                {option.label}
               </button>
             ))}
           </div>
-        </div>
-
+        }
+      >
         <div className="h-[320px]">
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart data={charts.signups_chart}>
@@ -78,16 +124,9 @@ export function DashboardChartsSection({
             </ComposedChart>
           </ResponsiveContainer>
         </div>
-      </section>
+      </ChartShell>
 
-      <section className="rounded-none border border-[#c4c6cf] bg-[#f4f4f0] p-6 shadow-sm">
-        <div className="mb-6">
-          <h2 className="font-serif text-xl font-bold text-[#002045]">工作流执行趋势</h2>
-          <p className="mt-2 font-mono text-[10px] tracking-widest text-[#74777f]">
-            总执行次数、成功次数、失败次数与 Token 消耗
-          </p>
-        </div>
-
+      <ChartShell title="工作流执行趋势" description="总执行次数、成功次数、失败次数与 Token 消耗">
         <div className="h-[320px]">
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart data={charts.workflow_chart}>
@@ -104,7 +143,7 @@ export function DashboardChartsSection({
             </ComposedChart>
           </ResponsiveContainer>
         </div>
-      </section>
+      </ChartShell>
     </div>
   );
 }

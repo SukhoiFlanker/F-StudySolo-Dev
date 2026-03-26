@@ -9,6 +9,7 @@ import type {
   PaginatedNoticeList,
 } from '@/types/admin';
 import {
+  AdminSelect,
   PageHeader,
   buildPaginationParams,
 } from '@/features/admin/shared';
@@ -118,29 +119,17 @@ export function AdminNoticesPageView() {
       />
 
       <div className="flex flex-col gap-3 sm:flex-row">
-        <select
+        <AdminSelect
           value={typeFilter}
+          options={TYPE_OPTIONS}
           onChange={(event) => setTypeFilter(event.target.value as NoticeTypeFilter)}
-          className="cursor-pointer rounded-none border border-[#c4c6cf] bg-[#f4f4f0] px-3 py-2 text-sm text-[#002045] shadow-sm transition focus:border-[#002045] focus:outline-none"
-        >
-          {TYPE_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
+        />
 
-        <select
+        <AdminSelect
           value={statusFilter}
+          options={STATUS_OPTIONS}
           onChange={(event) => setStatusFilter(event.target.value as NoticeStatusFilter)}
-          className="cursor-pointer rounded-none border border-[#c4c6cf] bg-[#f4f4f0] px-3 py-2 text-sm text-[#002045] shadow-sm transition focus:border-[#002045] focus:outline-none"
-        >
-          {STATUS_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
+        />
       </div>
 
       {error ? (

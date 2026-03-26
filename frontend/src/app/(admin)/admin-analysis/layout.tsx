@@ -27,7 +27,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
           <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
             <AdminTopbar />
-            <main className="flex-1 overflow-auto">{children}</main>
+            <main
+              className="flex-1 overflow-auto"
+              style={{
+                backgroundColor: '#f4f4f0',
+                backgroundImage:
+                  'radial-gradient(rgba(0,32,69,0.08) 0.7px, transparent 0.7px)',
+                backgroundSize: '24px 24px',
+              }}
+            >
+              {children}
+            </main>
           </div>
         </div>
       )}
