@@ -30,7 +30,7 @@ export default function WorkflowPageShell({
   return (
     <div className="flex h-full flex-col overflow-hidden">
       {/* ─── Slim info bar ─── */}
-      <div className="shrink-0 border-b border-border bg-background/80 backdrop-blur-sm px-4 py-1.5">
+      <div className="relative z-[60] shrink-0 border-b border-border bg-background/80 backdrop-blur-sm px-4 py-1.5 pointer-events-auto">
         <div className="flex items-center gap-3">
           <Link
             href="/workspace"
