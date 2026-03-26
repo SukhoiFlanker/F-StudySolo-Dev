@@ -44,20 +44,18 @@ function calcSafeX(existingNodes: Node[], anchorX: number): number {
   return Math.max(anchorX + 340, maxX + 340);
 }
 
-export function useActionExecutor() {
-  const store = useWorkflowStore;
+export async function executeCanvasActions(actions: CanvasAction[]): Promise<ExecutionResult> {
+  const store = useWorkflowStore.getState();
 
-  const execute = useCallback(
-    async (actions: CanvasAction[]): Promise<ExecutionResult> => {
-      if (!actions.length) return { success: true, appliedCount: 0 };
+  if (!actions.length) return { success: true, appliedCount: 0 };
 
-      // 执行前快照 (保证一次 MODIFY 可以整体 undo)
-      store.getState().takeSnapshot();
+  // 执行前快照 (保证一次 MODIFY 可以整体 undo)
+  store.takeSnapshot();
 
-      const state = store.getState();
-      let nodes: Node[] = [...state.nodes];
-      let edges: Edge[] = [...state.edges];
-      let appliedCount = 0;
+  const state = store;
+  let nodes: Node[] = [...state.nodes];
+  let edges: Edge[] = [...state.edges];
+  let appliedCount = 0;
 
       for (const action of actions) {
         try {
@@ -218,7 +216,7 @@ export function useActionExecutor() {
           }
         } catch (err) {
           // 任一 action 失败 → 整体回滚 (undo 快照自动保留了前置状态)
-          store.getState().undo();
+          store.undo();
           return {
             success: false,
             appliedCount,
@@ -228,13 +226,12 @@ export function useActionExecutor() {
       }
 
       // 一次性提交到 Store
-      store.getState().setNodes(nodes);
-      store.getState().setEdges(edges);
+      store.setNodes(nodes);
+      store.setEdges(edges);
 
       return { success: true, appliedCount };
-    },
-    [store],
-  );
+}
 
-  return { execute };
+export function useActionExecutor() {
+  return { execute: executeCanvasActions };
 }

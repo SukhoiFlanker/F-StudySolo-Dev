@@ -1,30 +1,41 @@
 'use client';
 
+import type { ReactNode } from 'react';
+import { motion } from 'framer-motion';
 import {
   Bar,
+  BarChart,
   CartesianGrid,
-  ComposedChart,
+  Cell,
   Legend,
   Line,
+  LineChart,
+  Pie,
+  PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from 'recharts';
-import { motion } from 'framer-motion';
-import type { ReactNode } from 'react';
-import type { DashboardCharts, DashboardTimeRange } from '@/types/admin';
+import type {
+  AdminUsageRange,
+  CostSplitResponse,
+  ModelBreakdownResponse,
+  UsageTimeseriesResponse,
+} from '@/types/usage';
 
 interface DashboardChartsSectionProps {
-  charts: DashboardCharts;
-  timeRange: DashboardTimeRange;
-  onTimeRangeChange: (value: DashboardTimeRange) => void;
+  timeseries: UsageTimeseriesResponse;
+  modelBreakdown: ModelBreakdownResponse;
+  costSplit: CostSplitResponse;
+  timeRange: AdminUsageRange;
+  onTimeRangeChange: (value: AdminUsageRange) => void;
 }
 
-const TIME_RANGE_OPTIONS: { value: DashboardTimeRange; label: string }[] = [
-  { value: '7d', label: '近 7 天' },
-  { value: '30d', label: '近 30 天' },
-  { value: '90d', label: '近 90 天' },
+const TIME_RANGE_OPTIONS: { value: AdminUsageRange; label: string }[] = [
+  { value: '24h', label: '24H' },
+  { value: '7d', label: '7D' },
+  { value: '30d', label: '30D' },
 ];
 
 const tooltipStyle = {
@@ -33,6 +44,15 @@ const tooltipStyle = {
   borderRadius: '0px',
   color: '#002045',
 };
+
+function formatUsd(value: number) {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: value >= 1 ? 2 : 4,
+    maximumFractionDigits: value >= 1 ? 2 : 4,
+  }).format(value);
+}
 
 function ChartShell({
   title,
@@ -53,20 +73,11 @@ function ChartShell({
       transition={{ duration: 0.35, ease: 'easeOut' }}
       className="relative overflow-hidden border border-[#c4c6cf] bg-[#f4f4f0] p-6 shadow-sm"
     >
-      <div
-        className="pointer-events-none absolute inset-0 opacity-40"
-        style={{
-          backgroundImage:
-            'repeating-linear-gradient(45deg, rgba(0,32,69,0.035), rgba(0,32,69,0.035) 1px, transparent 1px, transparent 16px)',
-        }}
-      />
       <div className="relative z-10">
         <div className="mb-6 flex items-start justify-between gap-4">
           <div>
             <h2 className="font-serif text-xl font-bold text-[#002045]">{title}</h2>
-            <p className="mt-2 font-mono text-[10px] tracking-[0.16em] text-[#74777f]">
-              {description}
-            </p>
+            <p className="mt-2 font-mono text-[10px] tracking-[0.16em] text-[#74777f]">{description}</p>
           </div>
           {action}
         </div>
@@ -77,15 +88,34 @@ function ChartShell({
 }
 
 export function DashboardChartsSection({
-  charts,
+  timeseries,
+  modelBreakdown,
+  costSplit,
   timeRange,
   onTimeRangeChange,
 }: DashboardChartsSectionProps) {
+  const chartData = timeseries.points.map((point) => ({
+    ts: point.ts,
+    assistant_calls: point.assistant_calls,
+    workflow_calls: point.workflow_calls,
+    assistant_tokens: point.assistant_tokens,
+    workflow_tokens: point.workflow_tokens,
+    assistant_cost_usd: point.assistant_cost_usd,
+    workflow_cost_usd: point.workflow_cost_usd,
+  }));
+
+  const pieData = costSplit.items.map((item) => ({
+    name: item.source_type === 'assistant' ? 'Assistant' : 'Workflow',
+    value: item.total_cost_usd,
+  }));
+
+  const topModels = modelBreakdown.items.slice(0, 8);
+
   return (
     <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
       <ChartShell
-        title="用户增长趋势"
-        description="注册用户与教育邮箱注册趋势"
+        title="调用次数趋势"
+        description="assistant 与 workflow 两本账的真实 provider 调用次数"
         action={
           <div className="flex gap-2">
             {TIME_RANGE_OPTIONS.map((option) => (
@@ -106,42 +136,102 @@ export function DashboardChartsSection({
       >
         <div className="h-[320px]">
           <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart data={charts.signups_chart}>
+            <BarChart data={chartData}>
               <CartesianGrid stroke="#d5d0c6" strokeDasharray="3 3" />
-              <XAxis dataKey="date" stroke="#74777f" fontSize={12} />
+              <XAxis dataKey="ts" stroke="#74777f" fontSize={12} />
               <YAxis stroke="#74777f" fontSize={12} />
               <Tooltip contentStyle={tooltipStyle} />
               <Legend />
-              <Bar dataKey="signups" fill="#002045" name="新增注册" />
-              <Line
-                type="monotone"
-                dataKey="edu_signups"
-                stroke="#6f7d95"
-                strokeWidth={2}
-                dot={{ r: 2 }}
-                name="教育邮箱注册"
-              />
-            </ComposedChart>
+              <Bar dataKey="assistant_calls" fill="#0f4c81" name="Assistant" />
+              <Bar dataKey="workflow_calls" fill="#0f766e" name="Workflow" />
+            </BarChart>
           </ResponsiveContainer>
         </div>
       </ChartShell>
 
-      <ChartShell title="工作流执行趋势" description="总执行次数、成功次数、失败次数与 Token 消耗">
+      <ChartShell title="Token 趋势" description="成功调用的 token 消耗，按账本拆分">
         <div className="h-[320px]">
           <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart data={charts.workflow_chart}>
+            <LineChart data={chartData}>
               <CartesianGrid stroke="#d5d0c6" strokeDasharray="3 3" />
-              <XAxis dataKey="date" stroke="#74777f" fontSize={12} />
-              <YAxis yAxisId="left" stroke="#74777f" fontSize={12} />
-              <YAxis yAxisId="right" orientation="right" stroke="#74777f" fontSize={12} />
+              <XAxis dataKey="ts" stroke="#74777f" fontSize={12} />
+              <YAxis stroke="#74777f" fontSize={12} />
               <Tooltip contentStyle={tooltipStyle} />
               <Legend />
-              <Bar yAxisId="left" dataKey="total_runs" fill="#002045" name="总执行次数" />
-              <Line yAxisId="left" type="monotone" dataKey="success" stroke="#2f855a" strokeWidth={2} name="成功" />
-              <Line yAxisId="left" type="monotone" dataKey="failed" stroke="#c53030" strokeWidth={2} name="失败" />
-              <Line yAxisId="right" type="monotone" dataKey="total_tokens" stroke="#8c6d1f" strokeWidth={2} name="Token" />
-            </ComposedChart>
+              <Line type="monotone" dataKey="assistant_tokens" stroke="#0f4c81" strokeWidth={2} name="Assistant Tokens" />
+              <Line type="monotone" dataKey="workflow_tokens" stroke="#0f766e" strokeWidth={2} name="Workflow Tokens" />
+            </LineChart>
           </ResponsiveContainer>
+        </div>
+      </ChartShell>
+
+      <ChartShell title="费用趋势" description="USD 账本，按 assistant / workflow 分开计算">
+        <div className="h-[320px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={chartData}>
+              <CartesianGrid stroke="#d5d0c6" strokeDasharray="3 3" />
+              <XAxis dataKey="ts" stroke="#74777f" fontSize={12} />
+              <YAxis stroke="#74777f" fontSize={12} />
+              <Tooltip
+                contentStyle={tooltipStyle}
+                formatter={(value: number) => [formatUsd(value), 'Cost']}
+              />
+              <Legend />
+              <Line type="monotone" dataKey="assistant_cost_usd" stroke="#8c6d1f" strokeWidth={2} name="Assistant Cost" />
+              <Line type="monotone" dataKey="workflow_cost_usd" stroke="#c05621" strokeWidth={2} name="Workflow Cost" />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </ChartShell>
+
+      <ChartShell title="成本拆分与模型排行" description="左侧看账本拆分，右侧看最贵 / 最热模型">
+        <div className="grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
+          <div className="h-[260px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Tooltip
+                  contentStyle={tooltipStyle}
+                  formatter={(value: number) => [formatUsd(value), 'Cost']}
+                />
+                <Pie data={pieData} dataKey="value" nameKey="name" outerRadius={88} innerRadius={44}>
+                  {pieData.map((entry, index) => (
+                    <Cell key={entry.name} fill={index === 0 ? '#0f4c81' : '#0f766e'} />
+                  ))}
+                </Pie>
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className="overflow-hidden border border-[#c4c6cf]">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="border-b border-[#c4c6cf] bg-[#efeeea]">
+                  <th className="px-4 py-3 font-mono text-[10px] tracking-[0.16em] text-[#002045]">MODEL</th>
+                  <th className="px-4 py-3 font-mono text-[10px] tracking-[0.16em] text-[#002045]">CALLS</th>
+                  <th className="px-4 py-3 font-mono text-[10px] tracking-[0.16em] text-[#002045]">TOKENS</th>
+                  <th className="px-4 py-3 font-mono text-[10px] tracking-[0.16em] text-[#002045]">COST</th>
+                </tr>
+              </thead>
+              <tbody>
+                {topModels.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="px-4 py-8 text-center text-sm text-[#74777f]">
+                      暂无模型账本数据
+                    </td>
+                  </tr>
+                ) : (
+                  topModels.map((item) => (
+                    <tr key={`${item.provider}-${item.model}`} className="border-b border-[#ddd8cf] last:border-b-0">
+                      <td className="px-4 py-3 text-sm text-[#002045]">{item.provider}/{item.model}</td>
+                      <td className="px-4 py-3 font-mono text-xs text-[#74777f]">{item.provider_call_count.toLocaleString('zh-CN')}</td>
+                      <td className="px-4 py-3 font-mono text-xs text-[#74777f]">{item.total_tokens.toLocaleString('zh-CN')}</td>
+                      <td className="px-4 py-3 font-mono text-xs text-[#002045]">{formatUsd(item.total_cost_usd)}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </ChartShell>
     </div>

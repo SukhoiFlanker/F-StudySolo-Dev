@@ -28,6 +28,7 @@ from app.engine.events import sse_event
 from app.nodes import NODE_REGISTRY
 from app.nodes._base import BaseNode, NodeInput
 from app.services.ai_router import call_llm, AIRouterError
+from app.services.usage_ledger import bind_usage_call
 
 logger = logging.getLogger(__name__)
 
@@ -324,8 +325,9 @@ async def _execute_single_node(
 
     full_output = ""
     try:
-        async for token in node_instance.execute(node_input, call_llm):
-            full_output += token
+        with bind_usage_call(node_id=node_id, node_type=node_type_str):
+            async for token in node_instance.execute(node_input, call_llm):
+                full_output += token
 
         result = await node_instance.post_process(full_output)
         return (node_id, result.content, None)
@@ -475,9 +477,10 @@ async def execute_workflow(
 
             full_output = ""
             try:
-                async for token in node_instance.execute(node_input, call_llm):
-                    full_output += token
-                    yield sse_event("node_token", {"node_id": node_id, "token": token})
+                with bind_usage_call(node_id=node_id, node_type=node_type_str):
+                    async for token in node_instance.execute(node_input, call_llm):
+                        full_output += token
+                        yield sse_event("node_token", {"node_id": node_id, "token": token})
 
                 result = await node_instance.post_process(full_output)
                 accumulated_outputs[node_id] = result.content

@@ -1,22 +1,70 @@
-import type { DashboardOverview } from '@/types/admin';
 import { KpiCard, formatNumber } from '@/features/admin/shared';
+import type { UsageLiveResponse, UsageOverviewResponse } from '@/types/usage';
 
-interface DashboardKpiSectionProps {
-  overview: DashboardOverview;
+function formatUsd(value: number) {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: value >= 1 ? 2 : 4,
+    maximumFractionDigits: value >= 1 ? 2 : 4,
+  }).format(value);
 }
 
-export function DashboardKpiSection({ overview }: DashboardKpiSectionProps) {
+function formatPercent(value: number) {
+  return `${(value * 100).toFixed(1)}%`;
+}
+
+interface DashboardKpiSectionProps {
+  overview: UsageOverviewResponse;
+  live: UsageLiveResponse | null;
+}
+
+export function DashboardKpiSection({ overview, live }: DashboardKpiSectionProps) {
   const cards = [
-    { label: '注册用户总数', value: formatNumber(overview.total_users), sub: 'user_profiles' },
-    { label: '当前活跃用户', value: formatNumber(overview.active_users), sub: 'is_active = true' },
-    { label: '今日新增用户', value: formatNumber(overview.today_signups), sub: 'v_daily_signups' },
-    { label: '今日执行次数', value: formatNumber(overview.today_workflow_runs), sub: 'ss_workflow_runs' },
-    { label: '工作流累计执行', value: formatNumber(overview.total_workflow_runs), sub: '历史累计' },
-    { label: '有效订阅数', value: formatNumber(overview.active_subscriptions), sub: 'subscriptions' },
+    {
+      label: '助手逻辑请求',
+      value: formatNumber(overview.assistant.logical_request_count),
+      sub: `近 5 分钟 ${formatNumber(live?.summary.logical_request_count ?? 0)}`,
+    },
+    {
+      label: '工作流逻辑请求',
+      value: formatNumber(overview.workflow.logical_request_count),
+      sub: `近 5 分钟 ${formatNumber(live?.summary.provider_call_count ?? 0)} 次 API 调用`,
+    },
+    {
+      label: '真实 API 调用',
+      value: formatNumber(overview.all.provider_call_count),
+      sub: `成功 ${formatNumber(overview.all.successful_provider_call_count)} 次`,
+    },
+    {
+      label: '总 Tokens',
+      value: formatNumber(overview.all.total_tokens),
+      sub: `助手 ${formatNumber(overview.assistant.total_tokens)} / 工作流 ${formatNumber(overview.workflow.total_tokens)}`,
+    },
+    {
+      label: '总费用',
+      value: formatUsd(overview.all.total_cost_usd),
+      sub: `助手 ${formatUsd(overview.assistant.total_cost_usd)} / 工作流 ${formatUsd(overview.workflow.total_cost_usd)}`,
+    },
+    {
+      label: '错误率',
+      value: formatPercent(overview.all.error_rate),
+      sub: `Fallback ${formatPercent(overview.all.fallback_rate)}`,
+    },
+    {
+      label: 'P95 延迟',
+      value: `${overview.all.p95_latency_ms ?? 0} ms`,
+      sub: '仅统计成功 provider 调用',
+    },
+    {
+      label: '近 5 分钟费用',
+      value: formatUsd(live?.summary.total_cost_usd ?? 0),
+      sub: `近 5 分钟 Tokens ${formatNumber(live?.summary.total_tokens ?? 0)}`,
+    },
   ];
 
   return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
       {cards.map((card) => (
         <KpiCard key={card.label} label={card.label} value={card.value} sub={card.sub} />
       ))}

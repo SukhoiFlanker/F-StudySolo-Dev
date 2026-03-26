@@ -26,11 +26,50 @@ export interface AIModelOption {
 }
 
 export const AI_MODEL_OPTIONS: AIModelOption[] = [
+  // ── 七牛云 (Qiniu Cloud) - [New Primary] ──
+  {
+    platform: 'qiniu',
+    model: 'DeepSeek-V3.2',
+    displayName: 'DeepSeek V3 (七牛)',
+    providerName: '七牛云',
+    brandColor: '#0082FA',
+    isPremium: false,
+    description: '日常对话优选，响应极快',
+  },
+  {
+    platform: 'qiniu',
+    model: 'DeepSeek-R1',
+    displayName: 'DeepSeek R1 (七牛)',
+    providerName: '七牛云',
+    brandColor: '#0082FA',
+    isPremium: true,
+    description: '强悍数学/编程推理，深度思维',
+    supportsThinking: true,
+  },
+  {
+    platform: 'qiniu',
+    model: 'Qwen3-Max',
+    displayName: 'Qwen 3 Max (七牛)',
+    providerName: '七牛云',
+    brandColor: '#0082FA',
+    isPremium: true,
+    description: '复杂任务与智能体编程专项',
+  },
+  {
+    platform: 'qiniu',
+    model: 'Kimi-K2.5',
+    displayName: 'Kimi K2.5 (七牛)',
+    providerName: '七牛云',
+    brandColor: '#0082FA',
+    isPremium: true,
+    description: '256K长上下文，旗舰架构',
+  },
+
   // ── DeepSeek ──────────────────────────────────────
   {
     platform: 'deepseek',
     model: 'deepseek-chat',
-    displayName: 'DeepSeek V3',
+    displayName: 'DeepSeek V3 (直连)',
     providerName: 'DeepSeek',
     brandColor: '#4D6BFE',
     isPremium: false,
@@ -39,7 +78,7 @@ export const AI_MODEL_OPTIONS: AIModelOption[] = [
   {
     platform: 'deepseek',
     model: 'deepseek-reasoner',
-    displayName: 'DeepSeek R1',
+    displayName: 'DeepSeek R1 (直连)',
     providerName: 'DeepSeek',
     brandColor: '#4D6BFE',
     isPremium: true,
@@ -49,7 +88,7 @@ export const AI_MODEL_OPTIONS: AIModelOption[] = [
   // ── 火山引擎 (豆包) ──────────────────────────────
   {
     platform: 'volcengine',
-    model: 'doubao-pro-32k',
+    model: 'Doubao-pro-32k',
     displayName: '豆包 Pro',
     providerName: '豆包',
     brandColor: '#3370FF',
@@ -58,7 +97,7 @@ export const AI_MODEL_OPTIONS: AIModelOption[] = [
   },
   {
     platform: 'volcengine',
-    model: 'doubao-pro-256k',
+    model: 'Doubao-pro-256k',
     displayName: '豆包 Pro 256K',
     providerName: '豆包',
     brandColor: '#3370FF',
@@ -78,7 +117,7 @@ export const AI_MODEL_OPTIONS: AIModelOption[] = [
   {
     platform: 'dashscope',
     model: 'qwen-max',
-    displayName: '通义千问 Max',
+    displayName: '通义千问 Max (直连)',
     providerName: '通义千问',
     brandColor: '#6B5CE7',
     isPremium: true,
@@ -107,7 +146,7 @@ export const AI_MODEL_OPTIONS: AIModelOption[] = [
   {
     platform: 'moonshot',
     model: 'moonshot-v1-8k',
-    displayName: 'Kimi 8K',
+    displayName: 'Kimi 8K (直连)',
     providerName: 'Kimi',
     brandColor: '#1E1E1E',
     isPremium: false,
@@ -116,7 +155,7 @@ export const AI_MODEL_OPTIONS: AIModelOption[] = [
   {
     platform: 'moonshot',
     model: 'moonshot-v1-128k',
-    displayName: 'Kimi 128K',
+    displayName: 'Kimi 128K (直连)',
     providerName: 'Kimi',
     brandColor: '#1E1E1E',
     isPremium: true,

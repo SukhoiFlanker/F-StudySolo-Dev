@@ -23,6 +23,7 @@ from app.models.ai import (
     WorkflowEdgeSchema,
 )
 from app.services.ai_router import call_llm, AIRouterError
+from app.services.usage_ledger import bind_usage_request, create_usage_request, finalize_usage_request
 from app.core.config_loader import get_config
 
 logger = logging.getLogger(__name__)
@@ -233,6 +234,36 @@ async def generate_workflow(
     body: GenerateWorkflowRequest,
     current_user: dict = Depends(get_current_user),
 ):
+    return await _generate_workflow_impl(body, current_user)
+
+
+async def _generate_workflow_impl(
+    body: GenerateWorkflowRequest,
+    current_user: dict,
+) -> GenerateWorkflowResponse:
+    usage_request = await create_usage_request(
+        user_id=current_user["id"],
+        source_type="assistant",
+        source_subtype="generate_workflow",
+    )
+    request_status = "completed"
+
+    with bind_usage_request(usage_request):
+        try:
+            return await _generate_workflow_core(body)
+        except HTTPException:
+            request_status = "failed"
+            raise
+        except Exception:
+            request_status = "failed"
+            raise
+        finally:
+            await finalize_usage_request(usage_request.request_id, request_status)
+
+
+async def _generate_workflow_core(
+    body: GenerateWorkflowRequest,
+) -> GenerateWorkflowResponse:
     """Two-stage AI workflow generation.
 
     Stage 1 — AI_Analyzer: parse user input into structured requirements JSON.

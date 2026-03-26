@@ -15,6 +15,22 @@ from pydantic import BaseModel
 from supabase._async.client import AsyncClient
 
 from app.core.database import get_db
+from app.models.usage import (
+    CostSplitResponse,
+    ModelBreakdownResponse,
+    RecentCallsResponse,
+    UsageLiveResponse,
+    UsageOverviewResponse,
+    UsageTimeseriesResponse,
+)
+from app.services.usage_analytics import (
+    get_cost_split,
+    get_model_breakdown,
+    get_recent_calls,
+    get_usage_live,
+    get_usage_overview,
+    get_usage_timeseries,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -228,3 +244,53 @@ async def get_dashboard_charts(
         signups_chart=signups_chart,
         workflow_chart=workflow_chart,
     )
+
+
+@router.get("/dashboard/ai-overview", response_model=UsageOverviewResponse)
+async def get_dashboard_ai_overview(
+    range_value: str = Query(default="24h", alias="range"),
+    db: AsyncClient = Depends(get_db),
+) -> UsageOverviewResponse:
+    return await get_usage_overview(db, range_value=range_value)
+
+
+@router.get("/dashboard/ai-live", response_model=UsageLiveResponse)
+async def get_dashboard_ai_live(
+    window: str = Query(default="5m"),
+    db: AsyncClient = Depends(get_db),
+) -> UsageLiveResponse:
+    return await get_usage_live(db, window_value=window)
+
+
+@router.get("/dashboard/ai-timeseries", response_model=UsageTimeseriesResponse)
+async def get_dashboard_ai_timeseries(
+    range_value: str = Query(default="7d", alias="range"),
+    source: str = Query(default="all"),
+    db: AsyncClient = Depends(get_db),
+) -> UsageTimeseriesResponse:
+    return await get_usage_timeseries(db, range_value=range_value, source_filter=source)
+
+
+@router.get("/dashboard/ai-model-breakdown", response_model=ModelBreakdownResponse)
+async def get_dashboard_ai_model_breakdown(
+    range_value: str = Query(default="7d", alias="range"),
+    source: str = Query(default="all"),
+    db: AsyncClient = Depends(get_db),
+) -> ModelBreakdownResponse:
+    return await get_model_breakdown(db, range_value=range_value, source_filter=source)
+
+
+@router.get("/dashboard/ai-recent-calls", response_model=RecentCallsResponse)
+async def get_dashboard_ai_recent_calls(
+    limit: int = Query(default=20, ge=1, le=100),
+    db: AsyncClient = Depends(get_db),
+) -> RecentCallsResponse:
+    return await get_recent_calls(db, limit=limit)
+
+
+@router.get("/dashboard/ai-cost-split", response_model=CostSplitResponse)
+async def get_dashboard_ai_cost_split(
+    range_value: str = Query(default="7d", alias="range"),
+    db: AsyncClient = Depends(get_db),
+) -> CostSplitResponse:
+    return await get_cost_split(db, range_value=range_value)

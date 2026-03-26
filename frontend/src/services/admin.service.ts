@@ -8,6 +8,17 @@ import type {
   PaginatedUserList,
   UserDetailResponse,
 } from '@/types/admin';
+import type {
+  AdminUsageRange,
+  CostSplitResponse,
+  ModelBreakdownResponse,
+  RecentCallsResponse,
+  UsageLiveResponse,
+  UsageOverviewResponse,
+  UsageSourceFilter,
+  UsageTimeseriesResponse,
+  UsageWindow,
+} from '@/types/usage';
 
 const ADMIN_API_BASE = '/api/admin';
 
@@ -74,6 +85,24 @@ export const getDashboardOverview = () => adminFetch<DashboardOverview>('/dashbo
 
 export const getDashboardCharts = (timeRange: DashboardTimeRange) =>
   adminFetch<DashboardCharts>(`/dashboard/charts?time_range=${timeRange}`);
+
+export const getAdminAiOverview = (range: AdminUsageRange = '24h') =>
+  adminFetch<UsageOverviewResponse>(`/dashboard/ai-overview?range=${range}`);
+
+export const getAdminAiLive = (window: UsageWindow = '5m') =>
+  adminFetch<UsageLiveResponse>(`/dashboard/ai-live?window=${window}`);
+
+export const getAdminAiTimeseries = (range: AdminUsageRange = '7d', source: UsageSourceFilter = 'all') =>
+  adminFetch<UsageTimeseriesResponse>(`/dashboard/ai-timeseries?range=${range}&source=${source}`);
+
+export const getAdminAiModelBreakdown = (range: AdminUsageRange = '7d', source: UsageSourceFilter = 'all') =>
+  adminFetch<ModelBreakdownResponse>(`/dashboard/ai-model-breakdown?range=${range}&source=${source}`);
+
+export const getAdminAiRecentCalls = (limit = 20) =>
+  adminFetch<RecentCallsResponse>(`/dashboard/ai-recent-calls?limit=${limit}`);
+
+export const getAdminAiCostSplit = (range: AdminUsageRange = '7d') =>
+  adminFetch<CostSplitResponse>(`/dashboard/ai-cost-split?range=${range}`);
 
 export const getUsers = (params: URLSearchParams) =>
   adminFetch<PaginatedUserList>(`/users?${params.toString()}`);

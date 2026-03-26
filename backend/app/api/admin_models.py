@@ -16,6 +16,7 @@ from supabase._async.client import AsyncClient
 
 from app.core.database import get_db
 from app.services.audit_logger import get_client_info, queue_audit_log
+from app.services.usage_analytics import get_model_breakdown
 
 logger = logging.getLogger(__name__)
 
@@ -100,28 +101,16 @@ async def get_models_usage(
     time_range: Literal["7d", "30d", "90d"] = Query(default="7d"),
     db: AsyncClient = Depends(get_db),
 ) -> ModelUsageResponse:
-    """Return token usage aggregated from ss_workflow_runs."""
-    days_map = {"7d": 7, "30d": 30, "90d": 90}
-    days = days_map[time_range]
-    cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
-
+    """Return model usage aggregated from ss_ai_usage_events."""
     try:
-        result = (
-            await db.table("ss_workflow_runs")
-            .select("tokens_used")
-            .gte("started_at", cutoff)
-            .execute()
-        )
-        rows = result.data or []
-
-        # Aggregate total (no per-model breakdown without model_id field)
-        total_tokens = sum(int(r.get("tokens_used") or 0) for r in rows)
+        breakdown = await get_model_breakdown(db, range_value=time_range, source_filter="all")
         usage = [
             ModelUsageStat(
-                model_id="all",
-                total_tokens=total_tokens,
-                run_count=len(rows),
+                model_id=f"{item.provider}/{item.model}",
+                total_tokens=item.total_tokens,
+                run_count=item.provider_call_count,
             )
+            for item in breakdown.items
         ]
 
     except Exception as exc:

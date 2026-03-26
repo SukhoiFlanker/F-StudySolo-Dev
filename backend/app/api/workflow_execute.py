@@ -12,6 +12,7 @@ from supabase import AsyncClient
 from app.core.database import get_db
 from app.core.deps import get_current_user, get_supabase_client
 from app.engine.executor import execute_workflow
+from app.services.usage_ledger import bind_usage_request, create_usage_request, finalize_usage_request
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +50,7 @@ async def execute_workflow_sse(
     # INSERT a workflow run record with status='running'
     run_id = str(uuid.uuid4())
     started_at = datetime.now(timezone.utc).isoformat()
+    workflow_run_ref: str | None = run_id
     try:
         await service_db.from_("ss_workflow_runs").insert({
             "id": run_id,
@@ -58,7 +60,16 @@ async def execute_workflow_sse(
             "started_at": started_at,
         }).execute()
     except Exception as e:
+        workflow_run_ref = None
         logger.error("Failed to insert ss_workflow_runs record: %s", e)
+
+    usage_request = await create_usage_request(
+        user_id=user_id,
+        source_type="workflow",
+        source_subtype="workflow_execute",
+        workflow_id=workflow_id,
+        workflow_run_id=workflow_run_ref,
+    )
 
     async def _save_results(wf_id: str, updated_nodes: list[dict]) -> None:
         await db.from_("ss_workflows").update(
@@ -69,38 +80,29 @@ async def execute_workflow_sse(
         total_tokens = 0
         final_output: dict | None = None
         run_status = "completed"
-
-        def _parse_event(evt: str) -> None:
-            nonlocal total_tokens, final_output, run_status
+        with bind_usage_request(usage_request):
             try:
-                if evt.startswith("event: node_token"):
-                    for line in evt.strip().split("\n"):
-                        if line.startswith("data: "):
-                            data = json.loads(line[6:])
-                            total_tokens += len(data.get("token", "").split())
-                elif evt.startswith("event: workflow_done"):
-                    for line in evt.strip().split("\n"):
-                        if line.startswith("data: "):
-                            data = json.loads(line[6:])
-                            if data.get("status") != "completed":
-                                run_status = "failed"
-                            final_output = data
-            except Exception:
-                pass
+                async for event in execute_workflow(
+                    workflow_id, nodes, edges, save_callback=_save_results
+                ):
+                    yield event
+                    try:
+                        if evt := _parse_sse_data(event):
+                            if event.startswith("event: workflow_done"):
+                                if evt.get("status") != "completed":
+                                    run_status = "failed"
+                                final_output = evt
+                    except Exception:
+                        pass
+            except Exception as e:
+                logger.error("Workflow execution error for run %s: %s", run_id, e)
+                run_status = "failed"
+            finally:
+                await finalize_usage_request(usage_request.request_id, run_status)
 
-        try:
-            async for event in execute_workflow(
-                workflow_id, nodes, edges, save_callback=_save_results
-            ):
-                yield event
-                _parse_event(event)
-
-        except Exception as e:
-            logger.error("Workflow execution error for run %s: %s", run_id, e)
-            run_status = "failed"
-
-        # UPDATE ss_workflow_runs with final status
-        await _finalize_run(service_db, run_id, run_status, total_tokens, final_output)
+        total_tokens = await _load_request_total_tokens(service_db, usage_request.request_id)
+        if workflow_run_ref:
+            await _finalize_run(service_db, run_id, run_status, total_tokens, final_output)
         await _update_usage_daily(service_db, user_id, total_tokens)
 
     return StreamingResponse(
@@ -133,6 +135,24 @@ async def _finalize_run(
         await db.from_("ss_workflow_runs").update(payload).eq("id", run_id).execute()
     except Exception as e:
         logger.error("Failed to update ss_workflow_runs record %s: %s", run_id, e)
+
+
+def _parse_sse_data(event: str) -> dict | None:
+    payload_line = next((line for line in event.strip().split("\n") if line.startswith("data: ")), None)
+    if not payload_line:
+        return None
+    return json.loads(payload_line[6:])
+
+
+async def _load_request_total_tokens(db: AsyncClient, request_id: str) -> int:
+    result = (
+        await db.from_("ss_ai_usage_events")
+        .select("total_tokens")
+        .eq("request_id", request_id)
+        .eq("status", "success")
+        .execute()
+    )
+    return sum(int(row.get("total_tokens") or 0) for row in (result.data or []))
 
 
 async def _update_usage_daily(

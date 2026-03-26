@@ -8,7 +8,7 @@
  * 单文件 < 300 行。
  */
 
-import { useState, useCallback, useEffect } from 'react';
+import { create } from 'zustand';
 
 // ── Types ────────────────────────────────────────────────────────────
 
@@ -60,24 +60,31 @@ function extractTitle(firstUserMessage: string): string {
 
 // ── Hook ─────────────────────────────────────────────────────────
 
-export function useConversationStore() {
-  const [conversations, setConversations] = useState<ConversationRecord[]>([]);
-  const [activeId, setActiveId] = useState<string | null>(null);
+export interface ConversationStore {
+  conversations: ConversationRecord[];
+  activeId: string | null;
+  activeConversation: ConversationRecord | null;
+  createConversation: () => string;
+  appendMessage: (entry: ChatEntry) => void;
+  switchConversation: (id: string) => void;
+  clearActive: () => void;
+  deleteConversation: (id: string) => void;
+  initStore: () => void;
+}
 
-  // 初始化: 加载本地数据
-  useEffect(() => {
+export const useConversationStore = create<ConversationStore>((set, get) => ({
+  conversations: [],
+  activeId: null,
+  activeConversation: null,
+
+  initStore: () => {
     const stored = loadAll();
-    setConversations(stored);
-    // 默认激活最近一条
-    if (stored.length > 0) {
-      setActiveId(stored[stored.length - 1].id);
-    }
-  }, []);
+    const actId = stored.length > 0 ? stored[stored.length - 1].id : null;
+    const actConv = stored.find(c => c.id === actId) ?? null;
+    set({ conversations: stored, activeId: actId, activeConversation: actConv });
+  },
 
-  const activeConversation = conversations.find((c) => c.id === activeId) ?? null;
-
-  /** 创建新会话 */
-  const createConversation = useCallback((): string => {
+  createConversation: () => {
     const newId = `conv-${Date.now().toString(36)}`;
     const newRecord: ConversationRecord = {
       id: newId,
@@ -87,81 +94,80 @@ export function useConversationStore() {
       updatedAt: Date.now(),
       messages: [],
     };
-    setConversations((prev) => {
-      const updated = [...prev, newRecord].slice(-MAX_CONVERSATIONS);
+    
+    set((state) => {
+      const updated = [...state.conversations, newRecord].slice(-MAX_CONVERSATIONS);
       saveAll(updated);
-      return updated;
+      return { 
+        conversations: updated, 
+        activeId: newId, 
+        activeConversation: newRecord 
+      };
     });
-    setActiveId(newId);
+    
     return newId;
-  }, []);
+  },
 
-  /** 向当前会话追加一条消息 */
-  const appendMessage = useCallback(
-    (entry: ChatEntry) => {
-      if (!activeId) return;
-      setConversations((prev) => {
-        const updated = prev.map((conv) => {
-          if (conv.id !== activeId) return conv;
+  appendMessage: (entry) => {
+    set((state) => {
+      if (!state.activeId) return state;
+      
+      const updated = state.conversations.map((conv) => {
+        if (conv.id !== state.activeId) return conv;
 
-          const isFirst = conv.messages.length === 0 && entry.role === 'user';
-          const newMessages = [...conv.messages, entry].slice(-MAX_MESSAGES_PER_CONV);
+        const isFirst = conv.messages.length === 0 && entry.role === 'user';
+        const newMessages = [...conv.messages, entry].slice(-MAX_MESSAGES_PER_CONV);
 
-          return {
-            ...conv,
-            title: isFirst ? extractTitle(entry.content) : conv.title,
-            preview: entry.content.slice(0, 48),
-            updatedAt: Date.now(),
-            messages: newMessages,
-          };
-        });
-        saveAll(updated);
-        return updated;
+        return {
+          ...conv,
+          title: isFirst ? extractTitle(entry.content) : conv.title,
+          preview: entry.content.slice(0, 48),
+          updatedAt: Date.now(),
+          messages: newMessages,
+        };
       });
-    },
-    [activeId],
-  );
+      
+      saveAll(updated);
+      return { 
+        conversations: updated, 
+        activeConversation: updated.find(c => c.id === state.activeId) ?? null 
+      };
+    });
+  },
 
-  /** 切换到指定会话 */
-  const switchConversation = useCallback((id: string) => {
-    setActiveId(id);
-  }, []);
+  switchConversation: (id) => {
+    set((state) => ({ 
+      activeId: id,
+      activeConversation: state.conversations.find(c => c.id === id) ?? null
+    }));
+  },
 
-  /** 清空当前会话消息 (保留会话记录) */
-  const clearActive = useCallback(() => {
-    if (!activeId) return;
-    setConversations((prev) => {
-      const updated = prev.map((c) =>
-        c.id === activeId ? { ...c, messages: [], preview: '', updatedAt: Date.now() } : c,
+  clearActive: () => {
+    set((state) => {
+      if (!state.activeId) return state;
+      
+      const updated = state.conversations.map((c) =>
+        c.id === state.activeId ? { ...c, messages: [], preview: '', updatedAt: Date.now() } : c,
       );
       saveAll(updated);
-      return updated;
+      return { 
+        conversations: updated,
+        activeConversation: updated.find(c => c.id === state.activeId) ?? null
+      };
     });
-  }, [activeId]);
+  },
 
-  /** 删除指定会话 */
-  const deleteConversation = useCallback(
-    (id: string) => {
-      setConversations((prev) => {
-        const updated = prev.filter((c) => c.id !== id);
-        saveAll(updated);
-        return updated;
-      });
-      if (activeId === id) {
-        setActiveId(null);
-      }
-    },
-    [activeId],
-  );
+  deleteConversation: (id) => {
+    set((state) => {
+      const updated = state.conversations.filter((c) => c.id !== id);
+      saveAll(updated);
+      const newActiveId = state.activeId === id ? null : state.activeId;
+      return { 
+        conversations: updated, 
+        activeId: newActiveId,
+        activeConversation: newActiveId ? (updated.find(c => c.id === newActiveId) ?? null) : null
+      };
+    });
+  },
+}));
 
-  return {
-    conversations,
-    activeId,
-    activeConversation,
-    createConversation,
-    appendMessage,
-    switchConversation,
-    clearActive,
-    deleteConversation,
-  };
-}

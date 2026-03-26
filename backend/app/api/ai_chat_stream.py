@@ -1,195 +1,221 @@
-"""AI Chat Stream route: /api/ai/chat-stream — SSE 流式对话.
-
-CHAT 意图下将 AI token 逐字推送给前端。
-BUILD/MODIFY/ACTION 意图不流式, 直接返回 JSON event。
-"""
+"""Streaming AI chat routes."""
 
 import json
 import logging
-from collections.abc import AsyncIterator
 
 from fastapi import APIRouter, Depends
 from sse_starlette.sse import EventSourceResponse
 
 from app.core.deps import get_current_user
 from app.models.ai_chat import AIChatRequest
-from app.prompts import (
-    get_plan_prompt,
-    get_chat_prompt,
-    get_create_prompt,
-    get_intent_prompt,
-)
-from app.services.ai_router import call_llm, call_llm_direct, AIRouterError
+from app.prompts import get_chat_prompt, get_create_prompt, get_intent_prompt, get_plan_prompt
+from app.services.ai_router import AIRouterError, call_llm, call_llm_direct
+from app.services.usage_ledger import bind_usage_request, create_usage_request, finalize_usage_request
 from app.api.ai_chat import _build_canvas_summary, _call_with_model, _extract_json_obj
 
 logger = logging.getLogger(__name__)
 stream_router = APIRouter()
 
-# 思考深度 → prompt 前缀
 _DEPTH_INSTRUCTIONS: dict[str, str] = {
-    "fast": "请快速简洁地回答, 不需要展开细节。",
-    "balanced": "请给出完整但有条理的回答。",
-    "deep": "请深入思考, 从多角度详细分析, 给出专业级回答。",
+    "fast": "Please answer briefly and directly.",
+    "balanced": "Please answer with useful detail and clear structure.",
+    "deep": "Please analyze in depth from multiple angles before answering.",
 }
 
-# Premium models require paid tier (free users cannot access)
 PREMIUM_MODELS = {
     "deepseek-reasoner",
+    "DeepSeek-R1",
     "doubao-pro-256k",
+    "Doubao-pro-256k",
     "qwen-max",
+    "Qwen3-Max",
     "glm-4",
+    "GLM-5",
     "moonshot-v1-128k",
+    "Kimi-K2.5",
 }
+
+
+def _resolve_source_subtype(body: AIChatRequest) -> str:
+    if body.mode == "plan":
+        return "plan"
+    if body.mode == "create":
+        return "modify"
+    return "chat"
 
 
 async def _chat_stream_generator(
-    body: AIChatRequest, current_user: dict
+    body: AIChatRequest,
+    current_user: dict,
 ):
-    """SSE 事件生成器 — CHAT 意图流式, 其他意图单次 JSON。"""
+    usage_request = await create_usage_request(
+        user_id=current_user["id"],
+        source_type="assistant",
+        source_subtype=_resolve_source_subtype(body),
+        workflow_id=body.canvas_context.workflow_id if body.canvas_context else None,
+    )
+    request_status = "completed"
 
-    # ── Tier-based model access control ─────────────────────────
-    selected_model = getattr(body, "selected_model", None)
-    user_tier = current_user.get("tier", "free")
-    if selected_model and selected_model in PREMIUM_MODELS and user_tier == "free":
-        yield {
-            "data": json.dumps(
-                {"error": "该模型需要升级会员使用", "done": True},
-                ensure_ascii=False,
-            )
-        }
-        return
+    with bind_usage_request(usage_request):
+        try:
+            selected_model = getattr(body, "selected_model", None)
+            user_tier = current_user.get("tier", "free")
+            if selected_model and selected_model in PREMIUM_MODELS and user_tier == "free":
+                yield {
+                    "data": json.dumps(
+                        {"error": "This model requires a paid tier.", "done": True},
+                        ensure_ascii=False,
+                    )
+                }
+                return
 
-    canvas_summary = _build_canvas_summary(body.canvas_context)
-    has_canvas = bool(body.canvas_context and body.canvas_context.nodes)
-    depth_instruction = _DEPTH_INSTRUCTIONS.get(body.thinking_level, "")
+            canvas_summary = _build_canvas_summary(body.canvas_context)
+            has_canvas = bool(body.canvas_context and body.canvas_context.nodes)
+            history_msgs = [
+                {"role": message.role, "content": message.content}
+                for message in (body.conversation_history or [])[-10:]
+            ]
+            mode = getattr(body, "mode", "chat")
 
-    history_msgs = [
-        {"role": m.role, "content": m.content}
-        for m in (body.conversation_history or [])[-10:]
-    ]
+            if mode == "create":
+                intent = body.intent_hint or "MODIFY"
+                if not body.intent_hint or body.intent_hint not in ("BUILD", "MODIFY", "ACTION"):
+                    classify_msgs = [
+                        {"role": "system", "content": get_intent_prompt(canvas_summary)},
+                        *history_msgs,
+                        {"role": "user", "content": body.user_input},
+                    ]
+                    try:
+                        raw, _, _ = await _call_with_model(
+                            body.selected_platform,
+                            body.selected_model,
+                            classify_msgs,
+                        )
+                        parsed = _extract_json_obj(raw)
+                        intent = parsed.get("intent", "MODIFY")
+                        if intent not in ("BUILD", "MODIFY", "ACTION"):
+                            intent = "MODIFY"
+                    except Exception:
+                        intent = "BUILD" if not has_canvas else "MODIFY"
 
-    # ── 新架构：根据 mode 路由 ────────────────────────────────
-    mode = getattr(body, "mode", "chat")
+                if intent in ("BUILD", "ACTION"):
+                    yield {
+                        "data": json.dumps(
+                            {"intent": intent, "done": True, "response": "Redirecting..."},
+                            ensure_ascii=False,
+                        )
+                    }
+                    return
 
-    if mode == "create":
-        # ── CREATE 模式 (JSON Tools) ─────────────────────────
-        # 在 Create 模式下仍然需要分类器：区分 BUILD (跳转到全量生成路线) 和 ACTION (运行)
-        intent = body.intent_hint or "MODIFY"
-        
-        if not body.intent_hint or body.intent_hint not in ("BUILD", "MODIFY", "ACTION"):
-            classify_msgs = [
-                {"role": "system", "content": get_intent_prompt(canvas_summary)},
+                system_content = get_create_prompt(canvas_summary, body.thinking_level)
+                create_msgs = [
+                    {"role": "system", "content": system_content},
+                    *history_msgs,
+                    {"role": "user", "content": body.user_input},
+                ]
+
+                try:
+                    raw, _, model_used = await _call_with_model(
+                        body.selected_platform,
+                        body.selected_model,
+                        create_msgs,
+                    )
+                    parsed = _extract_json_obj(raw)
+                    actions_data = parsed.get("tool_calls") or parsed.get("actions", [])
+                    formatted_actions = []
+                    for action in actions_data:
+                        payload = action.get("params", action.get("payload", {}))
+                        formatted_actions.append(
+                            {
+                                "operation": action.get("tool", action.get("operation", "")).upper(),
+                                "target_node_id": payload.get("target_node_id") or action.get("target_node_id"),
+                                "payload": payload,
+                            }
+                        )
+                    yield {
+                        "data": json.dumps(
+                            {
+                                "intent": "MODIFY",
+                                "done": True,
+                                "response": parsed.get("response", "Canvas updated."),
+                                "actions": formatted_actions,
+                                "model_used": model_used,
+                            },
+                            ensure_ascii=False,
+                        )
+                    }
+                except Exception as exc:
+                    request_status = "failed"
+                    yield {
+                        "data": json.dumps(
+                            {"intent": "MODIFY", "done": True, "response": str(exc)},
+                            ensure_ascii=False,
+                        )
+                    }
+                return
+
+            if mode == "plan":
+                intent = "PLAN"
+                system_content = get_plan_prompt(canvas_summary, body.thinking_level)
+            else:
+                intent = "CHAT"
+                system_content = get_chat_prompt(canvas_summary, body.thinking_level)
+
+            stream_msgs = [
+                {"role": "system", "content": system_content},
                 *history_msgs,
                 {"role": "user", "content": body.user_input},
             ]
-            try:
-                raw, _, _ = await _call_with_model(
-                    body.selected_platform, body.selected_model, classify_msgs,
-                )
-                parsed = _extract_json_obj(raw)
-                intent = parsed.get("intent", "MODIFY")
-                if intent not in ("BUILD", "MODIFY", "ACTION"):
-                    intent = "MODIFY"
-            except Exception:
-                intent = "BUILD" if not has_canvas else "MODIFY"
 
-        # 处理非图表编辑指令 (BUILD / ACTION)
-        if intent in ("BUILD", "ACTION"):
+            force_thinking = body.thinking_level in ("balanced", "deep")
+            has_custom = bool(body.selected_model and body.selected_platform)
+            _ = _DEPTH_INSTRUCTIONS.get(body.thinking_level, "")
+
+            yield {"data": json.dumps({"intent": intent}, ensure_ascii=False)}
+
+            if has_custom:
+                token_iter = await call_llm_direct(
+                    body.selected_platform,
+                    body.selected_model,
+                    stream_msgs,
+                    stream=True,
+                )
+            elif force_thinking:
+                token_iter = await call_llm_direct(
+                    "qiniu",
+                    "DeepSeek-R1",
+                    stream_msgs,
+                    stream=True,
+                )
+            else:
+                token_iter = await call_llm("chat_response", stream_msgs, stream=True)
+
+            full = ""
+            async for token in token_iter:
+                full += token
+                yield {"data": json.dumps({"token": token}, ensure_ascii=False)}
+
+            yield {"data": json.dumps({"done": True, "full": full}, ensure_ascii=False)}
+            yield {"data": "[DONE]"}
+        except AIRouterError as exc:
+            request_status = "failed"
             yield {
                 "data": json.dumps(
-                    {"intent": intent, "done": True, "response": "正在跳转..."},
+                    {"error": str(exc), "done": True},
                     ensure_ascii=False,
                 )
             }
-            return
-
-        # 执行 Modify/Create (返回 JSON Actions)
-        system_content = get_create_prompt(canvas_summary, body.thinking_level)
-        create_msgs = [
-            {"role": "system", "content": system_content},
-            *history_msgs,
-            {"role": "user", "content": body.user_input},
-        ]
-        
-        try:
-            raw, plat, mdl = await _call_with_model(
-                body.selected_platform, body.selected_model, create_msgs,
-            )
-            parsed = _extract_json_obj(raw)
-            actions_data = parsed.get("tool_calls") or parsed.get("actions", [])
-            formatted_actions = []
-            for act in actions_data:
-                op = act.get("tool", act.get("operation", "")).upper()
-                payload = act.get("params", act.get("payload", {}))
-                target_id = payload.get("target_node_id") or act.get("target_node_id")
-                formatted_actions.append({"operation": op, "target_node_id": target_id, "payload": payload})
-
+        except Exception as exc:
+            request_status = "failed"
+            logger.exception("AI chat stream failed: %s", exc)
             yield {
                 "data": json.dumps(
-                    {
-                        "intent": "MODIFY",
-                        "done": True,
-                        "response": parsed.get("response", "操作已完成。"),
-                        "actions": formatted_actions,
-                        "model_used": mdl,
-                    },
+                    {"error": str(exc), "done": True},
                     ensure_ascii=False,
                 )
             }
-        except Exception as e:
-            yield {
-                "data": json.dumps(
-                    {"intent": "MODIFY", "done": True, "response": str(e)},
-                    ensure_ascii=False,
-                )
-            }
-        return
-
-    # ── PLAN / CHAT 模式 (流式输出 XML/Text) ─────────────────
-    if mode == "plan":
-        intent = "PLAN"
-        system_content = get_plan_prompt(canvas_summary, body.thinking_level)
-    else:
-        intent = "CHAT"
-        system_content = get_chat_prompt(canvas_summary, body.thinking_level)
-
-    stream_msgs = [
-        {"role": "system", "content": system_content},
-        *history_msgs,
-        {"role": "user", "content": body.user_input},
-    ]
-
-    # 均衡/深度思考 → 强制路由到 deepseek-reasoner (CoT 推理)
-    force_thinking = body.thinking_level in ("balanced", "deep")
-
-    try:
-        yield {"data": json.dumps({"intent": intent}, ensure_ascii=False)}
-
-        if force_thinking:
-            token_iter: AsyncIterator[str] = await call_llm_direct(
-                "deepseek", "deepseek-reasoner", stream_msgs, stream=True,
-            )
-        else:
-            token_iter = await call_llm(
-                "chat_response", stream_msgs, stream=True,
-            )
-
-        full = ""
-        async for token in token_iter:
-            full += token
-            yield {"data": json.dumps({"token": token}, ensure_ascii=False)}
-
-        yield {
-            "data": json.dumps({"done": True, "full": full}, ensure_ascii=False),
-        }
-        yield {"data": "[DONE]"}
-
-    except AIRouterError as e:
-        yield {
-            "data": json.dumps(
-                {"error": str(e), "done": True}, ensure_ascii=False,
-            )
-        }
+        finally:
+            await finalize_usage_request(usage_request.request_id, request_status)
 
 
 @stream_router.post("/chat-stream")
@@ -197,5 +223,4 @@ async def ai_chat_stream(
     body: AIChatRequest,
     current_user: dict = Depends(get_current_user),
 ):
-    """SSE 流式 AI 对话."""
     return EventSourceResponse(_chat_stream_generator(body, current_user))
