@@ -6,7 +6,8 @@ import { ModelSelector } from './ModelSelector';
 import { ChatMessages } from './ChatMessages';
 import { ChatInputBar } from './ChatInputBar';
 import { useCanvasContext } from '@/features/workflow/hooks/use-canvas-context';
-import { useConversationStore } from '@/features/workflow/hooks/use-conversation-store';
+import { useConversationStore } from '@/stores/use-conversation-store';
+import { useStreamChat } from '@/features/workflow/hooks/use-stream-chat';
 import { useWorkflowExecution } from '@/features/workflow/hooks/use-workflow-execution';
 import { DEFAULT_MODEL, type AIModelOption } from '@/features/workflow/constants/ai-models';
 import { getDefaultAiModel, getUserAiModelCatalog } from '@/services/ai-catalog.service';
@@ -36,9 +37,9 @@ export function SidebarAIPanel() {
     setThinkingDepth,
     selectedModel,
     setSelectedModel,
-    sendStream,
-    abortStream,
   } = useAIChatStore();
+
+  const { send: sendStream, abort: abortStream } = useStreamChat();
 
   const [showHistoryDropdown, setShowHistoryDropdown] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
@@ -156,6 +157,9 @@ export function SidebarAIPanel() {
       canvasContext: serialize(),
       history: currentHistory,
       intentHint: mode === 'chat' ? 'CHAT' : undefined,
+      mode,
+      selectedModel,
+      thinkingDepth,
     });
   };
 

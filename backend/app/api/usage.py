@@ -7,6 +7,8 @@ from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.models.usage import UsageLiveResponse, UsageOverviewResponse, UsageTimeseriesResponse
 from app.services.usage_analytics import get_usage_live, get_usage_overview, get_usage_timeseries
+from app.services.quota_service import get_workflow_quota
+from pydantic import BaseModel
 
 router = APIRouter(tags=["usage"])
 
@@ -41,4 +43,36 @@ async def usage_timeseries(
         range_value=range_value,
         user_id=current_user["id"],
         source_filter=source,
+    )
+
+
+class WorkflowQuotaResponse(BaseModel):
+    tier: str
+    workflows_used: int
+    workflows_base_limit: int
+    workflows_addon_qty: int
+    workflows_total: int
+    workflows_remaining: int
+
+
+@router.get("/quota", response_model=WorkflowQuotaResponse)
+async def get_user_quota(
+    current_user: dict = Depends(get_current_user),
+    db: AsyncClient = Depends(get_db),
+) -> WorkflowQuotaResponse:
+    """Return the current user's resource quota summary.
+
+    Clients should call this on workspace init to get accurate
+    tier + addon-adjusted limits for display and soft-enforcement.
+    """
+    user_id = current_user["id"]
+    tier = current_user.get("tier", "free")
+    quota = await get_workflow_quota(user_id, tier, db)
+    return WorkflowQuotaResponse(
+        tier=tier,
+        workflows_used=quota["used"],
+        workflows_base_limit=quota["base_limit"],
+        workflows_addon_qty=quota["addon_qty"],
+        workflows_total=quota["total_limit"],
+        workflows_remaining=quota["remaining"],
     )

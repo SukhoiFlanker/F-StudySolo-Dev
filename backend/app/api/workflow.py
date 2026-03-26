@@ -8,6 +8,7 @@ from supabase import AsyncClient
 from app.core.database import get_db
 from app.core.deps import check_workflow_access, get_current_user, get_supabase_client
 from app.models.workflow import WorkflowContent, WorkflowCreate, WorkflowMeta, WorkflowUpdate
+from app.services.quota_service import assert_workflow_quota
 
 logger = logging.getLogger(__name__)
 
@@ -81,6 +82,10 @@ async def create_workflow(
 ):
     """Create a new workflow for the current user."""
     user_id = current_user["id"]
+    tier = current_user.get("tier", "free")
+
+    # Hard quota enforcement — must run before INSERT
+    await assert_workflow_quota(user_id, tier, service_db)
 
     payload = {
         "user_id": user_id,

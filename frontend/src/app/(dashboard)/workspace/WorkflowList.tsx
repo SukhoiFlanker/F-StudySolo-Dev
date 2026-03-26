@@ -16,6 +16,7 @@ import {
 
 interface WorkflowListProps {
   initialWorkflows: WorkflowMeta[];
+  remaining: number;
 }
 
 const STATUS_MAP: Record<string, { label: string; className: string }> = {
@@ -29,7 +30,7 @@ function statusLabel(status: string) {
   return STATUS_MAP[status] ?? { label: status, className: 'bg-slate-100 text-slate-600 border border-slate-200/60' };
 }
 
-export default function WorkflowList({ initialWorkflows }: WorkflowListProps) {
+export default function WorkflowList({ initialWorkflows, remaining }: WorkflowListProps) {
   const router = useRouter();
   const [workflows, setWorkflows] = useState<WorkflowMeta[]>(initialWorkflows);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; workflowId: string } | null>(null);
@@ -262,7 +263,11 @@ export default function WorkflowList({ initialWorkflows }: WorkflowListProps) {
       <div className="flex flex-col items-center justify-center py-24 text-center text-muted-foreground">
         <FileText className="h-12 w-12 mb-4 opacity-20" />
         <p className="text-sm font-medium">还没有工作流</p>
-        <p className="mt-1 text-xs">点击右上角新建工作流开始</p>
+        {remaining > 0 ? (
+          <p className="mt-1 text-xs">点击右上角新建工作流开始</p>
+        ) : (
+          <p className="mt-1 text-xs text-rose-500">工作流容量已满，请升级会员或购买增值包</p>
+        )}
       </div>
     );
   }

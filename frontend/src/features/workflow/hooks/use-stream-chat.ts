@@ -1,18 +1,29 @@
 'use client';
 
 /**
- * useStreamChat — 流式 AI 对话 Hook.
+ * useStreamChat — 流式 AI 对话 Hook（副作用收口层）.
  *
- * 对 /api/ai/chat-stream 端点使用 ReadableStream 解析 SSE token,
- * 实时 append 到 message content 生成流式打字效果。
- * 支持中止 (AbortController) + 思考深度。
+ * 职责：
+ *  - 发起 /api/ai/chat-stream 的 SSE 流式请求
+ *  - 解析 SSE 协议，回调 onToken / onDone / onError
+ *  - 支持 AbortController 中止
+ *  - 处理 MODIFY intent → executeCanvasActions
+ *  - 处理 BUILD intent → /api/ai/generate-workflow
+ *
+ * 遵循规范 §9.1：只发送正式字段 selected_model_key，不再发送兼容字段。
  */
 
-import { useState, useRef, useCallback } from 'react';
+import { useCallback } from 'react';
 import type { CanvasContext } from './use-canvas-context';
 import type { AIModelOption } from '@/features/workflow/constants/ai-models';
-import type { ChatEntry } from './use-conversation-store';
+import type { ChatEntry } from '@/stores/use-conversation-store';
 import type { ThinkingDepth } from '@/components/layout/sidebar/SidebarAIPanel';
+import { useAIChatStore, abortAIChatStream } from '@/stores/use-ai-chat-store';
+import { useWorkflowStore } from '@/stores/use-workflow-store';
+import { useConversationStore } from '@/stores/use-conversation-store';
+import { executeCanvasActions, type CanvasAction } from './use-action-executor';
+
+// ── Types ────────────────────────────────────────────────────────────
 
 export interface StreamChatOptions {
   userInput: string;
@@ -22,55 +33,176 @@ export interface StreamChatOptions {
   mode?: 'plan' | 'chat' | 'create';
   selectedModel: AIModelOption;
   thinkingDepth?: ThinkingDepth;
-  onToken: (token: string) => void;
-  onDone: (fullText: string, intent: string) => void;
-  onError: (err: string) => void;
 }
 
+interface GenerateResponse {
+  nodes: unknown[];
+  edges: unknown[];
+  implicit_context: Record<string, unknown>;
+}
+
+// ── SSE parser ───────────────────────────────────────────────────────
+
+async function parseSSEStream(
+  reader: ReadableStreamDefaultReader<Uint8Array>,
+  onToken: (t: string) => void,
+): Promise<{ fullText: string; intent: string }> {
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let fullText = '';
+  let intent = 'CHAT';
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split(/\r?\n/);
+    buffer = lines.pop() ?? '';
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed.startsWith('data:')) continue;
+
+      const raw = trimmed.slice(5).trim();
+      if (raw === '[DONE]') { await reader.cancel(); return { fullText, intent }; }
+
+      try {
+        const parsed = JSON.parse(raw) as Record<string, unknown>;
+        if (parsed.intent) intent = parsed.intent as string;
+
+        // MODIFY / BUILD: single terminal JSON event
+        if (parsed.done && (intent === 'MODIFY' || intent === 'BUILD')) {
+          fullText = JSON.stringify(parsed);
+          await reader.cancel();
+          return { fullText, intent };
+        }
+
+        // CHAT: stream tokens
+        if (parsed.token) {
+          const token = parsed.token as string;
+          fullText += token;
+          onToken(token);
+        }
+
+        if (parsed.done) { await reader.cancel(); return { fullText, intent }; }
+      } catch { /* partial JSON, skip */ }
+    }
+  }
+
+  return { fullText, intent };
+}
+
+// ── BUILD handler ────────────────────────────────────────────────────
+
+async function handleBuildIntent(userInput: string, thinkingDepth: ThinkingDepth): Promise<string> {
+  const wfStore = useWorkflowStore.getState();
+  wfStore.replaceWorkflowGraph(
+    [{ id: 'generating-node', position: { x: 300, y: 200 }, type: 'generating', data: {} }],
+    [],
+  );
+
+  const res = await fetch('/api/ai/generate-workflow', {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ user_input: userInput, thinking_level: thinkingDepth }),
+  });
+
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+  const data = await res.json() as GenerateResponse;
+  wfStore.replaceWorkflowGraph(
+    data.nodes as Parameters<typeof wfStore.replaceWorkflowGraph>[0],
+    data.edges as Parameters<typeof wfStore.replaceWorkflowGraph>[1],
+  );
+  wfStore.setGenerationContext(userInput, data.implicit_context);
+
+  return `✅ 已生成 ${data.nodes.length} 个节点。`;
+}
+
+// ── MODIFY handler ───────────────────────────────────────────────────
+
+async function handleModifyIntent(
+  rawJson: string,
+  msgId: string,
+): Promise<string> {
+  try {
+    const p = JSON.parse(rawJson) as { actions?: CanvasAction[]; response?: string };
+    const actions = p.actions ?? [];
+    if (!actions.length) return p.response ?? '（完成）';
+
+    const result = await executeCanvasActions(actions);
+    return result.success
+      ? `✅ ${p.response || '完成'} (${result.appliedCount}步)`
+      : `⚠️ ${result.error}`;
+  } catch {
+    return rawJson; // Parse failed — show raw response
+  }
+}
+
+// ── Hook ─────────────────────────────────────────────────────────────
+
 export function useStreamChat() {
-  const [streaming, setStreaming] = useState(false);
-  const abortRef = useRef<AbortController | null>(null);
+  const {
+    setLoading,
+    setStreaming,
+    setAbortController,
+    setError,
+    pushMessage,
+    updateMessage,
+  } = useAIChatStore();
 
   const send = useCallback(async (opts: StreamChatOptions) => {
-    const {
-      userInput, canvasContext, history, intentHint, mode,
-      selectedModel, thinkingDepth, onToken, onDone, onError,
-    } = opts;
+    const { userInput, canvasContext, history, intentHint, mode, selectedModel, thinkingDepth = 'balanced' } = opts;
 
-    abortRef.current?.abort();
+    // Abort previous stream
+    abortAIChatStream();
+
     const ctrl = new AbortController();
-    abortRef.current = ctrl;
-    setStreaming(true);
+    const assistantMsgId = crypto.randomUUID();
 
+    setAbortController(ctrl);
+    setLoading(true);
+    setStreaming(true, assistantMsgId);
+    setError(null);
+
+    // Seed the assistant message slot immediately (streaming placeholder)
+    useAIChatStore.getState().syncHistory([
+      ...history,
+      { id: assistantMsgId, role: 'assistant', content: '', timestamp: Date.now() },
+    ]);
+
+    // Build request body — only formal fields per 规范 §9.1
     const body = {
       user_input: userInput,
-      canvas_context: canvasContext && canvasContext.nodesSummary.length > 0 ? {
-        workflow_id: canvasContext.workflowId,
-        workflow_name: canvasContext.workflowName,
-        nodes: canvasContext.nodesSummary.map((n) => ({
-          id: n.id, index: n.index, label: n.label, type: n.type,
-          status: n.status, has_output: n.hasOutput,
-          output_preview: n.outputPreview,
-          upstream_labels: n.upstreamLabels,
-          downstream_labels: n.downstreamLabels,
-          position: n.position,
-        })),
-        dag_description: canvasContext.dagDescription,
-        selected_node_id: canvasContext.selectedNodeId,
-        execution_status: canvasContext.executionStatus,
-      } : null,
+      canvas_context: canvasContext?.nodesSummary.length
+        ? {
+            workflow_id: canvasContext.workflowId,
+            workflow_name: canvasContext.workflowName,
+            nodes: canvasContext.nodesSummary.map((n) => ({
+              id: n.id, index: n.index, label: n.label, type: n.type,
+              status: n.status, has_output: n.hasOutput,
+              output_preview: n.outputPreview,
+              upstream_labels: n.upstreamLabels,
+              downstream_labels: n.downstreamLabels,
+              position: n.position,
+            })),
+            dag_description: canvasContext.dagDescription,
+            selected_node_id: canvasContext.selectedNodeId,
+            execution_status: canvasContext.executionStatus,
+          }
+        : null,
       conversation_history: history.slice(-10).map((h) => ({
         role: h.role, content: h.content, timestamp: h.timestamp,
       })),
       intent_hint: intentHint,
       mode: mode ?? 'chat',
-      selected_model_key: selectedModel.skuId,
-      selected_model: selectedModel.modelId,
-      selected_platform: selectedModel.provider,
-      thinking_level: thinkingDepth ?? 'balanced',
+      selected_model_key: selectedModel.skuId, // ✅ 唯一正式字段（规范 §9.1）
+      thinking_level: thinkingDepth,
     };
 
-    let fullText = '';
+    let finalText = '';
     let intent = 'CHAT';
 
     try {
@@ -85,63 +217,57 @@ export function useStreamChat() {
       if (!res.ok || !res.body) {
         const data = await res.json().catch(() => ({})) as { response?: string; intent?: string; detail?: string };
         if (data.detail) throw new Error(data.detail);
-        fullText = data.response ?? '';
+        finalText = data.response ?? '';
         intent = data.intent ?? 'CHAT';
-        onDone(fullText, intent);
-        return;
+      } else {
+        const reader = res.body.getReader();
+        setLoading(false); // First chunk received
+
+        const parsed = await parseSSEStream(reader, (token) => {
+          finalText += token;
+          updateMessage(assistantMsgId, finalText);
+        });
+        finalText = parsed.fullText;
+        intent = parsed.intent;
       }
 
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
+      // ── Post-stream intent handling ──────────────────────────────
+      let displayText = finalText || '（已完成）';
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        // Handle both \r\n (SSE standard) and \n line endings
-        const lines = buffer.split(/\r?\n/);
-        buffer = lines.pop() ?? '';
-
-        for (const line of lines) {
-          const trimmedLine = line.trim();
-          if (trimmedLine.startsWith('data:')) {
-            const raw = trimmedLine.slice(5).trim();
-            if (raw === '[DONE]') { await reader.cancel(); break; }
-            try {
-              const parsed = JSON.parse(raw) as Record<string, unknown>;
-              if (parsed.intent) intent = parsed.intent as string;
-              // MODIFY/BUILD: single JSON event
-              if (parsed.done && (intent === 'MODIFY' || intent === 'BUILD')) {
-                fullText = JSON.stringify(parsed);
-                await reader.cancel();
-                break;
-              }
-              // CHAT: stream tokens
-              if (parsed.token) {
-                fullText += parsed.token as string;
-                onToken(parsed.token as string);
-              }
-              if (parsed.done) { await reader.cancel(); break; }
-            } catch { /* partial JSON, skip */ }
-          }
+      if (intent === 'BUILD') {
+        try {
+          displayText = await handleBuildIntent(userInput, thinkingDepth);
+        } catch (e) {
+          displayText = `❌ ${e instanceof Error ? e.message : '生成失败'}`;
         }
+      } else if (intent === 'MODIFY') {
+        displayText = await handleModifyIntent(finalText, assistantMsgId);
       }
 
-      onDone(fullText || '（已完成）', intent);
+      updateMessage(assistantMsgId, displayText);
+
+      // Persist final message to conversation store
+      useConversationStore.getState().appendMessage({
+        id: assistantMsgId,
+        role: 'assistant',
+        content: displayText,
+        timestamp: Date.now(),
+      });
     } catch (err) {
       if ((err as Error).name === 'AbortError') return;
-      onError(err instanceof Error ? err.message : '请求失败');
+      const msg = err instanceof Error ? err.message : '请求失败';
+      setError(msg);
+      updateMessage(assistantMsgId, `❌ ${msg}`);
     } finally {
-      setStreaming(false);
+      setStreaming(false, null);
+      setLoading(false);
+      setAbortController(null);
     }
-  }, []);
+  }, [setLoading, setStreaming, setAbortController, setError, pushMessage, updateMessage]);
 
   const abort = useCallback(() => {
-    abortRef.current?.abort();
-    setStreaming(false);
+    abortAIChatStream();
   }, []);
 
-  return { streaming, send, abort };
+  return { send, abort };
 }

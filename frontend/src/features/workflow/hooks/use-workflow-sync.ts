@@ -3,6 +3,7 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import localforage from 'localforage';
 import { toast } from 'sonner';
+import { authedFetch } from '@/services/api-client';
 import { useWorkflowStore } from '@/stores/use-workflow-store';
 import type { Node, Edge } from '@xyflow/react';
 
@@ -102,7 +103,7 @@ export function useWorkflowSync(): UseWorkflowSync {
     if (executionLockRef.current) return; // Don't overwrite during execution
     setSyncStatus('saving_cloud');
     try {
-      const res = await fetch(`/api/workflow/${workflowId}`, {
+      const res = await authedFetch(`/api/workflow/${workflowId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ nodes_json: nodes, edges_json: edges }),
@@ -197,11 +198,12 @@ export function useWorkflowSync(): UseWorkflowSync {
         cloud_updated_at: cloudUpdatedAtRef.current,
       } satisfies LocalWorkflowCache);
 
-      // Best-effort cloud save with keepalive
+      // Best-effort cloud save with keepalive (credentials required for session cookie)
       const payload = JSON.stringify({ nodes_json: nodes, edges_json: edges });
       if (payload.length < KEEPALIVE_MAX_BYTES) {
         void fetch(`/api/workflow/${currentWorkflowId}`, {
           method: 'PUT',
+          credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
           body: payload,
           keepalive: true,
