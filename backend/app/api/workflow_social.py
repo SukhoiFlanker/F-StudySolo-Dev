@@ -23,10 +23,8 @@ _PUBLIC_VIEW_COLS = (
     "is_featured,is_official,likes_count,favorites_count,"
     "user_id,created_at"
 )
-_MARKETPLACE_COLS = (
-    "id,name,description,status,tags,is_public,is_featured,is_official,"
-    "likes_count,favorites_count,user_id,created_at,updated_at"
-)
+# Derived from WorkflowMeta model — single source of truth, prevents field-drift
+_MARKETPLACE_COLS = WorkflowMeta.select_cols()
 
 
 async def _toggle_interaction(
@@ -35,31 +33,39 @@ async def _toggle_interaction(
     action: str,
     db: AsyncClient,
 ) -> InteractionToggleResponse:
-    """Toggle like/favorite — attempt INSERT; on conflict, DELETE."""
-    try:
+    """Toggle like/favorite — check-then-act: safe and unambiguous.
+
+    Previous INSERT-and-catch approach swallowed ALL exceptions
+    (network timeouts, RLS denials, schema errors) and mishandled
+    them as unique-constraint violations. This version first checks
+    for an existing record with .maybe_single(), then inserts or deletes
+    deterministically.
+    """
+    existing = (
+        await db.from_("ss_workflow_interactions")
+        .select("id")
+        .eq("user_id", user_id)
+        .eq("workflow_id", workflow_id)
+        .eq("action", action)
+        .maybe_single()
+        .execute()
+    )
+
+    if existing.data:
+        # Already interacted → remove (untoggle)
+        await db.from_("ss_workflow_interactions") \
+            .delete().eq("id", existing.data["id"]).execute()
+        toggled = False
+    else:
+        # No prior interaction → insert (toggle on)
         await db.from_("ss_workflow_interactions").insert({
             "user_id": user_id,
             "workflow_id": workflow_id,
             "action": action,
         }).execute()
         toggled = True
-    except Exception:
-        # UNIQUE constraint violation → already exists → remove it
-        existing = (
-            await db.from_("ss_workflow_interactions")
-            .select("id")
-            .eq("user_id", user_id)
-            .eq("workflow_id", workflow_id)
-            .eq("action", action)
-            .execute()
-        )
-        if existing.data:
-            await db.from_("ss_workflow_interactions").delete().eq(
-                "id", existing.data[0]["id"]
-            ).execute()
-        toggled = False
 
-    # Read back the updated count from ss_workflows
+    # Read back the DB-maintained count (kept in sync by a DB trigger)
     count_col = "likes_count" if action == "like" else "favorites_count"
     wf = (
         await db.from_("ss_workflows")
@@ -113,7 +119,8 @@ async def get_public_workflow(
             .execute()
         )
         rows = result.data or []
-    except Exception:
+    except Exception as e:
+        logger.warning("查询公开工作流异常 workflow_id=%s: %s", workflow_id, e)
         rows = []
 
     if not rows:
@@ -169,7 +176,11 @@ async def list_marketplace(
         query = query.eq("is_official", True)
     elif filter == "featured":
         query = query.eq("is_featured", True)
+    elif filter == "public":
+        # Strictly public-only, excludes official-only entries
+        query = query.eq("is_public", True)
     else:
+        # Default: show both public and official
         query = query.or_("is_public.eq.true,is_official.eq.true")
 
     if search:

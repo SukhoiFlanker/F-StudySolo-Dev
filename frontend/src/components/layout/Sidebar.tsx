@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { getUser, type UserInfo } from '@/services/auth.service';
 import { toggleFavorite as apiToggleFavorite, updateWorkflow } from '@/services/workflow.service';
+import { toast } from 'sonner';
 import { useSidebarNavigation } from '@/hooks/use-sidebar-navigation';
 import { useWorkflowContextMenu } from '@/features/workflow/hooks/use-workflow-context-menu';
 import { useWorkflowSidebarActions } from '@/features/workflow/hooks/use-workflow-sidebar-actions';
@@ -292,8 +293,30 @@ export default function Sidebar({ workflows }: SidebarProps) {
           onClose={closeContextMenu}
           onRename={handleRename}
           onDelete={handleDelete}
-          onToggleFavorite={(id) => { void apiToggleFavorite(id).then(refreshRouter); closeContextMenu(); }}
-          onTogglePublish={(id) => { const wf = workflows.find(w => w.id === id); if (wf) void updateWorkflow(id, { is_public: !wf.is_public }).then(afterVisibilityChange); closeContextMenu(); }}
+          onToggleFavorite={(id) => {
+            closeContextMenu();
+            apiToggleFavorite(id)
+              .then((r) => {
+                refreshRouter();
+                toast.success(r.toggled ? '已加入收藏' : '已取消收藏');
+              })
+              .catch((e: unknown) => {
+                toast.error(e instanceof Error ? e.message : '收藏操作失败');
+              });
+          }}
+          onTogglePublish={(id) => {
+            const wf = workflows.find((w) => w.id === id);
+            if (!wf) return;
+            closeContextMenu();
+            updateWorkflow(id, { is_public: !wf.is_public })
+              .then(afterVisibilityChange)
+              .then(() => {
+                toast.success(wf.is_public ? '已取消公开' : '工作流已公开');
+              })
+              .catch((e: unknown) => {
+                toast.error(e instanceof Error ? e.message : '发布操作失败');
+              });
+          }}
         />
       )}
     </>

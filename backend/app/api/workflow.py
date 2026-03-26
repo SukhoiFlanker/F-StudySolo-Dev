@@ -13,11 +13,8 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-_META_COLS = (
-    "id,name,description,status,tags,is_public,"
-    "is_featured,is_official,likes_count,favorites_count,"
-    "created_at,updated_at"
-)
+# Derived from WorkflowMeta model — single source of truth, prevents field-drift
+_META_COLS = WorkflowMeta.select_cols()
 _CONTENT_COLS = (
     "id,name,description,nodes_json,edges_json,annotations_json,"
     "status,tags,is_public,created_at,updated_at"

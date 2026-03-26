@@ -20,6 +20,11 @@ class WorkflowUpdate(BaseModel):
     is_public: bool | None = None
 
 
+# Fields computed/injected at runtime — NOT stored in the ss_workflows table.
+# Must be excluded when generating Supabase select columns via WorkflowMeta.select_cols().
+_WF_META_VIRTUAL_FIELDS: frozenset[str] = frozenset({"owner_name", "is_liked", "is_favorited"})
+
+
 class WorkflowMeta(BaseModel):
     """Metadata returned in list endpoints."""
     id: str
@@ -37,6 +42,22 @@ class WorkflowMeta(BaseModel):
     is_favorited: bool = False
     created_at: datetime
     updated_at: datetime
+
+    @classmethod
+    def select_cols(cls) -> str:
+        """Return a comma-separated Supabase select string from model fields.
+
+        Excludes virtual fields that are computed/injected at runtime, not
+        stored in the database. Using this as the single source of truth
+        prevents field-drift bugs (e.g., forgetting to add 'status').
+
+        Example usage::
+
+            query = db.from_("ss_workflows").select(WorkflowMeta.select_cols())
+        """
+        return ",".join(
+            f for f in cls.model_fields if f not in _WF_META_VIRTUAL_FIELDS
+        )
 
 
 class WorkflowContent(BaseModel):

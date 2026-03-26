@@ -6,6 +6,14 @@ import type {
   WorkflowPublicView,
 } from '@/types/workflow';
 
+/**
+ * Discriminated union for fetch operations that may fail silently.
+ * Callers can distinguish "genuinely empty data" from "request failed".
+ */
+export type FetchResult<T> =
+  | { ok: true; data: T }
+  | { ok: false; error: string; status?: number };
+
 /* ── List (my workflows) ────────────────────────────────────── */
 
 export async function fetchWorkflowList(
@@ -18,9 +26,13 @@ export async function fetchWorkflowList(
       next: { revalidate },
     });
 
-    if (!response.ok) return [];
+    if (!response.ok) {
+      console.error('[fetchWorkflowList] HTTP', response.status);
+      return [];
+    }
     return (await response.json()) as WorkflowMeta[];
-  } catch {
+  } catch (e) {
+    console.error('[fetchWorkflowList] network error:', e);
     return [];
   }
 }
@@ -40,9 +52,13 @@ export async function fetchWorkflowContent(
       }
     );
 
-    if (!response.ok) return null;
+    if (!response.ok) {
+      console.error('[fetchWorkflowContent] HTTP', response.status, 'for', workflowId);
+      return null;
+    }
     return (await response.json()) as WorkflowContent;
-  } catch {
+  } catch (e) {
+    console.error('[fetchWorkflowContent] network error:', e);
     return null;
   }
 }
@@ -120,15 +136,21 @@ export async function fetchPublicWorkflow(
   token?: string
 ): Promise<WorkflowPublicView | null> {
   try {
-    const headers: Record<string, string> = {};
-    if (token) headers['Cookie'] = `access_token=${token}`;
+    // Use Authorization header (instead of manual Cookie splice) for
+    // consistency and to avoid potential Cookie header injection issues.
     const response = await fetch(buildApiUrl(`/api/workflow/${workflowId}/public`), {
-      headers,
+      headers: buildAuthHeaders(token),
       next: { revalidate: 60 },
     });
-    if (!response.ok) return null;
+    if (!response.ok) {
+      if (response.status !== 404) {
+        console.error('[fetchPublicWorkflow] HTTP', response.status, 'for', workflowId);
+      }
+      return null;
+    }
     return (await response.json()) as WorkflowPublicView;
-  } catch {
+  } catch (e) {
+    console.error('[fetchPublicWorkflow] network error:', e);
     return null;
   }
 }
@@ -146,7 +168,7 @@ interface MarketplaceParams {
 
 export async function fetchMarketplace(
   params: MarketplaceParams = {}
-): Promise<WorkflowMeta[]> {
+): Promise<FetchResult<WorkflowMeta[]>> {
   const qs = new URLSearchParams();
   if (params.filter) qs.set('filter', params.filter);
   if (params.search) qs.set('search', params.search);
@@ -160,10 +182,14 @@ export async function fetchMarketplace(
       buildApiUrl(`/api/workflow/marketplace?${qs.toString()}`),
       { cache: 'no-store' }
     );
-    if (!response.ok) return [];
-    return (await response.json()) as WorkflowMeta[];
-  } catch {
-    return [];
+    if (!response.ok) {
+      const errMsg = await parseApiError(response, `HTTP ${response.status}`);
+      return { ok: false, error: errMsg, status: response.status };
+    }
+    return { ok: true, data: (await response.json()) as WorkflowMeta[] };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : '网络错误，请检查后端连接';
+    return { ok: false, error: msg };
   }
 }
 

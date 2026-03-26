@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { FileText, ArrowRight, Star, Heart, Search, Filter } from 'lucide-react';
+import { FileText, ArrowRight, Star, Heart, Search, Filter, AlertTriangle } from 'lucide-react';
+import { toast } from 'sonner';
 import { fetchMarketplace, forkWorkflow } from '@/services/workflow.service';
 import { usePanelStore } from '@/stores/use-panel-store';
 import type { WorkflowMeta } from '@/types/workflow';
@@ -12,6 +13,7 @@ type FilterType = 'all' | 'official' | 'featured' | 'public';
 export default function WorkflowExamplesPanel() {
   const router = useRouter();
   const [workflows, setWorkflows] = useState<WorkflowMeta[]>([]);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [filter, setFilter] = useState<FilterType>('all');
@@ -28,22 +30,51 @@ export default function WorkflowExamplesPanel() {
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
+    setFetchError(null);
+
     const params: Parameters<typeof fetchMarketplace>[0] = {};
     if (filter !== 'all') params.filter = filter;
     if (debouncedSearch.trim()) params.search = debouncedSearch.trim();
 
-    fetchMarketplace(params).then((data) => {
-      if (!cancelled) { setWorkflows(data); setLoading(false); }
-    });
+    // P1 Fix: consume FetchResult<T> to distinguish empty vs error,
+    //         and add .catch to prevent loading state from hanging forever.
+    fetchMarketplace(params)
+      .then((result) => {
+        if (cancelled) return;
+        if (result.ok) {
+          setWorkflows(result.data);
+          setFetchError(null);
+        } else {
+          setWorkflows([]);
+          setFetchError(result.error);
+        }
+        setLoading(false);
+      })
+      .catch(() => {
+        // Safety net: if fetchMarketplace itself throws (should not happen
+        // with current implementation, but guards future regressions).
+        if (!cancelled) {
+          setWorkflows([]);
+          setFetchError('加载失败，请稍后重试');
+          setLoading(false);
+        }
+      });
+
     return () => { cancelled = true; };
   }, [filter, debouncedSearch, marketplaceVersion]);
 
+  // P1 Fix: add toast feedback so users know what went wrong on fork failure
   const handleFork = async (id: string) => {
     setForkingId(id);
     try {
       const forked = await forkWorkflow(id);
+      toast.success('已复制到我的工作流');
       router.push(`/c/${forked.id}`);
-    } catch { setForkingId(null); }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Fork 失败，请重试';
+      toast.error(msg);
+      setForkingId(null);
+    }
   };
 
   const FILTER_OPTIONS: { value: FilterType; label: string }[] = [
@@ -88,6 +119,14 @@ export default function WorkflowExamplesPanel() {
       <div className="scrollbar-hide flex-1 overflow-y-auto px-2 py-2">
         {loading ? (
           <p className="text-center text-[10px] text-muted-foreground py-4">加载中...</p>
+        ) : fetchError ? (
+          /* P1 Fix: show distinct error state instead of empty-list message */
+          <div className="flex flex-col items-center gap-2 py-6 text-center">
+            <AlertTriangle className="h-4 w-4 text-amber-500" />
+            <p className="text-[10px] text-amber-600 dark:text-amber-400 leading-snug max-w-[160px]">
+              {fetchError}
+            </p>
+          </div>
         ) : workflows.length === 0 ? (
           <p className="text-center text-[10px] text-muted-foreground py-4">暂无工作流</p>
         ) : (
@@ -128,6 +167,9 @@ export default function WorkflowExamplesPanel() {
                     </span>
                   )}
                 </div>
+                {forkingId === wf.id && (
+                  <p className="text-[9px] text-muted-foreground text-center">复制中...</p>
+                )}
               </button>
             ))}
           </div>
