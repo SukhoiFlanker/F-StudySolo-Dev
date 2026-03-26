@@ -26,43 +26,43 @@ export default function CreateNoticePage() {
       })
       router.push('/admin-analysis/notices')
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to create notice')
+      setError(err instanceof Error ? err.message : '创建公告失败')
     } finally {
       setIsLoading(false)
     }
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="max-w-3xl mx-auto space-y-6 bg-[#f4f4f0]">
       {/* Header */}
       <div className="flex items-center gap-3">
         <button
           onClick={() => router.back()}
-          className="text-white/40 hover:text-white transition-colors"
-          aria-label="Go back"
+          className="text-[#74777f] hover:text-[#002045] transition-colors"
+          aria-label="返回"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
         </button>
         <div>
-          <h1 className="text-white text-xl font-bold">New Notice</h1>
-          <p className="text-white/40 text-sm mt-0.5">Create a new notice for users</p>
+          <h1 className="text-[#002045] text-xl font-bold">新建公告</h1>
+          <p className="text-[#74777f] text-sm mt-0.5">创建面向用户展示的新公告</p>
         </div>
       </div>
 
       {/* Error */}
       {error && (
-        <div className="rounded-xl px-4 py-3 bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+        <div className="rounded-none px-4 py-3 bg-red-50 border border-red-200 text-red-700 text-sm shadow-sm">
           {error}
         </div>
       )}
 
       {/* Editor card */}
-      <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6">
+      <div className="bg-[#f4f4f0] border border-[#c4c6cf] rounded-none p-6 shadow-sm">
         <NoticeEditor
           onSubmit={handleSubmit}
-          submitLabel="Create Notice"
+          submitLabel="创建公告"
           isLoading={isLoading}
         />
       </div>

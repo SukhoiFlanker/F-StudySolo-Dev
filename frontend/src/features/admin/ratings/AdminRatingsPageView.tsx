@@ -1,8 +1,9 @@
-﻿'use client';
+'use client';
 
 import { useCallback, useEffect, useState } from 'react';
 import { adminFetch } from '@/services/admin.service';
 import type { PaginatedRatingList, RatingOverview, RatingTypeFilter } from '@/types/admin';
+import { KpiCard, PageHeader } from '@/features/admin/shared';
 import { AdminRatingsTable } from './AdminRatingsTable';
 
 export function AdminRatingsPageView() {
@@ -20,14 +21,12 @@ export function AdminRatingsPageView() {
       const typeParam = typeFilter ? `&rating_type=${typeFilter}` : '';
       const [ov, list] = await Promise.all([
         adminFetch<RatingOverview>('/ratings/overview'),
-        adminFetch<PaginatedRatingList>(
-          `/ratings/details?page=${page}&page_size=20${typeParam}`
-        ),
+        adminFetch<PaginatedRatingList>(`/ratings/details?page=${page}&page_size=20${typeParam}`),
       ]);
       setOverview(ov);
       setRatingList(list);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load ratings');
+      setError(err instanceof Error ? err.message : '加载评分数据失败');
     } finally {
       setLoading(false);
     }
@@ -38,73 +37,34 @@ export function AdminRatingsPageView() {
   }, [fetchAll]);
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-xl font-bold text-white">Ratings & Feedback</h1>
-        <p className="mt-0.5 text-sm text-white/40">
-          {overview ? `${overview.nps_count + overview.csat_count} total ratings` : 'Loading...'}
-        </p>
-      </div>
+    <div className="mx-auto min-h-full max-w-[1600px] space-y-6 bg-[#f4f4f0] px-8 py-8">
+      <PageHeader
+        title="评分数据"
+        description={overview ? `共 ${overview.nps_count + overview.csat_count} 条用户反馈` : '查看 NPS 与 CSAT 评分情况'}
+      />
 
       {error ? (
-        <div className="flex items-center justify-between rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
-          <span>{error}</span>
-          <button onClick={() => void fetchAll()} className="ml-4 text-xs text-red-300 underline hover:text-red-200">
-            Retry
-          </button>
+        <div className="rounded-none border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 shadow-sm">
+          <div className="flex items-center justify-between gap-4">
+            <span>{error}</span>
+            <button onClick={() => void fetchAll()} className="text-xs underline">
+              重新加载
+            </button>
+          </div>
         </div>
       ) : null}
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="rounded-xl border border-white/10 bg-white/5 p-5">
-          <p className="mb-3 text-xs uppercase tracking-wider text-white/40">NPS Score</p>
-          {loading ? (
-            <div className="h-8 w-20 animate-pulse rounded bg-white/10" />
-          ) : overview ? (
-            <>
-              <p
-                className={`text-3xl font-bold ${
-                  overview.nps_score === null
-                    ? 'text-white/30'
-                    : overview.nps_score >= 50
-                      ? 'text-emerald-300'
-                      : overview.nps_score >= 0
-                        ? 'text-yellow-300'
-                        : 'text-red-300'
-                }`}
-              >
-                {overview.nps_score !== null ? overview.nps_score.toFixed(1) : '—'}
-              </p>
-              <p className="mt-1 text-xs text-white/40">
-                {overview.nps_count} responses · avg {overview.nps_avg?.toFixed(1) ?? '—'}/10
-              </p>
-            </>
-          ) : null}
-        </div>
-
-        <div className="rounded-xl border border-white/10 bg-white/5 p-5">
-          <p className="mb-3 text-xs uppercase tracking-wider text-white/40">CSAT Score</p>
-          {loading ? (
-            <div className="h-8 w-20 animate-pulse rounded bg-white/10" />
-          ) : overview ? (
-            <>
-              <p
-                className={`text-3xl font-bold ${
-                  overview.csat_avg === null
-                    ? 'text-white/30'
-                    : overview.csat_avg >= 4
-                      ? 'text-emerald-300'
-                      : overview.csat_avg >= 3
-                        ? 'text-yellow-300'
-                        : 'text-red-300'
-                }`}
-              >
-                {overview.csat_avg !== null ? overview.csat_avg.toFixed(2) : '—'}
-              </p>
-              <p className="mt-1 text-xs text-white/40">{overview.csat_count} responses · out of 5</p>
-            </>
-          ) : null}
-        </div>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <KpiCard
+          label="NPS 评分"
+          value={overview?.nps_score !== null && overview?.nps_score != null ? overview.nps_score.toFixed(1) : '—'}
+          sub={overview ? `共 ${overview.nps_count} 条，平均 ${overview.nps_avg?.toFixed(1) ?? '—'}` : '加载中'}
+        />
+        <KpiCard
+          label="CSAT 满意度"
+          value={overview?.csat_avg !== null && overview?.csat_avg != null ? overview.csat_avg.toFixed(2) : '—'}
+          sub={overview ? `共 ${overview.csat_count} 条反馈` : '加载中'}
+        />
       </div>
 
       <AdminRatingsTable

@@ -1,4 +1,13 @@
 import { credentialsFetch } from '@/services/api-client';
+import type {
+  ConfigListResponse,
+  DashboardCharts,
+  DashboardOverview,
+  DashboardTimeRange,
+  PaginatedAuditLogs,
+  PaginatedUserList,
+  UserDetailResponse,
+} from '@/types/admin';
 
 const ADMIN_API_BASE = '/api/admin';
 
@@ -60,3 +69,37 @@ export const adminChangePassword = (currentPassword: string, newPassword: string
     method: 'POST',
     body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
   });
+
+export const getDashboardOverview = () => adminFetch<DashboardOverview>('/dashboard/overview');
+
+export const getDashboardCharts = (timeRange: DashboardTimeRange) =>
+  adminFetch<DashboardCharts>(`/dashboard/charts?time_range=${timeRange}`);
+
+export const getUsers = (params: URLSearchParams) =>
+  adminFetch<PaginatedUserList>(`/users?${params.toString()}`);
+
+export const getUserDetail = (userId: string) =>
+  adminFetch<UserDetailResponse>(`/users/${userId}`);
+
+export const updateUserStatus = (userId: string, isActive: boolean) =>
+  adminFetch<{ success: boolean; user_id: string; is_active: boolean }>(`/users/${userId}/status`, {
+    method: 'PUT',
+    body: JSON.stringify({ is_active: isActive }),
+  });
+
+export const updateUserRole = (userId: string, tier: string) =>
+  adminFetch<{ success: boolean; user_id: string; tier: string }>(`/users/${userId}/role`, {
+    method: 'PUT',
+    body: JSON.stringify({ tier }),
+  });
+
+export const getConfigs = () => adminFetch<ConfigListResponse>('/config');
+
+export const updateConfig = (key: string, value: unknown, description?: string | null) =>
+  adminFetch<{ success: boolean; key: string }>('/config', {
+    method: 'PUT',
+    body: JSON.stringify({ key, value, description }),
+  });
+
+export const getAuditLogs = (params: URLSearchParams) =>
+  adminFetch<PaginatedAuditLogs>(`/audit-logs?${params.toString()}`);

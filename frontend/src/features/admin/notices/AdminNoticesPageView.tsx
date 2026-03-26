@@ -15,20 +15,20 @@ import {
 import { AdminNoticesTable } from './AdminNoticesTable';
 
 const TYPE_OPTIONS: { value: NoticeTypeFilter; label: string }[] = [
-  { value: 'all', label: 'All Types' },
-  { value: 'system', label: 'System' },
-  { value: 'feature', label: 'Feature' },
-  { value: 'promotion', label: 'Promotion' },
-  { value: 'education', label: 'Education' },
-  { value: 'changelog', label: 'Changelog' },
-  { value: 'maintenance', label: 'Maintenance' },
+  { value: 'all', label: '全部类型' },
+  { value: 'system', label: '系统公告' },
+  { value: 'feature', label: '功能更新' },
+  { value: 'promotion', label: '活动推广' },
+  { value: 'education', label: '教育通知' },
+  { value: 'changelog', label: '更新日志' },
+  { value: 'maintenance', label: '维护公告' },
 ];
 
 const STATUS_OPTIONS: { value: NoticeStatusFilter; label: string }[] = [
-  { value: 'all', label: 'All Status' },
-  { value: 'draft', label: 'Draft' },
-  { value: 'published', label: 'Published' },
-  { value: 'archived', label: 'Archived' },
+  { value: 'all', label: '全部状态' },
+  { value: 'draft', label: '草稿' },
+  { value: 'published', label: '已发布' },
+  { value: 'archived', label: '已归档' },
 ];
 
 export function AdminNoticesPageView() {
@@ -61,7 +61,7 @@ export function AdminNoticesPageView() {
       const result = await adminFetch<PaginatedNoticeList>(`/notices?${queryString}`);
       setData(result);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load notices');
+      setError(err instanceof Error ? err.message : '加载公告失败');
     } finally {
       setLoading(false);
     }
@@ -78,14 +78,14 @@ export function AdminNoticesPageView() {
       await adminFetch(`/notices/${noticeId}/publish`, { method: 'POST' });
       await fetchNotices();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to publish notice');
+      setError(err instanceof Error ? err.message : '发布公告失败');
     } finally {
       setActionLoading(null);
     }
   }
 
   async function handleDelete(noticeId: string, title: string) {
-    const confirmed = window.confirm(`Delete notice "${title}"? This cannot be undone.`);
+    const confirmed = window.confirm(`确认删除公告“${title}”吗？删除后不可恢复。`);
     if (!confirmed) return;
 
     setActionLoading(noticeId);
@@ -93,7 +93,7 @@ export function AdminNoticesPageView() {
       await adminFetch(`/notices/${noticeId}`, { method: 'DELETE' });
       await fetchNotices();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete notice');
+      setError(err instanceof Error ? err.message : '删除公告失败');
     } finally {
       setActionLoading(null);
     }
@@ -102,17 +102,17 @@ export function AdminNoticesPageView() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Notice Management"
-        description={data ? `${data.total.toLocaleString()} notices total` : 'Loading notices...'}
+        title="公告管理"
+        description={data ? `共 ${data.total.toLocaleString('zh-CN')} 条公告` : '查看和维护站内公告'}
         action={
           <button
             onClick={() => router.push('/admin-analysis/notices/create')}
-            className="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-500"
+            className="flex items-center gap-2 rounded-none bg-[#002045] px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:opacity-90"
           >
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
-            New Notice
+            新建公告
           </button>
         }
       />
@@ -121,10 +121,10 @@ export function AdminNoticesPageView() {
         <select
           value={typeFilter}
           onChange={(event) => setTypeFilter(event.target.value as NoticeTypeFilter)}
-          className="cursor-pointer rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white transition focus:border-indigo-500/60 focus:outline-none focus:ring-1 focus:ring-indigo-500/30"
+          className="cursor-pointer rounded-none border border-[#c4c6cf] bg-[#f4f4f0] px-3 py-2 text-sm text-[#002045] shadow-sm transition focus:border-[#002045] focus:outline-none"
         >
           {TYPE_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value} className="bg-[#0F172A]">
+            <option key={option.value} value={option.value}>
               {option.label}
             </option>
           ))}
@@ -133,10 +133,10 @@ export function AdminNoticesPageView() {
         <select
           value={statusFilter}
           onChange={(event) => setStatusFilter(event.target.value as NoticeStatusFilter)}
-          className="cursor-pointer rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white transition focus:border-indigo-500/60 focus:outline-none focus:ring-1 focus:ring-indigo-500/30"
+          className="cursor-pointer rounded-none border border-[#c4c6cf] bg-[#f4f4f0] px-3 py-2 text-sm text-[#002045] shadow-sm transition focus:border-[#002045] focus:outline-none"
         >
           {STATUS_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value} className="bg-[#0F172A]">
+            <option key={option.value} value={option.value}>
               {option.label}
             </option>
           ))}
@@ -144,10 +144,10 @@ export function AdminNoticesPageView() {
       </div>
 
       {error ? (
-        <div className="flex items-center justify-between rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+        <div className="flex items-center justify-between rounded-none border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 shadow-sm">
           <span>{error}</span>
-          <button onClick={() => void fetchNotices()} className="ml-4 text-xs text-red-300 underline hover:text-red-200">
-            Retry
+          <button onClick={() => void fetchNotices()} className="ml-4 text-xs text-red-700 underline hover:text-red-800">
+            重试
           </button>
         </div>
       ) : null}

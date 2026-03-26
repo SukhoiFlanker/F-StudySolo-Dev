@@ -1,16 +1,14 @@
-'use client'
+'use client';
 
-
-import { usePathname } from 'next/navigation'
-import { AdminSidebar, AdminTopbar } from '@/features/admin/shared'
+import { usePathname } from 'next/navigation';
+import { AdminSidebar, AdminTopbar } from '@/features/admin/shared';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname()
-  const isLoginPage = pathname === '/admin-analysis/login'
+  const pathname = usePathname();
+  const isLoginPage = pathname === '/admin-analysis/login';
 
   return (
     <>
-      {/* Material Symbols for admin scholarly design */}
       {/* eslint-disable-next-line @next/next/no-page-custom-font */}
       <link
         href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
@@ -24,19 +22,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       {isLoginPage ? (
         children
       ) : (
-        <div className="flex h-screen overflow-hidden bg-[#FAF9F5] font-[Work_Sans,sans-serif] text-[#1b1c1a]">
-          {/* Sidebar */}
+        <div className="flex h-screen overflow-hidden bg-[#f4f4f0] font-[Work_Sans,sans-serif] text-[#1b1c1a]">
           <AdminSidebar />
 
-          {/* Main content area */}
-          <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
+          <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
             <AdminTopbar />
-            <main className="flex-1 overflow-auto">
-              {children}
-            </main>
+            <main className="flex-1 overflow-auto">{children}</main>
           </div>
         </div>
       )}
     </>
-  )
+  );
 }

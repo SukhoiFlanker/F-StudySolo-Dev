@@ -10,6 +10,7 @@ export {
   truncateId,
   maskEmail,
   buildPaginationParams,
+  formatNumber,
 } from './utils';
 
 // Badge constants & resolver
@@ -29,6 +30,7 @@ export {
   Pagination,
   StatusBadge,
   ToastStack,
+  EmptyState,
 } from './components';
 
 // Layout components

@@ -17,7 +17,7 @@ export function AdminTopbar() {
   }
 
   return (
-    <header className="flex justify-between items-center px-8 h-16 w-full sticky top-0 z-50 bg-stone-50/70 backdrop-blur-md shadow-sm shadow-black/5 border-b border-stone-200/20">
+    <header className="flex justify-between items-center px-8 h-16 w-full sticky top-0 z-50 bg-[#f4f4f0] shadow-sm border-b border-[#c4c6cf]">
       <div className="flex items-center gap-6">
         {/* Mobile toggle */}
         <button
@@ -28,8 +28,8 @@ export function AdminTopbar() {
           <span className="material-symbols-outlined">menu</span>
         </button>
 
-        <div className="hidden md:block text-sky-900 font-serif font-bold text-lg tracking-tight">
-          StudySolo Admin
+        <div className="hidden md:block text-[#002045] font-serif font-bold text-lg tracking-tight">
+          StudySolo 后台
         </div>
         <div className="hidden md:block h-4 w-px bg-stone-300" />
         <div className="relative hidden sm:block">
@@ -37,7 +37,7 @@ export function AdminTopbar() {
             search
           </span>
           <input
-            className="pl-10 pr-4 py-1.5 bg-transparent border-b border-stone-300 focus:border-[#002045] focus:ring-0 text-sm font-mono transition-all w-64 placeholder:text-stone-400"
+            className="pl-10 pr-4 py-1.5 bg-[#f4f4f0] border border-[#c4c6cf] rounded-none focus:border-[#002045] focus:ring-0 text-sm font-mono transition-all w-64 placeholder:text-stone-400 shadow-sm"
             placeholder="搜索管理中心..."
             type="text"
           />

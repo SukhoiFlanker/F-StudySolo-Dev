@@ -4,6 +4,7 @@ import { ArrowLeft, Save, Loader2, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 import RightPanel from '@/components/layout/RightPanel';
 import CollaborationPopover from '@/components/workflow/CollaborationPopover';
+import CollaboratorAvatars from '@/components/workflow/CollaboratorAvatars';
 import { useWorkflowStore } from '@/stores/use-workflow-store';
 import { useSettingsStore } from '@/stores/use-settings-store';
 
@@ -62,6 +63,11 @@ export default function WorkflowPageShell({
             <div className="relative">
               <CollaborationPopover workflowId={workflowId} isPublic={isPublic} />
             </div>
+          )}
+
+          {/* Collaborator avatars — Figma-style stack */}
+          {workflowId && (
+            <CollaboratorAvatars workflowId={workflowId} />
           )}
 
           {/* Save status indicator */}

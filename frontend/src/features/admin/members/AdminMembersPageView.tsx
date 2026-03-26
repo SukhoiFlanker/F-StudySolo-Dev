@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useCallback, useEffect, useState } from 'react';
 import { adminFetch } from '@/services/admin.service';
@@ -8,46 +8,15 @@ import type {
   RevenueStats,
   TierStats,
 } from '@/types/admin';
+import { EmptyState, KpiCard, PageHeader, Pagination, formatDate } from '@/features/admin/shared';
+import { TierBadge } from '@/features/admin/users/user-shared';
 
-const TIER_LABELS: Record<string, string> = {
-  free: 'Free',
-  pro: 'Pro',
-  pro_plus: 'Pro+',
-  ultra: 'Ultra',
-};
-
-const TIER_COLORS: Record<string, string> = {
-  free: 'bg-white/10 text-white/50',
-  pro: 'bg-blue-500/20 text-blue-300 border border-blue-500/30',
-  pro_plus: 'bg-purple-500/20 text-purple-300 border border-purple-500/30',
-  ultra: 'bg-amber-500/20 text-amber-300 border border-amber-500/30',
-};
-
-function maskEmail(email: string | null): string {
-  if (!email) return '—';
-  const [local, domain] = email.split('@');
-  if (!domain) return email;
-  return `${local.slice(0, 2)}***@${domain}`;
-}
-
-function formatDate(iso: string | null): string {
-  if (!iso) return '—';
-  try {
-    return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  } catch {
-    return iso;
-  }
-}
-
-function KpiCard({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
-  return (
-    <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-      <p className="text-white/40 text-xs uppercase tracking-wider mb-1">{label}</p>
-      <p className="text-white text-2xl font-bold">{value}</p>
-      {sub ? <p className="text-white/40 text-xs mt-0.5">{sub}</p> : null}
-    </div>
-  );
-}
+const TIER_OPTIONS: { value: TierFilter; label: string }[] = [
+  { value: '', label: '全部付费会员' },
+  { value: 'pro', label: '专业版' },
+  { value: 'pro_plus', label: '专业增强版' },
+  { value: 'ultra', label: '旗舰版' },
+];
 
 export function AdminMembersPageView() {
   const [tierStats, setTierStats] = useState<TierStats | null>(null);
@@ -72,7 +41,7 @@ export function AdminMembersPageView() {
       setMemberList(list);
       setRevenue(rev);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load member data');
+      setError(err instanceof Error ? err.message : '加载会员数据失败');
     } finally {
       setLoading(false);
     }
@@ -83,77 +52,70 @@ export function AdminMembersPageView() {
   }, [fetchAll]);
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-white text-xl font-bold">Member Management</h1>
-        <p className="text-white/40 text-sm mt-0.5">
-          {tierStats ? `${tierStats.total.toLocaleString()} total users · ${tierStats.paid_total.toLocaleString()} paid` : 'Loading...'}
-        </p>
-      </div>
+    <div className="mx-auto min-h-full max-w-[1600px] space-y-6 bg-[#f4f4f0] px-8 py-8">
+      <PageHeader
+        title="会员管理"
+        description={
+          tierStats ? `共 ${tierStats.total.toLocaleString('zh-CN')} 位用户，其中 ${tierStats.paid_total.toLocaleString('zh-CN')} 位为付费用户` : '查看会员分布与收入概况'
+        }
+      />
 
       {error ? (
-        <div className="rounded-xl px-4 py-3 bg-red-500/10 border border-red-500/20 text-red-400 text-sm flex items-center justify-between">
-          <span>{error}</span>
-          <button onClick={() => void fetchAll()} className="text-red-300 hover:text-red-200 underline text-xs ml-4">
-            Retry
-          </button>
-        </div>
-      ) : null}
-
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        {loading ? (
-          Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="bg-white/5 border border-white/10 rounded-xl p-4 h-20 animate-pulse" />
-          ))
-        ) : tierStats ? (
-          <>
-            <KpiCard label="Free" value={tierStats.free.toLocaleString()} />
-            <KpiCard label="Pro" value={tierStats.pro.toLocaleString()} />
-            <KpiCard label="Pro+" value={tierStats.pro_plus.toLocaleString()} />
-            <KpiCard label="Ultra" value={tierStats.ultra.toLocaleString()} />
-          </>
-        ) : null}
-      </div>
-
-      {revenue ? (
-        <div className="grid grid-cols-3 gap-4">
-          <KpiCard label="MRR" value={`$${revenue.mrr.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
-          <KpiCard label="ARR" value={`$${revenue.arr.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
-          <KpiCard
-            label="ARPU"
-            value={`$${revenue.arpu.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-            sub={`${revenue.active_subscriptions} active subs`}
-          />
-        </div>
-      ) : null}
-
-      <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl overflow-hidden">
-        <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between">
-          <h2 className="text-white text-sm font-semibold">Paid Members</h2>
-          <div className="flex items-center gap-1">
-            {(['', 'pro', 'pro_plus', 'ultra'] as TierFilter[]).map((tier) => (
-              <button
-                key={tier || 'all'}
-                onClick={() => {
-                  setTierFilter(tier);
-                  setPage(1);
-                }}
-                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
-                  tierFilter === tier ? 'bg-indigo-600 text-white' : 'text-white/50 hover:text-white bg-white/5'
-                }`}
-              >
-                {tier ? TIER_LABELS[tier] : 'All'}
-              </button>
-            ))}
+        <div className="rounded-none border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 shadow-sm">
+          <div className="flex items-center justify-between gap-4">
+            <span>{error}</span>
+            <button onClick={() => void fetchAll()} className="text-xs underline">
+              重新加载
+            </button>
           </div>
         </div>
+      ) : null}
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+      {tierStats ? (
+        <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
+          <KpiCard label="免费版用户" value={tierStats.free.toLocaleString()} />
+          <KpiCard label="专业版用户" value={tierStats.pro.toLocaleString()} />
+          <KpiCard label="专业增强版" value={tierStats.pro_plus.toLocaleString()} />
+          <KpiCard label="旗舰版用户" value={tierStats.ultra.toLocaleString()} />
+        </div>
+      ) : null}
+
+      {revenue ? (
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <KpiCard label="月经常性收入" value={`¥ ${revenue.mrr.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}`} />
+          <KpiCard label="年经常性收入" value={`¥ ${revenue.arr.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}`} />
+          <KpiCard label="ARPU" value={`¥ ${revenue.arpu.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}`} sub={`有效订阅 ${revenue.active_subscriptions}`} />
+        </div>
+      ) : null}
+
+      <section className="rounded-none border border-[#c4c6cf] bg-[#f4f4f0] p-5 shadow-sm">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h2 className="font-serif text-xl font-bold text-[#002045]">付费会员列表</h2>
+            <p className="mt-2 text-sm text-[#74777f]">按会员等级筛选付费用户。</p>
+          </div>
+          <select
+            value={tierFilter}
+            onChange={(event) => {
+              setTierFilter(event.target.value as TierFilter);
+              setPage(1);
+            }}
+            className="rounded-none border border-[#c4c6cf] bg-[#f4f4f0] px-3 py-2 text-sm text-[#002045] shadow-sm focus:border-[#002045] focus:outline-none"
+          >
+            {TIER_OPTIONS.map((option) => (
+              <option key={option.value || 'all'} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="mt-5 overflow-x-auto">
+          <table className="w-full text-left">
             <thead>
-              <tr className="border-b border-white/10">
-                {['Email', 'Tier', 'Sub Status', 'Sub Start', 'Sub End'].map((header) => (
-                  <th key={header} className="px-4 py-2.5 text-left text-white/40 text-xs uppercase tracking-wider font-medium">
+              <tr className="border-b border-[#c4c6cf]">
+                {['邮箱', '会员等级', '订阅状态', '订阅开始', '订阅结束'].map((header) => (
+                  <th key={header} className="px-4 py-3 font-mono text-[10px] tracking-widest text-[#002045]">
                     {header}
                   </th>
                 ))}
@@ -162,63 +124,47 @@ export function AdminMembersPageView() {
             <tbody>
               {loading ? (
                 Array.from({ length: 5 }).map((_, row) => (
-                  <tr key={row} className="border-b border-white/5">
+                  <tr key={row} className="border-b border-[#ddd8cf]">
                     {Array.from({ length: 5 }).map((_, col) => (
                       <td key={col} className="px-4 py-3">
-                        <div className="h-3 bg-white/10 rounded animate-pulse w-24" />
+                        <div className="h-3 w-24 animate-pulse bg-[#e1ded1]" />
                       </td>
                     ))}
                   </tr>
                 ))
-              ) : (memberList?.members.length ?? 0) === 0 ? (
-                <tr>
-                  <td colSpan={5} className="px-4 py-8 text-center text-white/30 text-sm">
-                    No paid members found
-                  </td>
-                </tr>
-              ) : (
-                memberList?.members.map((member) => (
-                  <tr key={member.user_id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
-                    <td className="px-4 py-3 text-white/70 text-xs">{maskEmail(member.email)}</td>
+              ) : memberList && memberList.members.length > 0 ? (
+                memberList.members.map((member) => (
+                  <tr key={member.user_id} className="border-b border-[#ddd8cf] last:border-b-0">
+                    <td className="px-4 py-3 text-sm text-[#002045]">{member.email ?? '—'}</td>
                     <td className="px-4 py-3">
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium ${TIER_COLORS[member.tier] ?? TIER_COLORS.free}`}>
-                        {TIER_LABELS[member.tier] ?? member.tier}
-                      </span>
+                      <TierBadge tier={member.tier} />
                     </td>
-                    <td className="px-4 py-3 text-white/50 text-xs">{member.subscription_status ?? '—'}</td>
-                    <td className="px-4 py-3 text-white/50 text-xs">{formatDate(member.subscription_start)}</td>
-                    <td className="px-4 py-3 text-white/50 text-xs">{formatDate(member.subscription_end)}</td>
+                    <td className="px-4 py-3 text-sm text-[#74777f]">{member.subscription_status ?? '—'}</td>
+                    <td className="px-4 py-3 font-mono text-xs text-[#74777f]">{formatDate(member.subscription_start)}</td>
+                    <td className="px-4 py-3 font-mono text-xs text-[#74777f]">{formatDate(member.subscription_end)}</td>
                   </tr>
                 ))
+              ) : (
+                <tr>
+                  <td colSpan={5} className="p-6">
+                    <EmptyState title="暂无付费会员" description="当前筛选条件下没有付费会员记录。" />
+                  </td>
+                </tr>
               )}
             </tbody>
           </table>
         </div>
 
-        {memberList && memberList.total_pages > 1 ? (
-          <div className="px-4 py-3 border-t border-white/10 flex items-center justify-between">
-            <p className="text-white/40 text-xs">
-              Page {memberList.page} of {memberList.total_pages} · {memberList.total} total
-            </p>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setPage((current) => Math.max(1, current - 1))}
-                disabled={page === 1}
-                className="px-3 py-1 rounded-md text-xs bg-white/5 text-white/50 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-              >
-                Prev
-              </button>
-              <button
-                onClick={() => setPage((current) => Math.min(memberList.total_pages, current + 1))}
-                disabled={page === memberList.total_pages}
-                className="px-3 py-1 rounded-md text-xs bg-white/5 text-white/50 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-              >
-                Next
-              </button>
-            </div>
-          </div>
-        ) : null}
-      </div>
+        <div className="mt-4">
+          <Pagination
+            page={page}
+            totalPages={memberList?.total_pages ?? 1}
+            total={memberList?.total}
+            loading={loading}
+            onPageChange={setPage}
+          />
+        </div>
+      </section>
     </div>
   );
 }

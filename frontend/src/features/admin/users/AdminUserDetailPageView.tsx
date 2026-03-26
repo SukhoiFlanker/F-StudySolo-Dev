@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { adminFetch } from '@/services/admin.service';
+import { getUserDetail, updateUserRole, updateUserStatus } from '@/services/admin.service';
 import type { TierValue, UserDetailResponse } from '@/types/admin';
 import { ToastStack } from '@/features/admin/shared';
 import { useToastQueue } from '@/hooks/use-toast-queue';
@@ -26,11 +26,11 @@ export function AdminUserDetailPageView() {
     setLoading(true);
     setError(null);
     try {
-      const result = await adminFetch<UserDetailResponse>(`/users/${userId}`);
+      const result = await getUserDetail(userId);
       setData(result);
       setSelectedTier(result.user.tier as TierValue);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load user');
+      setError(err instanceof Error ? err.message : '加载用户详情失败');
     } finally {
       setLoading(false);
     }
@@ -46,7 +46,7 @@ export function AdminUserDetailPageView() {
     }
 
     const confirmed = window.confirm(
-      data.user.is_active ? `Deactivate user ${data.user.email}?` : `Activate user ${data.user.email}?`
+      data.user.is_active ? `确认停用用户 ${data.user.email} 吗？` : `确认启用用户 ${data.user.email} 吗？`
     );
     if (!confirmed) {
       return;
@@ -54,14 +54,11 @@ export function AdminUserDetailPageView() {
 
     setStatusLoading(true);
     try {
-      const result = await adminFetch<{ success: boolean; user_id: string; is_active: boolean }>(
-        `/users/${userId}/status`,
-        { method: 'PUT' }
-      );
+      const result = await updateUserStatus(userId, !data.user.is_active);
       setData((current) => (current ? { ...current, user: { ...current.user, is_active: result.is_active } } : current));
-      pushToast('success', result.is_active ? 'User activated successfully' : 'User deactivated successfully');
+      pushToast('success', result.is_active ? '用户已启用' : '用户已停用');
     } catch (err) {
-      pushToast('error', err instanceof Error ? err.message : 'Failed to update status');
+      pushToast('error', err instanceof Error ? err.message : '更新用户状态失败');
     } finally {
       setStatusLoading(false);
     }
@@ -73,20 +70,17 @@ export function AdminUserDetailPageView() {
     }
 
     if (selectedTier === data.user.tier) {
-      pushToast('error', 'Please select a different tier');
+      pushToast('error', '请选择新的会员等级');
       return;
     }
 
     setRoleLoading(true);
     try {
-      const result = await adminFetch<{ success: boolean; user_id: string; tier: string }>(`/users/${userId}/role`, {
-        method: 'PUT',
-        body: JSON.stringify({ tier: selectedTier }),
-      });
+      const result = await updateUserRole(userId, selectedTier);
       setData((current) => (current ? { ...current, user: { ...current.user, tier: result.tier } } : current));
-      pushToast('success', `Role changed to ${result.tier}`);
+      pushToast('success', `会员等级已更新为 ${result.tier}`);
     } catch (err) {
-      pushToast('error', err instanceof Error ? err.message : 'Failed to change role');
+      pushToast('error', err instanceof Error ? err.message : '更新会员等级失败');
     } finally {
       setRoleLoading(false);
     }
@@ -101,14 +95,14 @@ export function AdminUserDetailPageView() {
       <div className="space-y-6">
         <button
           onClick={() => router.push('/admin-analysis/users')}
-          className="flex items-center gap-2 text-white/50 hover:text-white text-sm transition-colors"
+          className="flex items-center gap-2 text-[#74777f] hover:text-[#002045] text-sm transition-colors"
         >
-          ← Back to Users
+          返回用户列表
         </button>
-        <div className="rounded-xl px-4 py-3 bg-red-500/10 border border-red-500/20 text-red-400 text-sm flex items-center justify-between">
+        <div className="rounded-none px-4 py-3 bg-red-50 border border-red-200 text-red-700 text-sm flex items-center justify-between shadow-sm">
           <span>{error}</span>
-          <button onClick={() => void fetchUser()} className="text-red-300 hover:text-red-200 underline text-xs ml-4">
-            Retry
+          <button onClick={() => void fetchUser()} className="text-red-700 hover:text-red-800 underline text-xs ml-4">
+            重试
           </button>
         </div>
       </div>
@@ -126,13 +120,13 @@ export function AdminUserDetailPageView() {
       <div className="flex items-center gap-4">
         <button
           onClick={() => router.push('/admin-analysis/users')}
-          className="flex items-center gap-2 text-white/50 hover:text-white text-sm transition-colors"
+          className="flex items-center gap-2 text-[#74777f] hover:text-[#002045] text-sm transition-colors"
         >
-          ← Back
+          返回
         </button>
         <div>
-          <h1 className="text-white text-xl font-bold">{data.user.email}</h1>
-          <p className="text-white/40 text-sm mt-0.5">User ID: {data.user.id}</p>
+          <h1 className="text-[#002045] text-xl font-bold">{data.user.email}</h1>
+          <p className="text-[#74777f] text-sm mt-0.5">用户 ID：{data.user.id}</p>
         </div>
       </div>
 

@@ -7,6 +7,11 @@ export function formatDate(value: string | null | undefined, locale = 'en-CA'): 
   }
 }
 
+export function formatNumber(value: number | null | undefined): string {
+  if (value == null) return '0';
+  return value.toLocaleString('zh-CN');
+}
+
 /** Format an ISO date string to a locale date+time (e.g. "2026-03-15 14:30"). */
 export function formatDateTime(value: string | null | undefined): string {
   if (!value) return '—';

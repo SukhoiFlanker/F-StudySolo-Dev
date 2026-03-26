@@ -23,24 +23,24 @@ interface NoticeEditorProps {
 }
 
 const TYPE_OPTIONS: { value: NoticeType; label: string }[] = [
-  { value: 'system', label: 'System' },
-  { value: 'feature', label: 'Feature' },
-  { value: 'promotion', label: 'Promotion' },
-  { value: 'education', label: 'Education' },
-  { value: 'changelog', label: 'Changelog' },
-  { value: 'maintenance', label: 'Maintenance' },
+  { value: 'system', label: '系统公告' },
+  { value: 'feature', label: '功能更新' },
+  { value: 'promotion', label: '活动推广' },
+  { value: 'education', label: '教育通知' },
+  { value: 'changelog', label: '更新日志' },
+  { value: 'maintenance', label: '维护公告' },
 ];
 
 const STATUS_OPTIONS: { value: NoticeStatus; label: string }[] = [
-  { value: 'draft', label: 'Draft' },
-  { value: 'published', label: 'Published' },
-  { value: 'archived', label: 'Archived' },
+  { value: 'draft', label: '草稿' },
+  { value: 'published', label: '已发布' },
+  { value: 'archived', label: '已归档' },
 ];
 
 export default function NoticeEditor({
   initialData,
   onSubmit,
-  submitLabel = 'Save',
+  submitLabel = '保存',
   isLoading = false,
 }: NoticeEditorProps) {
   const [title, setTitle] = useState(initialData?.title ?? '');
@@ -53,14 +53,14 @@ export default function NoticeEditor({
 
   const validate = useCallback((): boolean => {
     const nextErrors: Record<string, string> = {};
-    if (!title.trim()) nextErrors.title = 'Title is required';
-    else if (title.trim().length > 200) nextErrors.title = 'Title must be ≤ 200 characters';
-    if (!content.trim()) nextErrors.content = 'Content is required';
-    else if (content.trim().length > 10000) nextErrors.content = 'Content must be ≤ 10,000 characters';
+    if (!title.trim()) nextErrors.title = '标题不能为空';
+    else if (title.trim().length > 200) nextErrors.title = '标题长度不能超过 200 个字符';
+    if (!content.trim()) nextErrors.content = '正文不能为空';
+    else if (content.trim().length > 10000) nextErrors.content = '正文长度不能超过 10,000 个字符';
     if (expiresAt) {
       const date = new Date(expiresAt);
-      if (Number.isNaN(date.getTime())) nextErrors.expires_at = 'Invalid date';
-      else if (date <= new Date()) nextErrors.expires_at = 'Expiry must be in the future';
+      if (Number.isNaN(date.getTime())) nextErrors.expires_at = '时间格式无效';
+      else if (date <= new Date()) nextErrors.expires_at = '失效时间必须晚于当前时间';
     }
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
@@ -79,33 +79,33 @@ export default function NoticeEditor({
   };
 
   const inputClass =
-    'w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm placeholder-white/30 focus:outline-none focus:border-indigo-500/60 focus:ring-1 focus:ring-indigo-500/30 transition';
-  const errorClass = 'mt-1 text-xs text-red-400';
+    'w-full bg-[#f4f4f0] border border-[#c4c6cf] rounded-none px-3 py-2 text-[#002045] text-sm placeholder:text-stone-400 focus:outline-none focus:border-[#002045] transition shadow-sm';
+  const errorClass = 'mt-1 text-xs text-red-700';
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div>
-        <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/60">
-          Title <span className="text-red-400">*</span>
+        <label className="mb-1.5 block text-xs font-medium tracking-wider text-[#002045]">
+          标题 <span className="text-red-700">*</span>
         </label>
         <input
           type="text"
           value={title}
           onChange={(event) => setTitle(event.target.value)}
-          placeholder="Notice title…"
+          placeholder="请输入公告标题"
           maxLength={200}
           className={inputClass}
         />
         {errors.title ? <p className={errorClass}>{errors.title}</p> : null}
-        <p className="mt-1 text-xs text-white/30">{title.length}/200</p>
+        <p className="mt-1 text-xs text-[#74777f]">{title.length}/200</p>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/60">Type</label>
+          <label className="mb-1.5 block text-xs font-medium tracking-wider text-[#002045]">公告类型</label>
           <select value={type} onChange={(event) => setType(event.target.value as NoticeType)} className={inputClass}>
             {TYPE_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value} className="bg-[#0F172A]">
+              <option key={option.value} value={option.value}>
                 {option.label}
               </option>
             ))}
@@ -113,10 +113,10 @@ export default function NoticeEditor({
         </div>
 
         <div>
-          <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/60">Status</label>
+          <label className="mb-1.5 block text-xs font-medium tracking-wider text-[#002045]">状态</label>
           <select value={status} onChange={(event) => setStatus(event.target.value as NoticeStatus)} className={inputClass}>
             {STATUS_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value} className="bg-[#0F172A]">
+              <option key={option.value} value={option.value}>
                 {option.label}
               </option>
             ))}
@@ -125,7 +125,7 @@ export default function NoticeEditor({
       </div>
 
       <div>
-        <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/60">Expires At</label>
+        <label className="mb-1.5 block text-xs font-medium tracking-wider text-[#002045]">失效时间</label>
         <input
           type="datetime-local"
           value={expiresAt}
@@ -137,42 +137,42 @@ export default function NoticeEditor({
 
       <div>
         <div className="mb-1.5 flex items-center justify-between">
-          <label className="text-xs font-medium uppercase tracking-wider text-white/60">
-            Content <span className="text-red-400">*</span>
+          <label className="text-xs font-medium tracking-wider text-[#002045]">
+            公告正文 <span className="text-red-700">*</span>
           </label>
           <button
             type="button"
             onClick={() => setPreview((value) => !value)}
-            className="text-xs text-indigo-400 transition-colors hover:text-indigo-300"
+            className="text-xs text-[#002045] transition-colors hover:underline"
           >
-            {preview ? 'Edit' : 'Preview'}
+            {preview ? '返回编辑' : '预览内容'}
           </button>
         </div>
 
         {preview ? (
-          <div className="prose prose-invert min-h-[300px] rounded-lg border border-white/10 bg-black/20 p-4 text-sm">
-            {content ? <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown> : <p className="text-white/30">Nothing to preview.</p>}
+          <div className="prose min-h-[300px] max-w-none rounded-none border border-[#c4c6cf] bg-[#f4f4f0] p-4 text-sm text-[#002045] shadow-sm">
+            {content ? <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown> : <p className="text-[#74777f]">暂无预览内容。</p>}
           </div>
         ) : (
           <textarea
             value={content}
             onChange={(event) => setContent(event.target.value)}
-            placeholder="Write your notice in Markdown..."
+            placeholder="请使用 Markdown 编写公告内容"
             rows={14}
             className={`${inputClass} min-h-[300px] resize-y py-3`}
           />
         )}
         {errors.content ? <p className={errorClass}>{errors.content}</p> : null}
-        <p className="mt-1 text-xs text-white/30">{content.length}/10000</p>
+        <p className="mt-1 text-xs text-[#74777f]">{content.length}/10000</p>
       </div>
 
-      <div className="flex justify-end gap-3 border-t border-white/10 pt-4">
+      <div className="flex justify-end gap-3 border-t border-[#c4c6cf] pt-4">
         <button
           type="submit"
           disabled={isLoading}
-          className="rounded-lg bg-indigo-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-600 disabled:cursor-not-allowed disabled:opacity-50"
+          className="rounded-none bg-[#002045] px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {isLoading ? 'Saving...' : submitLabel}
+          {isLoading ? '保存中...' : submitLabel}
         </button>
       </div>
     </form>

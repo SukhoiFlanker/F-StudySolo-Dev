@@ -32,7 +32,7 @@ export default function EditNoticePage() {
     adminFetch<NoticeDetail>(`/notices/${noticeId}`)
       .then(setNotice)
       .catch((err: unknown) => {
-        setLoadError(err instanceof Error ? err.message : 'Failed to load notice')
+        setLoadError(err instanceof Error ? err.message : '加载公告失败')
       })
   }, [noticeId])
 
@@ -53,7 +53,7 @@ export default function EditNoticePage() {
       })
       router.push('/admin-analysis/notices')
     } catch (err: unknown) {
-      setSaveError(err instanceof Error ? err.message : 'Failed to save notice')
+      setSaveError(err instanceof Error ? err.message : '保存公告失败')
     } finally {
       setIsLoading(false)
     }
@@ -62,36 +62,36 @@ export default function EditNoticePage() {
   // Loading skeleton
   if (!notice && !loadError) {
     return (
-      <div className="max-w-3xl mx-auto space-y-6">
-        <div className="h-8 w-48 bg-white/10 rounded animate-pulse" />
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-6 space-y-4">
+      <div className="max-w-3xl mx-auto space-y-6 bg-[#f4f4f0]">
+        <div className="h-8 w-48 bg-[#e1ded1] animate-pulse" />
+        <div className="bg-[#f4f4f0] border border-[#c4c6cf] rounded-none p-6 space-y-4 shadow-sm">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-10 bg-white/10 rounded animate-pulse" />
+            <div key={i} className="h-10 bg-[#e1ded1] animate-pulse" />
           ))}
-          <div className="h-40 bg-white/10 rounded animate-pulse" />
+          <div className="h-40 bg-[#e1ded1] animate-pulse" />
         </div>
       </div>
     )
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="max-w-3xl mx-auto space-y-6 bg-[#f4f4f0]">
       {/* Header */}
       <div className="flex items-center gap-3">
         <button
           onClick={() => router.back()}
-          className="text-white/40 hover:text-white transition-colors"
-          aria-label="Go back"
+          className="text-[#74777f] hover:text-[#002045] transition-colors"
+          aria-label="返回"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
         </button>
         <div>
-          <h1 className="text-white text-xl font-bold">Edit Notice</h1>
+          <h1 className="text-[#002045] text-xl font-bold">编辑公告</h1>
           {notice && (
-            <p className="text-white/40 text-sm mt-0.5">
-              {notice.read_count.toLocaleString()} reads
+            <p className="text-[#74777f] text-sm mt-0.5">
+              已读 {notice.read_count.toLocaleString('zh-CN')} 次
             </p>
           )}
         </div>
@@ -99,21 +99,21 @@ export default function EditNoticePage() {
 
       {/* Load error */}
       {loadError && (
-        <div className="rounded-xl px-4 py-3 bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+        <div className="rounded-none px-4 py-3 bg-red-50 border border-red-200 text-red-700 text-sm shadow-sm">
           {loadError}
         </div>
       )}
 
       {/* Save error */}
       {saveError && (
-        <div className="rounded-xl px-4 py-3 bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+        <div className="rounded-none px-4 py-3 bg-red-50 border border-red-200 text-red-700 text-sm shadow-sm">
           {saveError}
         </div>
       )}
 
       {/* Editor card */}
       {notice && (
-        <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6">
+        <div className="bg-[#f4f4f0] border border-[#c4c6cf] rounded-none p-6 shadow-sm">
           <NoticeEditor
             initialData={{
               title: notice.title,
@@ -125,7 +125,7 @@ export default function EditNoticePage() {
                 : '',
             }}
             onSubmit={handleSubmit}
-            submitLabel="Save Changes"
+            submitLabel="保存修改"
             isLoading={isLoading}
           />
         </div>

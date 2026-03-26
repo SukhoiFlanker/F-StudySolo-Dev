@@ -29,12 +29,11 @@ export interface UserDetail {
 
 export interface Subscription {
   id: string;
-  plan: string;
+  tier: string;
+  plan_type: string | null;
   status: string;
-  current_period_start: string | null;
-  current_period_end: string | null;
-  amount: number | null;
-  currency: string | null;
+  expires_at: string | null;
+  created_at: string;
 }
 
 export interface UsageStats {

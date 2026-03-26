@@ -11,7 +11,7 @@ export default function AdminLoginLayout({ children }: { children: React.ReactNo
         href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700;900&family=Work+Sans:wght@300;400;600&family=JetBrains+Mono:wght@400;700&display=swap"
         rel="stylesheet"
       />
-      <div className="min-h-screen bg-[#FAF9F5] text-[#1b1c1a]">
+      <div className="min-h-screen bg-[#f4f4f0] text-[#1b1c1a]">
         {children}
       </div>
     </>

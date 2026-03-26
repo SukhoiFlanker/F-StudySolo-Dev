@@ -13,7 +13,7 @@ export function PageHeader({ title, description, action }: PageHeaderProps) {
     <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between mb-8">
       <div>
         <h1 className="text-3xl font-serif font-bold text-[#002045] tracking-tight">{title}</h1>
-        {description ? <p className="mt-2 text-sm font-mono text-[#74777f] uppercase tracking-widest">{description}</p> : null}
+        {description ? <p className="mt-2 text-sm font-mono text-[#74777f] tracking-wider">{description}</p> : null}
       </div>
       {action ? <div className="flex-shrink-0">{action}</div> : null}
     </div>
@@ -30,13 +30,11 @@ interface KpiCardProps {
 
 export function KpiCard({ label, value, sub }: KpiCardProps) {
   return (
-    <div className="rounded-none border border-[#c4c6cf]/60 bg-white p-6 shadow-sm relative overflow-hidden group">
-      {/* Hatched pattern overlay on hover */}
-      <div className="absolute inset-0 hatched-pattern opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+    <div className="rounded-none border border-[#c4c6cf] bg-[#f4f4f0] p-6 shadow-sm relative overflow-hidden">
       <div className="relative z-10">
-        <p className="text-[10px] font-bold uppercase tracking-widest text-[#002045]/60 font-mono pb-2 border-b border-[#002045]/10 inline-block mb-3">{label}</p>
+        <p className="text-[10px] font-bold tracking-widest text-[#002045]/60 font-mono pb-2 border-b border-[#002045]/10 inline-block mb-3">{label}</p>
         <p className="text-3xl font-serif font-black text-[#002045]">{value}</p>
-        {sub ? <p className="mt-2 text-[10px] font-mono tracking-widest text-[#74777f] uppercase">{sub}</p> : null}
+        {sub ? <p className="mt-2 text-[10px] font-mono tracking-widest text-[#74777f]">{sub}</p> : null}
       </div>
     </div>
   );
@@ -79,25 +77,25 @@ export function Pagination({ page, totalPages, total, loading, onPageChange }: P
   if (totalPages <= 1 && !total) return null;
 
   return (
-    <div className="flex items-center justify-between border-t border-[#c4c6cf]/60 px-5 py-4 bg-[#FAF9F5]">
-      <span className="font-mono text-[10px] uppercase tracking-widest text-[#74777f]">
-        Page {page} of {totalPages}
-        {total != null ? ` · ${total.toLocaleString()} total` : ''}
+    <div className="flex items-center justify-between border-t border-[#c4c6cf] px-5 py-4 bg-[#f4f4f0]">
+      <span className="font-mono text-[10px] tracking-widest text-[#74777f]">
+        第 {page} / {totalPages} 页
+        {total != null ? ` · 共 ${total.toLocaleString('zh-CN')} 条` : ''}
       </span>
       <div className="flex gap-2">
         <button
           disabled={page <= 1 || loading}
           onClick={() => onPageChange(page - 1)}
-          className="rounded-none border border-[#c4c6cf] bg-white px-4 py-2 font-mono text-[10px] tracking-widest uppercase text-[#002045] transition-colors hover:bg-[#002045]/5 hover:border-[#002045]/30 disabled:cursor-not-allowed disabled:opacity-30"
+          className="rounded-none border border-[#c4c6cf] bg-[#f4f4f0] px-4 py-2 font-mono text-[10px] tracking-widest text-[#002045] transition-colors hover:bg-[#ebe9df] disabled:cursor-not-allowed disabled:opacity-30"
         >
-          ← Prev
+          上一页
         </button>
         <button
           disabled={page >= totalPages || loading}
           onClick={() => onPageChange(page + 1)}
-          className="rounded-none border border-[#c4c6cf] bg-white px-4 py-2 font-mono text-[10px] tracking-widest uppercase text-[#002045] transition-colors hover:bg-[#002045]/5 hover:border-[#002045]/30 disabled:cursor-not-allowed disabled:opacity-30"
+          className="rounded-none border border-[#c4c6cf] bg-[#f4f4f0] px-4 py-2 font-mono text-[10px] tracking-widest text-[#002045] transition-colors hover:bg-[#ebe9df] disabled:cursor-not-allowed disabled:opacity-30"
         >
-          Next →
+          下一页
         </button>
       </div>
     </div>
@@ -114,10 +112,24 @@ interface StatusBadgeProps {
 export function StatusBadge({ label, className = '' }: StatusBadgeProps) {
   return (
     <span
-      className={`inline-flex items-center rounded-none border px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-widest ${className}`}
+      className={`inline-flex items-center rounded-none border px-2 py-0.5 font-mono text-[10px] font-bold tracking-widest ${className}`}
     >
       {label}
     </span>
+  );
+}
+
+interface EmptyStateProps {
+  title: string;
+  description: string;
+}
+
+export function EmptyState({ title, description }: EmptyStateProps) {
+  return (
+    <div className="rounded-none border border-[#c4c6cf] bg-[#f4f4f0] px-6 py-12 text-center shadow-sm">
+      <p className="font-serif text-lg font-bold text-[#002045]">{title}</p>
+      <p className="mt-2 text-sm text-[#74777f]">{description}</p>
+    </div>
   );
 }
 

@@ -32,17 +32,17 @@ export function AdminNoticesTable({
   const router = useRouter();
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md">
+    <div className="overflow-hidden rounded-none border border-[#c4c6cf] bg-[#f4f4f0] shadow-sm">
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-white/10">
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-white/50">Title</th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-white/50">Type</th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-white/50">Status</th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-white/50">Created</th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-white/50">Published</th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-white/50">Actions</th>
+            <tr className="border-b border-[#c4c6cf]">
+              <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-[#002045]">标题</th>
+              <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-[#002045]">类型</th>
+              <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-[#002045]">状态</th>
+              <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-[#002045]">创建时间</th>
+              <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-[#002045]">发布时间</th>
+              <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-[#002045]">操作</th>
             </tr>
           </thead>
           <tbody>
@@ -50,8 +50,8 @@ export function AdminNoticesTable({
               <TableSkeletonRows rows={8} cols={6} />
             ) : !data || data.notices.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-12 text-center text-sm text-white/30">
-                  No notices found
+                <td colSpan={6} className="px-4 py-12 text-center text-sm text-[#74777f]">
+                  暂无公告
                 </td>
               </tr>
             ) : (
@@ -63,9 +63,9 @@ export function AdminNoticesTable({
                   <tr
                     key={notice.id}
                     onClick={() => router.push(`/admin-analysis/notices/${notice.id}/edit`)}
-                    className="group cursor-pointer border-b border-white/5 transition-colors hover:bg-white/5"
+                    className="group cursor-pointer border-b border-[#ddd8cf] transition-colors hover:bg-[#ebe9df]"
                   >
-                    <td className="max-w-xs px-4 py-3 text-white/80 transition-colors group-hover:text-white">
+                    <td className="max-w-xs px-4 py-3 text-[#002045] transition-colors">
                       <span className="line-clamp-1">{notice.title}</span>
                     </td>
                     <td className="px-4 py-3">
@@ -74,8 +74,8 @@ export function AdminNoticesTable({
                     <td className="px-4 py-3">
                       <StatusBadge label={statusBadge.label} className={statusBadge.className} />
                     </td>
-                    <td className="px-4 py-3 text-xs text-white/50">{formatDate(notice.created_at)}</td>
-                    <td className="px-4 py-3 text-xs text-white/50">{formatDate(notice.published_at)}</td>
+                    <td className="px-4 py-3 text-xs text-[#74777f]">{formatDate(notice.created_at)}</td>
+                    <td className="px-4 py-3 text-xs text-[#74777f]">{formatDate(notice.published_at)}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2" onClick={(event) => event.stopPropagation()}>
                         {notice.status === 'draft' ? (
@@ -83,24 +83,24 @@ export function AdminNoticesTable({
                             <button
                               onClick={() => onPublish(notice.id)}
                               disabled={actionLoading === notice.id}
-                              className="rounded-md border border-emerald-500/30 bg-emerald-500/20 px-2.5 py-1 text-xs font-medium text-emerald-300 transition-colors hover:bg-emerald-500/30 disabled:cursor-not-allowed disabled:opacity-40"
+                              className="rounded-none border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700 transition-colors hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-40"
                             >
-                              {actionLoading === notice.id ? '...' : 'Publish'}
+                              {actionLoading === notice.id ? '...' : '发布'}
                             </button>
                             <button
                               onClick={() => onDelete(notice.id, notice.title)}
                               disabled={actionLoading === notice.id}
-                              className="rounded-md border border-red-500/30 bg-red-500/20 px-2.5 py-1 text-xs font-medium text-red-300 transition-colors hover:bg-red-500/30 disabled:cursor-not-allowed disabled:opacity-40"
+                              className="rounded-none border border-red-200 bg-red-50 px-2.5 py-1 text-xs font-medium text-red-700 transition-colors hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-40"
                             >
-                              Delete
+                              删除
                             </button>
                           </>
                         ) : (
                           <button
                             onClick={() => router.push(`/admin-analysis/notices/${notice.id}/edit`)}
-                            className="text-xs font-medium text-indigo-400 transition-colors hover:text-indigo-300"
+                            className="text-xs font-medium text-[#002045] transition-colors hover:underline"
                           >
-                            Edit →
+                            编辑
                           </button>
                         )}
                       </div>
