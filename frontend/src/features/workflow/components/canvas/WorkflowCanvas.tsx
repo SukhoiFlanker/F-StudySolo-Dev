@@ -20,7 +20,6 @@ import {
 import type { Node } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
-import ExecutionTraceDrawer from '@/features/workflow/components/execution/ExecutionTraceDrawer';
 import FloatingToolbar from '@/features/workflow/components/toolbar/FloatingToolbar';
 import type { CanvasTool } from '@/features/workflow/components/toolbar/FloatingToolbar';
 import AnimatedEdge from '@/features/workflow/components/canvas/edges/AnimatedEdge';
@@ -731,8 +730,6 @@ function WorkflowCanvasInner() {
       </ReactFlow>
 
       <FloatingToolbar />
-
-      <ExecutionTraceDrawer />
 
       {/* Canvas modal for edit/upload messages */}
       {modal && (

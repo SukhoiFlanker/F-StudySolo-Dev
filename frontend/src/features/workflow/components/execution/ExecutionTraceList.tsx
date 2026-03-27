@@ -13,9 +13,10 @@ import {
 interface ExecutionTraceListProps {
   session: WorkflowExecutionSession;
   nodeNameMap: Record<string, string>;
+  embedded?: boolean;
 }
 
-export function ExecutionTraceList({ session, nodeNameMap }: ExecutionTraceListProps) {
+export function ExecutionTraceList({ session, nodeNameMap, embedded = false }: ExecutionTraceListProps) {
   const [activeChainId, setActiveChainId] = useState<number | null>(null);
 
   useEffect(() => {
@@ -30,7 +31,7 @@ export function ExecutionTraceList({ session, nodeNameMap }: ExecutionTraceListP
   const hasMultipleChains = shouldShowChainTabs(session.chains);
 
   return (
-    <div className="space-y-4 p-4">
+    <div className={embedded ? 'space-y-4' : 'space-y-4 p-4'}>
       {hasMultipleChains ? (
         <div className="flex gap-2 overflow-x-auto pb-1">
           <button
