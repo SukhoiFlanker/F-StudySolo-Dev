@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from typing import Any
@@ -7,6 +8,8 @@ from typing import Any
 from app.core.config_loader import get_config
 from app.core.database import get_db
 from app.models.ai_catalog import CatalogSku, TierType
+
+logger = logging.getLogger(__name__)
 
 UTC = timezone.utc
 _CATALOG_TTL = timedelta(minutes=5)
@@ -209,3 +212,37 @@ async def update_catalog_sku(sku_id: str, payload: dict[str, Any]) -> None:
     db = await get_db()
     await db.table("ai_model_skus").update(payload).eq("id", sku_id).execute()
     await refresh_catalog_cache()
+
+
+async def validate_config_sku_references() -> list[str]:
+    """Startup health check: verify all config.yaml sku_ids exist in catalog.
+
+    Returns list of missing SKU IDs (empty = healthy).
+    """
+    config = get_config()
+    all_sku_ids: set[str] = set()
+
+    # Collect from task_routes
+    for route in config.get("task_routes", {}).values():
+        all_sku_ids.update(route.get("sku_ids", []))
+
+    # Collect from chat_models
+    for entry in config.get("chat_models", []):
+        all_sku_ids.update(entry.get("sku_ids", []))
+
+    # Compare against database
+    catalog = await _load_catalog_rows()
+    db_ids = {sku.sku_id for sku in catalog}
+    missing = sorted(all_sku_ids - db_ids)
+
+    if missing:
+        logger.warning(
+            "[startup] %d SKU ID(s) referenced in config.yaml but missing in DB: %s",
+            len(missing),
+            missing,
+        )
+    else:
+        logger.info("[startup] All %d config SKU references verified OK", len(all_sku_ids))
+
+    return missing
+

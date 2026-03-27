@@ -44,6 +44,8 @@ export function SidebarAIPanel() {
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const [userTier, setUserTier] = useState<TierType>('free');
   const [chatModels, setChatModels] = useState<ChatModelOption[]>([]);
+  const [isModelsLoading, setIsModelsLoading] = useState(true);
+  const [modelsError, setModelsError] = useState(false);
   // Track A selected model — default to first accessible model once list loads
   const [selectedChatModel, setSelectedChatModel] = useState<ChatModelOption | null>(null);
 
@@ -87,20 +89,26 @@ export function SidebarAIPanel() {
     getUser().then((user) => setUserTier(user.tier ?? 'free')).catch(() => null);
   }, []);
 
-  useEffect(() => {
-    let cancelled = false;
-    // Track A: load curated chat panel model list
+  const fetchChatModels = useCallback(() => {
+    setIsModelsLoading(true);
+    setModelsError(false);
     getChatModelList()
       .then((models) => {
-        if (cancelled) return;
         setChatModels(models);
-        // Auto-select first accessible model
         const firstAccessible = models.find((m) => m.isAccessible) ?? models[0];
         setSelectedChatModel((prev) => prev ?? firstAccessible ?? null);
       })
-      .catch(() => null);
-    return () => { cancelled = true; };
+      .catch(() => {
+        setModelsError(true);
+      })
+      .finally(() => {
+        setIsModelsLoading(false);
+      });
   }, []);
+
+  useEffect(() => {
+    fetchChatModels();
+  }, [fetchChatModels]);
 
   useEffect(() => {
     initStore();
@@ -174,6 +182,9 @@ export function SidebarAIPanel() {
             options={chatModels}
             onChange={setSelectedChatModel}
             userTier={userTier}
+            isLoading={isModelsLoading}
+            isError={modelsError}
+            onRetry={fetchChatModels}
           />
         </div>
 

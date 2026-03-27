@@ -24,6 +24,7 @@ _VENDOR_BRAND_COLORS: dict[str, str] = {
     "doubao": "#3370FF",
     "moonshot": "#111827",
     "openai_oss": "#10B981",
+    "openai": "#10B981",
 }
 
 # Short descriptions per chat model key
@@ -59,15 +60,18 @@ async def get_chat_models(
         sku_ids: list[str] = entry.get("sku_ids", [])
         is_recommended = entry.get("is_recommended", False)
 
-        # Determine vendor from the primary SKU
-        vendor = "deepseek"
-        primary_sku = None
-        if sku_ids:
+        # Vendor resolution: config.yaml vendor → DB SKU vendor → default
+        vendor = entry.get("vendor", "")
+        if not vendor and sku_ids:
             try:
                 primary_sku = await get_sku_by_id(sku_ids[0])
                 vendor = primary_sku.vendor if primary_sku else "deepseek"
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.warning(
+                    "[chat_models] SKU lookup failed for sku_id=%s key=%s: %s",
+                    sku_ids[0], key, exc,
+                )
+        vendor = vendor or "deepseek"
 
         models.append({
             "key": key,
@@ -84,3 +88,4 @@ async def get_chat_models(
         })
 
     return {"models": models}
+
