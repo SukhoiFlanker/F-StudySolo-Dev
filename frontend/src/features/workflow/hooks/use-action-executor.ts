@@ -84,7 +84,7 @@ export async function executeCanvasActions(actions: CanvasAction[]): Promise<Exe
 
               const newNode: Node = {
                 id: `ai-node-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
-                type: 'ai_step',
+                type: type,
                 position: finalPos,
                 data: {
                   label,
