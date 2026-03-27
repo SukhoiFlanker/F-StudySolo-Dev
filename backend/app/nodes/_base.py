@@ -92,6 +92,11 @@ class BaseNode(ABC):
     output_format: ClassVar[str] = "markdown"   # "markdown" | "json" | "passthrough"
     icon: ClassVar[str] = "⚙️"
     color: ClassVar[str] = "#6366f1"
+    config_schema: ClassVar[list[dict[str, Any]]] = []
+    output_capabilities: ClassVar[list[str]] = []
+    supports_upload: ClassVar[bool] = False
+    supports_preview: ClassVar[bool] = True
+    deprecated_surface: ClassVar[str | None] = None
 
     # ── System prompt (unified three-segment assembly) ─────────────────────────
 
@@ -179,6 +184,12 @@ class BaseNode(ABC):
             parts.append(f"前序节点输出：\n{upstream_text}")
         if node_input.user_content:
             parts.append(f"当前任务：{node_input.user_content}")
+        if node_input.node_config:
+            import json
+            parts.append(
+                "节点配置（如与默认行为冲突，优先遵守这些参数）：\n"
+                + json.dumps(node_input.node_config, ensure_ascii=False, indent=2)
+            )
         return "\n\n".join(parts)
 
     # ── Context prompt builder ───────────────────────────────────────────────
@@ -218,6 +229,11 @@ class BaseNode(ABC):
                 "output_format": nc.output_format,
                 "icon": nc.icon,
                 "color": nc.color,
+                "config_schema": nc.config_schema,
+                "output_capabilities": nc.output_capabilities,
+                "supports_upload": nc.supports_upload,
+                "supports_preview": nc.supports_preview,
+                "deprecated_surface": nc.deprecated_surface,
             }
-            for nc in cls._registry.values()
+            for _, nc in sorted(cls._registry.items(), key=lambda item: item[0])
         ]

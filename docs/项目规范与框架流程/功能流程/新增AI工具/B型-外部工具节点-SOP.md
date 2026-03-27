@@ -8,6 +8,14 @@
 
 ---
 
+## 0.0 真实基线与补全范围
+
+- Prompt 装配仍以 `backend/app/nodes/_base.py` 为准；只有 B-Augmented 才需要 `prompt.md`
+- 本 SOP 同时适用于**新增 B 型节点**和**现有 B 型节点功能补全**
+- 现有 B 型节点补全必须优先复用 `backend/app/services/*` 与现有 API，禁止另起第二套后端链路
+
+---
+
 ## 0. 先做节点模式判断
 
 B 型节点有三种内部模式，实现方式有所不同：
@@ -301,6 +309,19 @@ class <NodeName>Node(BaseNode, LLMStreamMixin):
 | B-Search（无 LLM）| ❌ 禁止 | ✅ 如有可配置项 |
 | B-Augmented（含 LLM）| ✅ 必须 | ✅ 如有可配置项 |
 
+### 5.4 节点内操作优先规则
+
+当一个 B 型节点原本有独立页面，但当前产品要求回收到工作流节点内时：
+
+- 保留后端 API 与 Service 层
+- 退役旧前端页面入口
+- 通过节点配置抽屉、节点输出区快捷入口或节点内弹层承载上传/预览/导出
+- 节点 manifest 必须正确声明：
+  - `config_schema`
+  - `supports_upload`
+  - `supports_preview`
+  - `deprecated_surface`
+
 ### 5.2 B-Augmented 节点写 `task_routes`
 
 ```yaml
@@ -436,6 +457,14 @@ except ExternalServiceError as e:
 # 后续 LLM 调用不受影响
 ```
 
+### 7.5 节点内上传 / 节点内工具操作
+
+若节点具备上传、导出、预览等动作，则必须满足：
+
+- 动作入口在节点内可达，不依赖旧独立页面
+- 上传类节点要显示处理状态、错误原因和基础预览
+- 旧页面若已废弃，文案中应明确提示“旧入口已退役”
+
 ---
 
 ## 8. 联调验收
@@ -551,3 +580,5 @@ npx tsc --noEmit
 
 > 📌 **核心原则**：B 型节点的价值在服务层封装。`node.py` 只做胶水层，所有外部逻辑在 `services/` 里。
 > 改变服务提供商，只改 service 文件；节点逻辑不动。
+>
+> **补充原则**：当产品要求把旧页面回收到节点内时，前端优先做“节点配置抽屉 + 节点内动作”，不要再维护双入口。

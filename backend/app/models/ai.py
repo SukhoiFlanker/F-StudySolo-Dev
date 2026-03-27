@@ -89,6 +89,7 @@ class NodeData(BaseModel):
     status: str = "pending"
     output: str = ""
     user_content: str = ""  # Full user input for trigger_input; used by execution engine
+    config: dict[str, Any] = Field(default_factory=dict)
 
 
 class WorkflowNodeSchema(BaseModel):

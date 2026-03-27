@@ -8,6 +8,19 @@
 
 ---
 
+## 0.0 真实基线与补全范围
+
+- Prompt 基线以 `backend/app/nodes/_base.py` 为准：统一拼接 `identity.md + _base_prompt.md + 节点目录 prompt.md`
+- 本 SOP 不只适用于“新增 A 型节点”，也适用于**现有 A 型节点能力补全**
+- 现有 A 型节点补全时，除 Prompt 外还必须同步补：
+  - `config_schema`
+  - 节点内配置入口
+  - 画布预览
+  - 执行面板 `compact`
+  - 错误文案与验收步骤
+
+---
+
 ## 0. 先做子类型判断
 
 在开始写代码之前，必须先确定是 A1 还是A2。
@@ -93,6 +106,7 @@ class <NodeName>Node(BaseNode, LLMStreamMixin):
     icon = "<Emoji>"                # 与前端 workflow-meta.ts 中保持一致
     color = "<hex color>"           # 与前端 workflow-meta.ts 中保持一致
     config_schema: list = []        # 无参数时留空列表
+    output_capabilities = ["preview", "compact"]
 
     async def execute(
         self,
@@ -132,6 +146,7 @@ class <NodeName>Node(BaseNode, LLMStreamMixin, JsonOutputMixin):
     icon = "<Emoji>"
     color = "<hex color>"
     config_schema: list = []
+    output_capabilities = ["preview", "compact"]
 
     async def execute(
         self,
@@ -418,6 +433,15 @@ const RENDERER_REGISTRY = {
 - `QuizRenderer`：题目数量摘要
 - 其他专用渲染器：至少返回可读的一行摘要
 
+### 6.6 现有 A 型节点补全时的额外要求
+
+如果不是“新增节点”，而是补现有节点功能，则在 6.1~6.5 之外还必须满足：
+
+- 节点 manifest 中能返回 `config_schema`
+- 节点配置抽屉可以编辑 `node.data.config`
+- 至少一个真实配置参数会影响输出结果
+- 画布节点本体能直接预览主要结果，而不是只显示原始 JSON
+
 ---
 
 ## 7. 联调验收
@@ -459,6 +483,7 @@ npx tsc --noEmit
 3. `running` 状态时步骤自动展开，流式输出实时追加
 4. `done` 状态后可展开查看 Input / Output，且内容与画布节点 slip 一致
 5. `compact = true` 时渲染器不崩溃、不显示不必要的重交互控件
+6. 节点配置改变后再次执行，执行面板 Input 中可看到 `node_config`
 
 ---
 
@@ -519,3 +544,5 @@ npx tsc --noEmit
 
 > 📌 **核心原则**：A 型节点的全部价值在 `prompt.md` 里。写代码是形式，写 Prompt 才是内容。
 > 新增一个 A 型节点，后端结构改动不超过 3 个文件，前端不超过 4 个文件。超过了，重新分类。
+>
+> **补充原则**：现有 A 型节点如果已经有渲染器但没有配置能力，优先补 `config_schema + 节点配置抽屉 + compact`，而不是继续新增独立页面。

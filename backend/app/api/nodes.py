@@ -25,7 +25,12 @@ async def get_node_manifest():
             "is_llm_node": true,
             "output_format": "json",
             "icon": "🃏",
-            "color": "#f59e0b"
+            "color": "#f59e0b",
+            "config_schema": [],
+            "output_capabilities": ["preview", "compact"],
+            "supports_upload": false,
+            "supports_preview": true,
+            "deprecated_surface": null
         },
         ...
     ]

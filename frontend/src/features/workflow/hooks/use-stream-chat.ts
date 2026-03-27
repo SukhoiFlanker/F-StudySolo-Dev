@@ -15,7 +15,6 @@
 
 import { useCallback } from 'react';
 import type { CanvasContext } from './use-canvas-context';
-import type { AIModelOption } from '@/features/workflow/constants/ai-models';
 import type { ChatEntry } from '@/stores/use-conversation-store';
 import type { ThinkingDepth } from '@/components/layout/sidebar/SidebarAIPanel';
 import { useAIChatStore, abortAIChatStream } from '@/stores/use-ai-chat-store';
@@ -59,6 +58,7 @@ function hydrateTriggerInputNodes(nodes: unknown[], userInput: string) {
       ...(typedNode.data ?? {}),
       user_content: (typedNode.data?.user_content as string | undefined) || userInput,
       label: (typedNode.data?.label as string | undefined) || userInput.trim().slice(0, 80) || '用户输入',
+      config: (typedNode.data?.config as Record<string, unknown> | undefined) ?? {},
     };
 
     return {
@@ -192,7 +192,6 @@ export function useStreamChat() {
     setStreaming,
     setAbortController,
     setError,
-    pushMessage,
     updateMessage,
   } = useAIChatStore();
 
@@ -306,7 +305,7 @@ export function useStreamChat() {
       setLoading(false);
       setAbortController(null);
     }
-  }, [setLoading, setStreaming, setAbortController, setError, pushMessage, updateMessage]);
+  }, [setLoading, setStreaming, setAbortController, setError, updateMessage]);
 
   const abort = useCallback(() => {
     abortAIChatStream();

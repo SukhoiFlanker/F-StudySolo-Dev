@@ -27,6 +27,28 @@ class ExportFileNode(BaseNode):
     output_format = "markdown"
     icon = "📥"
     color = "#10b981"
+    config_schema = [
+        {
+            "key": "format",
+            "type": "select",
+            "label": "导出格式",
+            "default": "docx",
+            "options": [
+                {"label": "DOCX", "value": "docx"},
+                {"label": "PDF", "value": "pdf"},
+                {"label": "Markdown", "value": "md"},
+            ],
+            "description": "要生成的文件格式。",
+        },
+        {
+            "key": "filename",
+            "type": "text",
+            "label": "文件名",
+            "default": "学习笔记",
+            "description": "不含扩展名的导出文件名。",
+        },
+    ]
+    output_capabilities = ["preview", "compact", "download"]
 
     async def execute(self, node_input: NodeInput, llm_caller: Any) -> AsyncIterator[str]:
         """Export upstream content to file.

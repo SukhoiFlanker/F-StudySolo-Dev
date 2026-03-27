@@ -64,6 +64,39 @@ export type NodeStatus =
   | 'skipped'
   | 'paused';
 
+export interface NodeConfigFieldSchemaOption {
+  label: string;
+  value: string;
+}
+
+export interface NodeConfigFieldSchema {
+  key: string;
+  type: 'text' | 'textarea' | 'number' | 'select' | 'boolean';
+  label: string;
+  default?: string | number | boolean;
+  description?: string;
+  placeholder?: string;
+  min?: number;
+  max?: number;
+  step?: number;
+  options?: NodeConfigFieldSchemaOption[];
+}
+
+export interface NodeManifestItem {
+  type: NodeType;
+  category: string;
+  description: string;
+  is_llm_node: boolean;
+  output_format: string;
+  icon: string;
+  color: string;
+  config_schema: NodeConfigFieldSchema[];
+  output_capabilities: string[];
+  supports_upload: boolean;
+  supports_preview: boolean;
+  deprecated_surface?: string | null;
+}
+
 /** AI 步骤节点数据（存储在 WorkflowNode.data 中） */
 export interface AIStepNodeData {
   label: string;
@@ -76,6 +109,7 @@ export interface AIStepNodeData {
   output_format?: string;
   input_snapshot?: string;
   execution_time_ms?: number;
+  config?: Record<string, unknown>;
 }
 
 /** 循环容器块节点数据 */
