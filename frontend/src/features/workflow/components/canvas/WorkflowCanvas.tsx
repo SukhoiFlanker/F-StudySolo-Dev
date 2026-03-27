@@ -132,15 +132,13 @@ function HistoryControls() {
 
 function WorkflowCanvasInner() {
 
-  const {
-    edges,
-    nodes,
-    onConnect,
-    onEdgesChange,
-    onNodesChange,
-    setSelectedNodeId,
-    setNodes,
-  } = useWorkflowStore();
+  const edges = useWorkflowStore((state) => state.edges);
+  const nodes = useWorkflowStore((state) => state.nodes);
+  const onConnect = useWorkflowStore((state) => state.onConnect);
+  const onEdgesChange = useWorkflowStore((state) => state.onEdgesChange);
+  const onNodesChange = useWorkflowStore((state) => state.onNodesChange);
+  const setSelectedNodeId = useWorkflowStore((state) => state.setSelectedNodeId);
+  const setNodes = useWorkflowStore((state) => state.setNodes);
   const [canvasTool, setCanvasTool] = useState<CanvasTool>('pan');
   const [modal, setModal] = useState<{ title: string; message: string } | null>(null);
   const [placementMode, setPlacementMode] = useState<string | null>(null);

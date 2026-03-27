@@ -18,18 +18,15 @@ export function useWorkflowExecution() {
   const startTimeMapRef = useRef<Record<string, number>>({});
   const traceOrderRef = useRef(1);
 
-  const {
-    currentWorkflowId,
-    setSelectedNodeId,
-    updateNodeData,
-    startExecutionSession,
-    registerNodeTrace,
-    updateNodeTrace,
-    appendNodeTraceToken,
-    finalizeExecutionSession,
-    clearExecutionSession,
-  } = useWorkflowStore();
-
+  const currentWorkflowId = useWorkflowStore((state) => state.currentWorkflowId);
+  const setSelectedNodeId = useWorkflowStore((state) => state.setSelectedNodeId);
+  const updateNodeData = useWorkflowStore((state) => state.updateNodeData);
+  const startExecutionSession = useWorkflowStore((state) => state.startExecutionSession);
+  const registerNodeTrace = useWorkflowStore((state) => state.registerNodeTrace);
+  const updateNodeTrace = useWorkflowStore((state) => state.updateNodeTrace);
+  const appendNodeTraceToken = useWorkflowStore((state) => state.appendNodeTraceToken);
+  const finalizeExecutionSession = useWorkflowStore((state) => state.finalizeExecutionSession);
+  const clearExecutionSession = useWorkflowStore((state) => state.clearExecutionSession);
   const stop = useCallback(() => {
     esRef.current?.close();
     esRef.current = null;
