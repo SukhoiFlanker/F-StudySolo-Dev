@@ -11,9 +11,9 @@ import { createPortal } from 'react-dom';
 const NODE_CATEGORIES: { id: string; label: string; icon: LucideIcon; types: NodeType[] }[] = [
   {
     id: 'trigger',
-    label: '输入 & 触发',
+    label: '输入源',
     icon: FileTerminal,
-    types: ['trigger_input'],
+    types: ['trigger_input', 'knowledge_base', 'web_search'],
   },
   {
     id: 'ai',
@@ -29,9 +29,9 @@ const NODE_CATEGORIES: { id: string; label: string; icon: LucideIcon; types: Nod
   },
   {
     id: 'data',
-    label: '数据 & 集成',
+    label: '输出 & 存储',
     icon: LibraryBig,
-    types: ['knowledge_base', 'web_search', 'write_db', 'export_file'],
+    types: ['write_db', 'export_file'],
   },
   {
     id: 'logic',

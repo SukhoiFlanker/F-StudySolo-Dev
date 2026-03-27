@@ -63,6 +63,7 @@ async def _chat_stream_generator(
 
             canvas_summary = _build_canvas_summary(body.canvas_context)
             has_canvas = bool(body.canvas_context and body.canvas_context.nodes)
+            model_identity = selected_sku.display_name if selected_sku else "StudySolo 默认模型"
             history_msgs = [
                 {"role": message.role, "content": message.content}
                 for message in (body.conversation_history or [])[-10:]
@@ -73,7 +74,7 @@ async def _chat_stream_generator(
                 intent = body.intent_hint or "MODIFY"
                 if not body.intent_hint or body.intent_hint not in ("BUILD", "MODIFY", "ACTION"):
                     classify_msgs = [
-                        {"role": "system", "content": get_intent_prompt(canvas_summary)},
+                        {"role": "system", "content": get_intent_prompt(canvas_summary, model_identity=model_identity)},
                         *history_msgs,
                         {"role": "user", "content": body.user_input},
                     ]
@@ -100,7 +101,7 @@ async def _chat_stream_generator(
                     }
                     return
 
-                system_content = get_create_prompt(canvas_summary, body.thinking_level)
+                system_content = get_create_prompt(canvas_summary, body.thinking_level, model_identity=model_identity)
                 create_msgs = [
                     {"role": "system", "content": system_content},
                     *history_msgs,
@@ -150,10 +151,10 @@ async def _chat_stream_generator(
 
             if mode == "plan":
                 intent = "PLAN"
-                system_content = get_plan_prompt(canvas_summary, body.thinking_level)
+                system_content = get_plan_prompt(canvas_summary, body.thinking_level, model_identity=model_identity)
             else:
                 intent = "CHAT"
-                system_content = get_chat_prompt(canvas_summary, body.thinking_level)
+                system_content = get_chat_prompt(canvas_summary, body.thinking_level, model_identity=model_identity)
 
             stream_msgs = [
                 {"role": "system", "content": system_content},

@@ -66,9 +66,13 @@ def load_prompt(name: str, **variables: str) -> str:
 
 # ── High-level Assemblers ────────────────────────────────────────
 
-def get_plan_prompt(canvas_context: str, thinking_depth: str = "balanced") -> str:
+def get_plan_prompt(
+    canvas_context: str,
+    thinking_depth: str = "balanced",
+    model_identity: str = "StudySolo 默认模型",
+) -> str:
     """Assemble Plan mode system prompt: identity + mode_plan."""
-    identity = load_prompt("identity")
+    identity = load_prompt("identity", model_identity=model_identity)
     plan = load_prompt(
         "mode_plan",
         canvas_context=canvas_context,
@@ -77,9 +81,13 @@ def get_plan_prompt(canvas_context: str, thinking_depth: str = "balanced") -> st
     return f"{identity}\n\n{plan}"
 
 
-def get_chat_prompt(canvas_context: str, thinking_depth: str = "fast") -> str:
+def get_chat_prompt(
+    canvas_context: str,
+    thinking_depth: str = "fast",
+    model_identity: str = "StudySolo 默认模型",
+) -> str:
     """Assemble Chat mode system prompt: identity + mode_chat."""
-    identity = load_prompt("identity")
+    identity = load_prompt("identity", model_identity=model_identity)
     depth_label = DEPTH_LABELS.get(thinking_depth, "")
     chat = load_prompt("mode_chat", canvas_context=canvas_context)
     if depth_label:
@@ -87,9 +95,13 @@ def get_chat_prompt(canvas_context: str, thinking_depth: str = "fast") -> str:
     return f"{identity}\n\n{chat}"
 
 
-def get_create_prompt(canvas_context: str, thinking_depth: str = "balanced") -> str:
+def get_create_prompt(
+    canvas_context: str,
+    thinking_depth: str = "balanced",
+    model_identity: str = "StudySolo 默认模型",
+) -> str:
     """Assemble Create mode system prompt: identity + mode_create."""
-    identity = load_prompt("identity")
+    identity = load_prompt("identity", model_identity=model_identity)
     create = load_prompt(
         "mode_create",
         canvas_context=canvas_context,
@@ -98,9 +110,12 @@ def get_create_prompt(canvas_context: str, thinking_depth: str = "balanced") -> 
     return f"{identity}\n\n{create}"
 
 
-def get_intent_prompt(canvas_context: str) -> str:
+def get_intent_prompt(
+    canvas_context: str,
+    model_identity: str = "StudySolo 默认模型",
+) -> str:
     """Assemble intent classifier prompt: identity + intent_classifier."""
-    identity = load_prompt("identity")
+    identity = load_prompt("identity", model_identity=model_identity)
     classifier = load_prompt("intent_classifier", canvas_context=canvas_context)
     return f"{identity}\n\n{classifier}"
 
@@ -117,6 +132,10 @@ def get_modify_system_prompt(canvas_context_str: str) -> str:
     return get_create_prompt(canvas_context_str)
 
 
-def get_chat_system_prompt(canvas_context_str: str, thinking_depth: str = "fast") -> str:
+def get_chat_system_prompt(
+    canvas_context_str: str,
+    thinking_depth: str = "fast",
+    model_identity: str = "StudySolo 默认模型",
+) -> str:
     """Legacy: 映射到新 get_chat_prompt."""
-    return get_chat_prompt(canvas_context_str, thinking_depth)
+    return get_chat_prompt(canvas_context_str, thinking_depth, model_identity)

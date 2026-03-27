@@ -125,6 +125,7 @@ async def ai_chat(
 
             canvas_summary = _build_canvas_summary(body.canvas_context)
             has_canvas = bool(body.canvas_context and body.canvas_context.nodes)
+            model_identity = selected_sku.display_name if selected_sku else "StudySolo 默认模型"
 
             if body.intent_hint == "ACTION":
                 return AIChatResponse(
@@ -209,7 +210,7 @@ async def ai_chat(
                 )
 
             chat_msgs = [
-                {"role": "system", "content": get_chat_system_prompt(canvas_summary)},
+                {"role": "system", "content": get_chat_system_prompt(canvas_summary, model_identity=model_identity)},
                 *history_msgs,
                 {"role": "user", "content": body.user_input},
             ]

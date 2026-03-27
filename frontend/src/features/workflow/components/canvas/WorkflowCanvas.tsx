@@ -35,8 +35,9 @@ import CanvasContextMenu, { buildCanvasMenuItems } from '@/features/workflow/com
 import NodeContextMenu, { buildNodeMenuGroups } from '@/features/workflow/components/canvas/NodeContextMenu';
 import EdgeContextMenu from '@/features/workflow/components/canvas/EdgeContextMenu';
 import { useLoopGroupDrop } from '@/features/workflow/hooks/use-loop-group-drop';
+import { NODE_TYPE_META } from '@/features/workflow/constants/workflow-meta';
 import { useWorkflowStore } from '@/stores/use-workflow-store';
-import type { AIStepNodeData } from '@/types';
+import type { AIStepNodeData, NodeType } from '@/types';
 
 /* ── Canvas background presets ── */
 const BG_PRESETS = [
@@ -80,6 +81,22 @@ const edgeTypes: EdgeTypes = {
   default: AnimatedEdge,
   sequential: SequentialEdge,
 };
+
+/** Create default node data for any node type. */
+function createDefaultNodeData(nodeType: string): Record<string, unknown> {
+  if (nodeType === 'loop_group') {
+    return { label: '循环块', maxIterations: 3, intervalSeconds: 0 };
+  }
+  const meta = NODE_TYPE_META[nodeType as NodeType];
+  return {
+    label: meta?.label ?? nodeType,
+    type: nodeType,
+    system_prompt: '',
+    model_route: '',
+    status: 'pending',
+    output: '',
+  };
+}
 
 function HistoryControls() {
   const undo = useWorkflowStore((s) => s.undo);
@@ -128,6 +145,46 @@ function WorkflowCanvasInner() {
   const reactFlowInstance = useReactFlow();
   const annotationCountRef = useRef(0);
   const handleNodeDragStop = useLoopGroupDrop();
+
+  // ── Node store drag-and-drop ──────────────────────────────────────────────
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  }, []);
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      const nodeType = e.dataTransfer.getData('application/studysolo-node-type');
+      if (!nodeType) return;
+
+      const flowPos = reactFlowInstance.screenToFlowPosition({
+        x: e.clientX,
+        y: e.clientY,
+      });
+
+      const store = useWorkflowStore.getState();
+      store.takeSnapshot();
+
+      const isLoop = nodeType === 'loop_group';
+      const nodeId = `${nodeType}-${Date.now().toString(36)}`;
+
+      const newNode: Node = {
+        id: nodeId,
+        type: nodeType,
+        position: {
+          x: flowPos.x - (isLoop ? 250 : 176),
+          y: flowPos.y - (isLoop ? 175 : 70),
+        },
+        data: createDefaultNodeData(nodeType),
+        ...(isLoop ? { style: { width: 500, height: 350 } } : {}),
+      };
+
+      store.setNodes([...store.nodes, newNode]);
+      setSelectedNodeId(nodeId);
+    },
+    [reactFlowInstance, setSelectedNodeId]
+  );
 
   // ── Context menu state ────────────────────────────────────────────────────
   const [canvasMenu, setCanvasMenu] = useState<{ x: number; y: number } | null>(null);
@@ -565,6 +622,40 @@ function WorkflowCanvasInner() {
     return () => window.removeEventListener('canvas:placement-mode', handler);
   }, []);
 
+  // ── Listen for node-store click-to-add events ─────────────────────────────
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { nodeType } = (e as CustomEvent).detail as { nodeType: string };
+      if (!nodeType) return;
+
+      const store = useWorkflowStore.getState();
+      store.takeSnapshot();
+
+      const isLoop = nodeType === 'loop_group';
+      const nodeId = `${nodeType}-${Date.now().toString(36)}`;
+      const canvasCenter = reactFlowInstance.screenToFlowPosition({
+        x: window.innerWidth / 2,
+        y: window.innerHeight / 2,
+      });
+
+      const newNode: Node = {
+        id: nodeId,
+        type: nodeType,
+        position: {
+          x: canvasCenter.x - (isLoop ? 250 : 176),
+          y: canvasCenter.y - (isLoop ? 175 : 70),
+        },
+        data: createDefaultNodeData(nodeType),
+        ...(isLoop ? { style: { width: 500, height: 350 } } : {}),
+      };
+
+      store.setNodes([...store.nodes, newNode]);
+      setSelectedNodeId(nodeId);
+    };
+    window.addEventListener('node-store:add-node', handler);
+    return () => window.removeEventListener('node-store:add-node', handler);
+  }, [reactFlowInstance, setSelectedNodeId]);
+
   // ── Compute React Flow props based on active tool ──────────────────────────
   const isSelectMode = canvasTool === 'select';
   const bgPreset = BG_PRESETS[bgIndex];
@@ -576,6 +667,8 @@ function WorkflowCanvasInner() {
         isSelectMode ? 'cursor-crosshair' : ''
       }`}
       style={{ touchAction: 'none' }}
+      onDrop={handleDrop}
+      onDragOver={handleDragOver}
     >
       <ReactFlow
         nodes={nodes}
