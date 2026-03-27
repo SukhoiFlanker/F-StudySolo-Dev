@@ -2,14 +2,13 @@
 
 import { useCallback, useRef, useState } from 'react';
 import { useWorkflowStore } from '@/stores/use-workflow-store';
-import type { WorkflowSSEEvent } from '@/types/workflow-events';
 import {
   buildExecutionRequestBody,
   getExecutionFailureMessage,
   shouldFinalizeExecutionAsInterrupted,
 } from '@/features/workflow/utils/execution-state';
 import { extractSseEvents } from '@/features/workflow/utils/parse-sse';
-import { buildParallelGroupId, parseInputSummary } from '@/features/workflow/utils/trace-helpers';
+import { applyWorkflowExecutionEvent } from '@/features/workflow/utils/workflow-execution-events';
 
 export type ExecutionStatus = 'idle' | 'running' | 'completed' | 'error';
 
@@ -77,134 +76,22 @@ export function useWorkflowExecution() {
       let didComplete = false;
 
       const handleEvent = (event: string, payload: string) => {
-        try {
-          if (event === 'node_input') {
-            const data = JSON.parse(payload) as Extract<WorkflowSSEEvent, { type: 'node_input' }>;
-            startTimeMapRef.current[data.node_id] = performance.now();
-            const session = useWorkflowStore.getState().executionSession;
-            const runningNodeIds = (session?.traces ?? [])
-              .filter((trace) => trace.status === 'running' && trace.nodeId !== data.node_id)
-              .map((trace) => trace.nodeId);
-            const parallelGroupId = runningNodeIds.length > 0
-              ? buildParallelGroupId([...runningNodeIds, data.node_id])
-              : undefined;
-
-            if (parallelGroupId) {
-              for (const runningNodeId of runningNodeIds) {
-                updateNodeTrace(runningNodeId, {
-                  isParallel: true,
-                  parallelGroupId,
-                });
-              }
-            }
-
-            registerNodeTrace(
-              data.node_id,
-              traceOrderRef.current++,
-              Boolean(parallelGroupId),
-              parallelGroupId,
-            );
-            updateNodeData(data.node_id, {
-              input_snapshot: data.input_snapshot,
-            });
-            updateNodeTrace(data.node_id, {
-              status: 'running',
-              startedAt: performance.now(),
-              inputSummary: parseInputSummary(data.input_snapshot),
-              rawInputSnapshot: data.input_snapshot,
-            });
-            return;
-          }
-
-          if (event === 'node_status') {
-            const data = JSON.parse(payload) as Extract<WorkflowSSEEvent, { type: 'node_status' }>;
-            setSelectedNodeId(data.node_id);
-
-            const updates: Parameters<typeof updateNodeData>[1] = {
-              status: data.status,
-              ...(data.error ? { error: data.error } : {}),
-            };
-
-            if (data.status === 'running') {
-              if (!startTimeMapRef.current[data.node_id]) {
-                startTimeMapRef.current[data.node_id] = performance.now();
-              }
-            } else if (data.status === 'done' || data.status === 'error') {
-              const startT = startTimeMapRef.current[data.node_id];
-              if (startT) {
-                updates.execution_time_ms = Math.round(performance.now() - startT);
-                delete startTimeMapRef.current[data.node_id];
-              }
-            }
-
-            updateNodeData(data.node_id, updates);
-            if (data.status !== 'running') {
-              updateNodeTrace(data.node_id, {
-                status: data.status,
-                errorMessage: data.error,
-                durationMs: typeof updates.execution_time_ms === 'number' ? updates.execution_time_ms : undefined,
-                finishedAt: data.status === 'done' || data.status === 'error'
-                  ? performance.now()
-                  : undefined,
-              });
-            }
-            return;
-          }
-
-          if (event === 'node_token') {
-            const data = JSON.parse(payload) as Extract<WorkflowSSEEvent, { type: 'node_token' }>;
-            setSelectedNodeId(data.node_id);
-            updateNodeData(data.node_id, (prev) => ({
-              output: (prev.output ?? '') + data.token,
-            }));
-            appendNodeTraceToken(data.node_id, data.token);
-            return;
-          }
-
-          if (event === 'node_done') {
-            const data = JSON.parse(payload) as Extract<WorkflowSSEEvent, { type: 'node_done' }>;
-            setSelectedNodeId(data.node_id);
-            updateNodeData(data.node_id, {
-              output: data.full_output,
-              status: 'done',
-            });
-            updateNodeTrace(data.node_id, {
-              status: 'done',
-              finalOutput: data.full_output,
-            });
-            return;
-          }
-
-          if (event === 'loop_iteration') {
-            const data = JSON.parse(payload) as Extract<WorkflowSSEEvent, { type: 'loop_iteration' }>;
-            setSelectedNodeId(data.group_id);
-            updateNodeData(data.group_id, {
-              currentIteration: data.iteration,
-              totalIterations: data.total,
-              status: 'running',
-            });
-            return;
-          }
-
-          if (event === 'save_error') {
-            const data = JSON.parse(payload) as Extract<WorkflowSSEEvent, { type: 'save_error' }>;
-            setError(data.error);
-            return;
-          }
-
-          if (event === 'workflow_done') {
-            const data = JSON.parse(payload) as Extract<WorkflowSSEEvent, { type: 'workflow_done' }>;
-            didComplete = true;
-            const nextStatus = data.status === 'completed' ? 'completed' : 'error';
-            setStatus(nextStatus);
-            setError(data.status === 'completed' ? null : (data.error ?? '工作流执行失败'));
-            finalizeExecutionSession(nextStatus);
-            closeStream();
-            resetTrackingState();
-          }
-        } catch {
-          // Ignore malformed SSE payloads.
-        }
+        didComplete = applyWorkflowExecutionEvent(event, payload, {
+          getExecutionSession: () => useWorkflowStore.getState().executionSession,
+          now: () => performance.now(),
+          nextTraceOrder: () => traceOrderRef.current++,
+          startTimeMap: startTimeMapRef.current,
+          setStatus,
+          setError,
+          setSelectedNodeId,
+          updateNodeData,
+          registerNodeTrace,
+          updateNodeTrace,
+          appendNodeTraceToken,
+          finalizeExecutionSession,
+          closeStream,
+          resetTrackingState,
+        }) || didComplete;
       };
 
       try {

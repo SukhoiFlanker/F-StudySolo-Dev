@@ -37,6 +37,7 @@
 ### 与原草案不同的实现决策
 
 - SSE 解析采用独立工具 `parse-sse.ts`，不是直接在 hook 内逐行字符串拆分
+- 事件落库与 trace 更新已抽到独立 helper `workflow-execution-events.ts`，便于做解析级测试
 - 断流后直接把 session 标记为 error，由用户手动重跑
 - 不再依赖“暂停云同步”规避竞态，而是依赖 POST body 传入即时图
 
@@ -130,6 +131,7 @@
   - sync
   - SSE/store 更新
   - execution utils
+  - execution event handler
   - execution 收尾 helper
   - config patch helper
   - trace filtering / grouping helper
@@ -167,6 +169,7 @@
 | `frontend/src/features/workflow/components/execution/TraceStepItem.tsx` | 已完成 | 线段视觉强化 |
 | `frontend/src/features/workflow/utils/compute-chains.ts` | 已完成 | root-to-leaf 链路计算 |
 | `frontend/src/features/workflow/utils/parse-sse.ts` | 已完成 | SSE 文本解析 |
+| `frontend/src/features/workflow/utils/workflow-execution-events.ts` | 已完成 | SSE 事件到 store/trace 的更新 helper |
 | `frontend/src/features/workflow/utils/execution-state.ts` | 已完成 | 执行收尾 helper |
 | `frontend/src/features/workflow/components/node-config/config-patch.ts` | 已完成 | 配置 patch helper |
 | `frontend/src/features/workflow/components/execution/trace-list-utils.ts` | 已完成 | trace 筛选与分组 helper |

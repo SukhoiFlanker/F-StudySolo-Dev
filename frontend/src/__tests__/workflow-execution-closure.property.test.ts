@@ -14,6 +14,7 @@ import {
   filterTracesByChain,
   shouldShowChainTabs,
 } from '@/features/workflow/components/execution/trace-list-utils';
+import { applyWorkflowExecutionEvent } from '@/features/workflow/utils/workflow-execution-events';
 
 function makeTrace(overrides: Partial<NodeExecutionTrace>): NodeExecutionTrace {
   return {
@@ -102,5 +103,193 @@ describe('workflow execution closure helpers', () => {
       { kind: 'parallel', traces: [traces[0], traces[1]] },
       { kind: 'single', trace: traces[2] },
     ]);
+  });
+
+  it('applies node_input events with parallel metadata and input summary', () => {
+    const updateNodeTraceCalls: Array<{ nodeId: string; updates: Record<string, unknown> }> = [];
+    const registerCalls: Array<{ nodeId: string; executionOrder: number; isParallel?: boolean; parallelGroupId?: string }> = [];
+    const nodeDataState: Record<string, Record<string, unknown>> = {};
+
+    const didComplete = applyWorkflowExecutionEvent(
+      'node_input',
+      JSON.stringify({
+        type: 'node_input',
+        node_id: 'new-node',
+        input_snapshot: JSON.stringify({
+          topic: '工作流',
+          section_text: '执行面板重构',
+        }),
+      }),
+      {
+        getExecutionSession: () => ({
+          sessionId: 'session-1',
+          workflowId: 'wf-1',
+          workflowName: '执行测试',
+          startedAt: 0,
+          overallStatus: 'running',
+          traces: [makeTrace({ nodeId: 'existing', status: 'running' })],
+          completedCount: 0,
+          totalCount: 1,
+          chains: [],
+        }),
+        now: () => 120,
+        nextTraceOrder: () => 1,
+        startTimeMap: {},
+        setStatus: () => {},
+        setError: () => {},
+        setSelectedNodeId: () => {},
+        updateNodeData: (nodeId, update) => {
+          nodeDataState[nodeId] = { ...(nodeDataState[nodeId] ?? {}), ...(update as Record<string, unknown>) };
+        },
+        registerNodeTrace: (nodeId, executionOrder, isParallel, parallelGroupId) => {
+          registerCalls.push({ nodeId, executionOrder, isParallel, parallelGroupId });
+        },
+        updateNodeTrace: (nodeId, updates) => {
+          updateNodeTraceCalls.push({ nodeId, updates });
+        },
+        appendNodeTraceToken: () => {},
+        finalizeExecutionSession: () => {},
+        closeStream: () => {},
+        resetTrackingState: () => {},
+      },
+    );
+
+    expect(didComplete).toBe(false);
+    expect(registerCalls).toHaveLength(1);
+    expect(registerCalls[0].nodeId).toBe('new-node');
+    expect(registerCalls[0].executionOrder).toBe(1);
+    expect(registerCalls[0].isParallel).toBe(true);
+    expect(registerCalls[0].parallelGroupId).toBeTruthy();
+    expect(updateNodeTraceCalls[0]).toEqual({
+      nodeId: 'existing',
+      updates: {
+        isParallel: true,
+        parallelGroupId: registerCalls[0].parallelGroupId,
+      },
+    });
+    expect(updateNodeTraceCalls[1].nodeId).toBe('new-node');
+    expect(updateNodeTraceCalls[1].updates).toMatchObject({
+      status: 'running',
+      inputSummary: '',
+      rawInputSnapshot: JSON.stringify({
+        topic: '工作流',
+        section_text: '执行面板重构',
+      }),
+    });
+    expect(nodeDataState['new-node']).toEqual({
+      input_snapshot: JSON.stringify({
+        topic: '工作流',
+        section_text: '执行面板重构',
+      }),
+    });
+  });
+
+  it('applies token, status, node_done and workflow_done events through one execution flow', () => {
+    const nodeDataState: Record<string, Record<string, unknown>> = {
+      node: { output: '前缀' },
+    };
+    const selectedNodeIds: string[] = [];
+    const traceUpdates: Array<{ nodeId: string; updates: Record<string, unknown> }> = [];
+    const traceTokens: string[] = [];
+    const terminalStatuses: string[] = [];
+    const errors: Array<string | null> = [];
+    let now = 130;
+    const startTimeMap: Record<string, number> = { node: 100 };
+    let closed = 0;
+    let reset = 0;
+
+    const deps = {
+      getExecutionSession: () => null,
+      now: () => now,
+      nextTraceOrder: () => 1,
+      startTimeMap,
+      setStatus: (status: 'completed' | 'error') => {
+        terminalStatuses.push(status);
+      },
+      setError: (error: string | null) => {
+        errors.push(error);
+      },
+      setSelectedNodeId: (nodeId: string) => {
+        selectedNodeIds.push(nodeId);
+      },
+      updateNodeData: (nodeId: string, update: unknown) => {
+        const next = typeof update === 'function'
+          ? (update as (prev: Record<string, unknown>) => Record<string, unknown>)(nodeDataState[nodeId] ?? {})
+          : (update as Record<string, unknown>);
+        nodeDataState[nodeId] = { ...(nodeDataState[nodeId] ?? {}), ...next };
+      },
+      registerNodeTrace: () => {},
+      updateNodeTrace: (nodeId: string, updates: Record<string, unknown>) => {
+        traceUpdates.push({ nodeId, updates });
+      },
+      appendNodeTraceToken: (_nodeId: string, token: string) => {
+        traceTokens.push(token);
+      },
+      finalizeExecutionSession: (status: 'completed' | 'error') => {
+        terminalStatuses.push(`final:${status}`);
+      },
+      closeStream: () => {
+        closed += 1;
+      },
+      resetTrackingState: () => {
+        reset += 1;
+      },
+    };
+
+    expect(applyWorkflowExecutionEvent(
+      'node_token',
+      JSON.stringify({ type: 'node_token', node_id: 'node', token: ' 输出' }),
+      deps,
+    )).toBe(false);
+    expect(nodeDataState.node.output).toBe('前缀 输出');
+    expect(traceTokens).toEqual([' 输出']);
+
+    now = 145;
+    expect(applyWorkflowExecutionEvent(
+      'node_status',
+      JSON.stringify({ type: 'node_status', node_id: 'node', status: 'done' }),
+      deps,
+    )).toBe(false);
+    expect(nodeDataState.node.status).toBe('done');
+    expect(nodeDataState.node.execution_time_ms).toBe(45);
+    expect(startTimeMap.node).toBeUndefined();
+
+    expect(applyWorkflowExecutionEvent(
+      'node_done',
+      JSON.stringify({ type: 'node_done', node_id: 'node', full_output: '最终输出' }),
+      deps,
+    )).toBe(false);
+    expect(nodeDataState.node.output).toBe('最终输出');
+
+    const completed = applyWorkflowExecutionEvent(
+      'workflow_done',
+      JSON.stringify({ type: 'workflow_done', status: 'completed' }),
+      deps,
+    );
+
+    expect(completed).toBe(true);
+    expect(selectedNodeIds).toEqual(['node', 'node', 'node']);
+    expect(traceUpdates).toEqual([
+      {
+        nodeId: 'node',
+        updates: {
+          status: 'done',
+          errorMessage: undefined,
+          durationMs: 45,
+          finishedAt: 145,
+        },
+      },
+      {
+        nodeId: 'node',
+        updates: {
+          status: 'done',
+          finalOutput: '最终输出',
+        },
+      },
+    ]);
+    expect(terminalStatuses).toEqual(['completed', 'final:completed']);
+    expect(errors).toEqual([null]);
+    expect(closed).toBe(1);
+    expect(reset).toBe(1);
   });
 });
