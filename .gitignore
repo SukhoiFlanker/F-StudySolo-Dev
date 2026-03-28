@@ -82,5 +82,11 @@ Desktop.ini
 htmlcov/
 .pytest_cache/
 
+# Build / tool output artifacts (never commit these)
+*.tsbuildinfo
+lint_output.txt
+ts_out.txt
+*.log
+
 # Trae IDE (case-insensitive fix)
 .trae/
