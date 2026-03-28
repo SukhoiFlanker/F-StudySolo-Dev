@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import ThemeProvider from "@/components/layout/ThemeProvider";
 import { AuthSessionBridge } from "@/features/auth/components";
 import { ConsentManager } from "@/components/ui/ConsentManager";
@@ -32,7 +33,9 @@ export default function RootLayout({
   return (
     <html lang="zh-CN" className="dark" suppressHydrationWarning>
       <body className="antialiased" style={fontVars}>
-        <AuthSessionBridge />
+        <Suspense fallback={null}>
+          <AuthSessionBridge />
+        </Suspense>
         <NextTopLoader
           color="#6366F1"
           initialPosition={0.08}
