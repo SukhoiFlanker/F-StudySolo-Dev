@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { initCrossTabSync } from '@/services/auth.service';
@@ -11,7 +11,7 @@ import {
 
 const AUTH_PAGES = new Set(['/login', '/register', '/forgot-password', '/reset-password']);
 
-export function AuthSessionBridge() {
+function BridgeContent() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
@@ -163,5 +163,13 @@ export function AuthSessionBridge() {
         </motion.div>
       )}
     </AnimatePresence>
+  );
+}
+
+export function AuthSessionBridge() {
+  return (
+    <Suspense fallback={null}>
+      <BridgeContent />
+    </Suspense>
   );
 }
