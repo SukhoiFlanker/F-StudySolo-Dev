@@ -9,6 +9,7 @@ export type SidebarPanel =
   | 'ai-chat'
   | 'node-store'
   | 'workflow-examples'
+  | 'knowledge-base'
   | 'dashboard'
   | 'wallet'
   | 'extensions'   // ← 原 'plugins'，migrate 自动兼容旧 localStorage
@@ -27,6 +28,7 @@ export const IMMOVABLE_PANELS: readonly SidebarPanel[] = [
   'ai-chat',
   'node-store',
   'extensions',
+  'wallet',
   'settings',
 ] as const;
 
@@ -36,17 +38,17 @@ export const IMMOVABLE_PANELS: readonly SidebarPanel[] = [
  */
 export const PINNABLE_PANELS: readonly SidebarPanel[] = [
   'workflows',
+  'knowledge-base',
   'workflow-examples',
   'dashboard',
-  'wallet',
 ] as const;
 
 /** 默认固定的面板（全量 PINNABLE_PANELS） */
 const DEFAULT_PINNED_PANELS: SidebarPanel[] = [
   'workflows',
+  'knowledge-base',
   'workflow-examples',
   'dashboard',
-  'wallet',
 ];
 
 // ─── 面板尺寸约束 ─────────────────────────────────────────────────────────────
@@ -187,19 +189,43 @@ export const usePanelStore = create<PanelState>()(
     {
       name: 'studysolo-panel-layout',
 
-      // ── Version 1：修正 'plugins' → 'extensions'，注入 pinnedPanels 默认值 ──
-      version: 1,
+      // ── Version 3：调换 knowledge-base 和 workflow-examples 的显示顺序 ──
+      version: 3,
       migrate: (persistedState: unknown, version: number) => {
         const state = (persistedState ?? {}) as Partial<PanelState>;
 
         if (version < 1) {
-          // 兼容旧版：'plugins' 重命名为 'extensions'
           if ((state.activeSidebarPanel as string) === 'plugins') {
             state.activeSidebarPanel = 'extensions';
           }
-          // 为没有 pinnedPanels 的旧客户端注入完整默认值
           if (!Array.isArray(state.pinnedPanels)) {
             state.pinnedPanels = [...DEFAULT_PINNED_PANELS];
+          }
+        }
+
+        if (version < 2) {
+          if (Array.isArray(state.pinnedPanels) && !state.pinnedPanels.includes('knowledge-base')) {
+            const idx = state.pinnedPanels.indexOf('workflow-examples');
+            if (idx !== -1) {
+              state.pinnedPanels.splice(idx + 1, 0, 'knowledge-base');
+            } else {
+              state.pinnedPanels.push('knowledge-base');
+            }
+          }
+          if (Array.isArray(state.pinnedPanels)) {
+            state.pinnedPanels = state.pinnedPanels.filter((p) => p !== 'wallet');
+          }
+        }
+
+        if (version < 3) {
+          // Swap knowledge-base before workflow-examples
+          if (Array.isArray(state.pinnedPanels)) {
+            const kbIdx = state.pinnedPanels.indexOf('knowledge-base');
+            const weIdx = state.pinnedPanels.indexOf('workflow-examples');
+            if (kbIdx !== -1 && weIdx !== -1 && kbIdx > weIdx) {
+              state.pinnedPanels.splice(kbIdx, 1);
+              state.pinnedPanels.splice(weIdx, 0, 'knowledge-base');
+            }
           }
         }
 

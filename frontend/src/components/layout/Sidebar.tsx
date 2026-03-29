@@ -95,8 +95,8 @@ export default function Sidebar({ workflows }: SidebarProps) {
               )}
               {activeSidebarPanel === 'ai-chat'           && <SidebarAIPanel />}
               {activeSidebarPanel === 'node-store'        && <NodeStorePanel />}
-              {activeSidebarPanel === 'workflow-examples' && <KnowledgeBasePanel />}
-              {activeSidebarPanel === 'knowledge-base'    && <WorkflowExamplesPanel />}
+              {activeSidebarPanel === 'workflow-examples' && <WorkflowExamplesPanel />}
+              {activeSidebarPanel === 'knowledge-base'    && <KnowledgeBasePanel />}
               {activeSidebarPanel === 'dashboard'         && <DashboardPanel />}
               {activeSidebarPanel === 'wallet'            && <WalletPanel />}
               {activeSidebarPanel === 'extensions'        && <ExtensionsPanel />}

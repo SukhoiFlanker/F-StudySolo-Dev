@@ -80,8 +80,15 @@ async def search_via_glm(
     Uses the Zhipu AI API with web_search tool enabled.
     The model performs the search and we extract results from the response.
     """
-    api_key = os.getenv("ZHIPU_API_KEY", "")
-    base_url = os.getenv("ZHIPU_BASE_URL", "https://open.bigmodel.cn/api/paas/v4")
+    # Read credentials from unified config (config.yaml + .env fallback)
+    try:
+        from app.core.config_loader import get_config
+        zhipu_cfg = get_config().get("providers", {}).get("zhipu", {})
+        api_key = str(zhipu_cfg.get("api_key", "")).strip()
+        base_url = str(zhipu_cfg.get("base_url", "")).strip() or "https://open.bigmodel.cn/api/paas/v4"
+    except Exception:
+        api_key = os.getenv("ZHIPU_API_KEY", "")
+        base_url = os.getenv("ZHIPU_BASE_URL", "https://open.bigmodel.cn/api/paas/v4")
 
     if not api_key:
         logger.warning("ZHIPU_API_KEY not set, GLM search unavailable")

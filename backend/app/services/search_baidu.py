@@ -69,8 +69,15 @@ async def search_via_baidu(
     Uses the Qiniu OpenAI-compatible API with a search-capable model
     that performs Baidu searches and returns structured results.
     """
-    api_key = os.getenv("QINIU_API_KEY", "")
-    base_url = os.getenv("QINIU_BASE_URL", "https://api.qnaigc.com/v1")
+    # Read credentials from unified config (config.yaml + .env fallback)
+    try:
+        from app.core.config_loader import get_config
+        qiniu_cfg = get_config().get("providers", {}).get("qiniu", {})
+        api_key = str(qiniu_cfg.get("api_key", "")).strip()
+        base_url = str(qiniu_cfg.get("base_url", "")).strip() or "https://api.qnaigc.com/v1"
+    except Exception:
+        api_key = os.getenv("QINIU_API_KEY", "")
+        base_url = os.getenv("QINIU_BASE_URL", "https://api.qnaigc.com/v1")
 
     if not api_key:
         logger.warning("QINIU_API_KEY not set, Baidu search via Qiniu unavailable")
