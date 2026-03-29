@@ -134,13 +134,19 @@ export async function authedFetch(
  * Returns an unsubscribe function.
  */
 export function initCrossTabSync(): () => void {
-  const supabase = createClient();
-  const {
-    data: { subscription },
-  } = supabase.auth.onAuthStateChange((event) => {
-    if (event === 'SIGNED_OUT') {
-      redirectToLogin();
-    }
-  });
-  return () => subscription.unsubscribe();
+  try {
+    const supabase = createClient();
+    if (!supabase) return () => {};
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event: string) => {
+      if (event === 'SIGNED_OUT') {
+        redirectToLogin();
+      }
+    });
+    return () => subscription.unsubscribe();
+  } catch (err) {
+    console.warn('[initCrossTabSync] Supabase init failed, skipping:', err instanceof Error ? err.message : err);
+    return () => {};
+  }
 }

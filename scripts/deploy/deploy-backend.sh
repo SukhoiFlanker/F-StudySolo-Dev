@@ -5,7 +5,7 @@
 
 set -euo pipefail
 
-APP_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+APP_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
 BACKEND_DIR="$APP_DIR/backend"
 VENV_DIR="$BACKEND_DIR/.venv"
 SWAP_FILE="/swapfile"

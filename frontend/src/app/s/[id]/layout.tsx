@@ -10,9 +10,9 @@ export default function SharedLayout({ children }: { children: React.ReactNode }
       <header className="absolute top-0 left-0 right-0 z-50 px-4 py-3 pointer-events-none">
         <div className="flex items-center justify-between max-w-7xl mx-auto pointer-events-auto">
           <a
-            href="/"
+            href="/workspace"
             className="flex items-center gap-2 rounded-md bg-background/80 backdrop-blur-md px-3 py-1.5 border border-border/50 text-sm font-serif font-semibold text-foreground shadow-sm hover:bg-background/90 transition-all group"
-            title="返回首页"
+            title="返回工作台"
           >
             ← <span className="group-hover:opacity-80 transition-opacity">StudySolo</span>
           </a>

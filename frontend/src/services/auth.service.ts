@@ -121,7 +121,7 @@ export async function logout(): Promise<void> {
   const { createClient } = await import('@/utils/supabase/client');
   await authedFetch('/api/auth/logout', { method: 'POST' });
   const supabase = createClient();
-  await supabase.auth.signOut();
+  if (supabase) await supabase.auth.signOut();
 }
 
 /** Request a password reset email. */

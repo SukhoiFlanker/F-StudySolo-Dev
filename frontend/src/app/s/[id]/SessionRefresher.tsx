@@ -20,6 +20,7 @@ import { createClient } from '@/utils/supabase/client';
 export default function SessionRefresher() {
   useEffect(() => {
     const supabase = createClient();
+    if (!supabase) return;
 
     // Trigger session load + token auto-refresh if needed.
     // supabase-js v2 handles refresh internally via the stored refresh_token.
@@ -30,7 +31,7 @@ export default function SessionRefresher() {
     // Keep session fresh for the lifetime of this page
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, _session) => {
+    } = supabase.auth.onAuthStateChange((_event: string, _session: unknown) => {
       // No-op: we only need the listener registered so the SDK fires
       // its internal "TOKEN_REFRESHED" machinery automatically.
     });

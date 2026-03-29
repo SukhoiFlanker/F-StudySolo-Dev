@@ -9,7 +9,7 @@
 # 4. 使用项目专属锁文件和日志文件，避免与其他 StudySolo 项目互相影响。
 #
 # 用法:
-#   ./scripts/start-studysolo.sh [BackendPort] [FrontendPort]
+#   ./scripts/startup/start-studysolo.sh [BackendPort] [FrontendPort]
 
 set +e
 
@@ -17,7 +17,7 @@ BackendPort="${1:-2038}"
 FrontendPort="${2:-2037}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ProjectDir="$(cd "$SCRIPT_DIR/.." && pwd)"
+ProjectDir="$(cd "$SCRIPT_DIR/../.." && pwd)"
 BACKEND_DIR="$ProjectDir/backend"
 FRONTEND_DIR="$ProjectDir/frontend"
 PROJECT_SLUG="flankerstudysolo"

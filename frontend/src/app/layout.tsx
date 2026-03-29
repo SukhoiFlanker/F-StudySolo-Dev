@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import ThemeProvider from "@/components/layout/ThemeProvider";
 import { AuthSessionBridge } from "@/features/auth/components";
+import { SafeErrorBoundary } from "@/components/ui/SafeErrorBoundary";
 import { ConsentManager } from "@/components/ui/ConsentManager";
 import NextTopLoader from "nextjs-toploader";
 import { Toaster } from "sonner";
@@ -22,6 +23,10 @@ export const metadata: Metadata = {
   title: "StudySolo - AI Learning Workflow Platform",
   description:
     "Generate complete learning workflows with AI, from outlines to key concepts.",
+  icons: {
+    icon: "/StudySolo.png",
+    apple: "/StudySolo.png",
+  },
 };
 
 export default function RootLayout({
@@ -32,7 +37,25 @@ export default function RootLayout({
   return (
     <html lang="zh-CN" className="dark" suppressHydrationWarning>
       <body className="antialiased" style={fontVars}>
-        <AuthSessionBridge />
+        {/* ── Runtime env injection ──
+             MUST be in <body>, NOT <head>!
+             Next.js App Router manages <head> via metadata API and silently
+             strips custom content placed inside <head>.
+             This synchronous script injects env vars into window.__ENV__
+             BEFORE any client component hydrates (including AuthSessionBridge). */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `window.__ENV__=${JSON.stringify({
+              NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
+              NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "",
+              NEXT_PUBLIC_API_BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL ?? "",
+              NEXT_PUBLIC_COOKIE_DOMAIN: process.env.NEXT_PUBLIC_COOKIE_DOMAIN ?? "",
+            })};`,
+          }}
+        />
+        <SafeErrorBoundary>
+          <AuthSessionBridge />
+        </SafeErrorBoundary>
         <NextTopLoader
           color="#6366F1"
           initialPosition={0.08}

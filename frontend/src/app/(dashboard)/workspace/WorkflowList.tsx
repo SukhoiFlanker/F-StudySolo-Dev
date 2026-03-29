@@ -78,7 +78,7 @@ export default function WorkflowList({ initialWorkflows, remaining }: WorkflowLi
     closeMenu();
     try {
       await updateWorkflow(id, { is_public: newPublic });
-      if (newPublic) router.push(`/s/${id}`);
+      if (newPublic) window.open(`/s/${id}`, '_blank', 'noopener');
     } catch { /* noop */ }
   };
 

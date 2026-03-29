@@ -4,7 +4,7 @@
 
 set -euo pipefail
 
-APP_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+APP_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
 FRONTEND_DIR="$APP_DIR/frontend"
 PM2_APP_NAME="studysolo-frontend"
 

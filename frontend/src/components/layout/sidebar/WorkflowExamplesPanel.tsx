@@ -122,7 +122,7 @@ export default function WorkflowExamplesPanel() {
               <button
                 key={wf.id}
                 type="button"
-                onClick={() => router.push(`/s/${wf.id}`)}
+                onClick={() => window.open(`/s/${wf.id}`, '_blank', 'noopener')}
                 className="node-paper-bg group flex w-full flex-col gap-1.5 rounded-xl border-[1.5px] border-border/50 shadow-sm hover:-translate-y-0.5 hover:shadow-md transition-all p-3 text-left"
               >
                 <div className="flex items-start justify-between gap-2 w-full">

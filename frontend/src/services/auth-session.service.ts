@@ -23,6 +23,7 @@ async function syncSessionTokens(payload: SessionPayload) {
 
 async function setBrowserSession(accessToken: string, refreshToken: string) {
   const supabase = createClient();
+  if (!supabase) return;
   await supabase.auth.setSession({
     access_token: accessToken,
     refresh_token: refreshToken,
@@ -45,6 +46,7 @@ export async function refreshBackendSession() {
 
 export async function syncBrowserSessionToBackend(rememberMe = true) {
   const supabase = createClient();
+  if (!supabase) return false;
   let session = (await supabase.auth.getSession()).data.session;
 
   if (!session) {
@@ -89,20 +91,26 @@ export async function restoreAuthSession(rememberMe = true) {
 }
 
 export function subscribeToAuthSessionSync(rememberMe = true) {
-  const supabase = createClient();
-  const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-    if (
-      (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') &&
-      session?.access_token &&
-      session.refresh_token
-    ) {
-      void syncSessionTokens({
-        access_token: session.access_token,
-        refresh_token: session.refresh_token,
-        remember_me: rememberMe,
-      });
-    }
-  });
+  try {
+    const supabase = createClient();
+    if (!supabase) return () => {};
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: string, session: { access_token?: string; refresh_token?: string } | null) => {
+      if (
+        (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') &&
+        session?.access_token &&
+        session.refresh_token
+      ) {
+        void syncSessionTokens({
+          access_token: session.access_token,
+          refresh_token: session.refresh_token,
+          remember_me: rememberMe,
+        });
+      }
+    });
 
-  return () => subscription.unsubscribe();
+    return () => subscription.unsubscribe();
+  } catch (err) {
+    console.warn('[subscribeToAuthSessionSync] Supabase init failed, skipping:', err instanceof Error ? err.message : err);
+    return () => {};
+  }
 }

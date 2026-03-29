@@ -52,6 +52,7 @@ export function LoginForm() {
     try {
       const result = await login(email, password, remember);
       const supabase = createClient();
+      if (!supabase) throw new Error('系统初始化失败，请刷新页面重试');
       await supabase.auth.setSession({
         access_token: result.access_token,
         refresh_token: result.refresh_token,

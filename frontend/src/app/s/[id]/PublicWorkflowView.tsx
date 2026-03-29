@@ -252,37 +252,37 @@ export default function PublicWorkflowView({ workflow }: Props) {
         </div>
       </div>
 
-      {/* Share Modal Dialog */}
+      {/* Share Floating Card — bottom-anchored, non-blocking */}
       {showShare && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center pointer-events-auto">
-          <div className="absolute inset-0 bg-background/60 backdrop-blur-sm" onClick={() => setShowShare(false)} />
-          <div className="relative bg-[#FDFBF7] border border-black/80 w-full max-w-md p-6 rounded-xl shadow-xl animate-in zoom-in-95 duration-200">
+        <div
+          className="fixed bottom-6 left-1/2 z-[100] -translate-x-1/2 pointer-events-auto w-[calc(100%-2rem)] max-w-md animate-in slide-in-from-bottom-4 fade-in duration-300"
+        >
+          <div className="relative bg-background/95 backdrop-blur-xl border border-border rounded-2xl shadow-2xl px-5 py-4">
             <button
               onClick={() => setShowShare(false)}
-              className="absolute top-4 right-4 text-black/50 hover:text-black transition-colors"
+              className="absolute top-3 right-3 p-1 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
             >
-              <X className="h-4 w-4" />
+              <X className="h-3.5 w-3.5" />
             </button>
-            <h2 className="text-lg font-serif font-bold text-black flex items-center gap-2">
-              <Share className="h-5 w-5" />
+            <h2 className="text-sm font-serif font-bold text-foreground flex items-center gap-2">
+              <Share className="h-4 w-4" />
               分享此工作流
             </h2>
-            <p className="text-xs text-black/60 mt-2 font-serif leading-relaxed">
-              任何人都可以通过此链接访问只读版本的画布。将其发送给协作者或发布在社区中。
+            <p className="text-[11px] text-muted-foreground mt-1 font-serif leading-relaxed">
+              任何人都可以通过此链接访问只读画布预览。
             </p>
-            <div className="mt-5 flex items-center gap-2">
-              <div className="flex-1 bg-white border border-black/20 px-3 py-2 rounded text-xs font-mono text-black truncate select-all">
+            <div className="mt-3 flex items-center gap-2">
+              <div className="flex-1 bg-muted/60 border border-border px-3 py-1.5 rounded-lg text-[11px] font-mono text-foreground truncate select-all">
                 {shareUrl || `/s/${workflow.id}`}
               </div>
               <button
                 onClick={() => {
                   navigator.clipboard.writeText(shareUrl || `${window.location.origin}/s/${workflow.id}`);
                   toast.success('链接已复制到剪贴板');
-                  setShowShare(false);
                 }}
-                className="bg-black text-white px-4 py-2 rounded text-xs font-bold font-serif hover:bg-black/80 transition-colors shrink-0 shadow-sm"
+                className="bg-foreground text-background px-4 py-1.5 rounded-lg text-xs font-bold font-serif hover:opacity-90 transition-opacity shrink-0 shadow-sm"
               >
-                复制链接
+                复制
               </button>
             </div>
           </div>
