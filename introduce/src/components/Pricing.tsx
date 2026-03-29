@@ -1,156 +1,207 @@
 import { useInView } from '../hooks/useInView';
 
-// Pricing based on README tier system
-const TIERS = [
+const PLANS = [
   {
     id: 'free',
-    tier: 'FREE',
+    name: '免费体验',
     price: '¥0',
-    period: '/月',
-    desc: '适合初步了解和轻度体验平台能力的用户。',
-    featured: false,
-    cta: '免费开始',
-    ctaUrl: 'https://StudyFlow.1037solo.com',
+    period: '',
+    desc: '轻设体验，感受平台能力',
+    color: 'var(--text-dim)',
+    accent: 'var(--border-panel)',
     features: [
-      '基础工作流创建与执行',
-      '社区工作流浏览与收藏',
-      '标准节点（15种）',
-      '有限的 AI 模型调用配额',
-      '单一工作流上限',
+      { text: '基础工作流编排执行', included: true },
+      { text: '社区优质工作流浏览', included: true },
+      '15 种标准执行节点',
+      { text: '低优模型路由配额', included: true },
+      { text: '高优 AI Router', included: false },
+      { text: '复杂逻辑节点（switch/loop）', included: false },
+      { text: '工作流共享发布', included: false },
     ],
-    note: null,
+    cta: '开始免费体验',
+    ctaStyle: 'secondary',
   },
   {
     id: 'pro',
-    tier: 'PRO',
+    name: 'Pro 认证版',
     price: '¥29',
     period: '/月',
-    desc: '适合日常学习自动化需求的个人用户和学生。',
-    featured: true,
-    cta: '立即升级',
-    ctaUrl: 'https://StudyFlow.1037solo.com',
+    desc: '日常自动化学习场景首选',
+    color: 'var(--accent-green)',
+    accent: 'var(--accent-green)',
+    highlight: true,
     features: [
-      '所有免费功能',
-      '全部 18 种节点解锁',
-      '更高 AI 调用配额',
-      '工作流发布至社区',
-      '自定义并发布节点',
-      '优先模型路由（能力固定策略）',
-      '知识库文件上传',
+      '全部 18 种执行节点类型',
+      '高优 AI Router 调用权',
+      '复杂逻辑节点（switch / loop）',
+      '工作流共享与社区发布',
+      '邮件 + 站内双通道进度通知',
+      '历史执行记录查询',
+      { text: '独立资源通道', included: false },
     ],
-    note: '最受欢迎',
+    cta: '升级 Pro →',
+    ctaStyle: 'primary',
+    badge: 'POPULAR',
   },
   {
-    id: 'pro_plus',
-    tier: 'PRO+',
+    id: 'proplus',
+    name: 'Pro+ 极客版',
     price: '¥79',
     period: '/月',
-    desc: '适合高频使用、重度学习场景和教师用户。',
-    featured: false,
-    cta: '联系了解',
-    ctaUrl: 'mailto:contact@1037solo.com',
+    desc: '高频场景 + 私有化部署',
+    color: 'var(--accent-cyan)',
+    accent: 'var(--accent-cyan)',
     features: [
-      '所有 PRO 功能',
-      '最高级别调用配额',
-      '管理后台访问权限',
+      '不限量 Qwen-MAX 并发推导',
+      '全量管理员数据后台',
+      '独立私有资源通道',
       '使用量统计与审计日志',
-      '多端同步优先保障',
-      '优先客服支持',
+      '工作流 A/B 测试实验场',
+      '优先技术支持响应',
+      '自定义模型端点接入',
     ],
-    note: null,
+    cta: '联系获取',
+    ctaStyle: 'secondary',
   },
 ];
 
+function FeatureItem({ feature }: { feature: string | { text: string; included: boolean } }) {
+  const text = typeof feature === 'string' ? feature : feature.text;
+  const included = typeof feature === 'string' ? true : feature.included;
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: '1px solid var(--border-subtle)' }}>
+      <span style={{ color: included ? 'var(--accent-green)' : 'var(--text-dim)', flexShrink: 0, fontFamily: 'var(--font-mono)', fontSize: 12 }}>
+        {included ? '✓' : '○'}
+      </span>
+      <span style={{ fontSize: 13, color: included ? 'var(--text-secondary)' : 'var(--text-dim)', lineHeight: 1.4 }}>
+        {text}
+      </span>
+    </div>
+  );
+}
+
 export default function Pricing() {
-  const [ref, inView] = useInView<HTMLDivElement>(0.1);
+  const [ref, inView] = useInView<HTMLDivElement>(0.15);
 
   return (
-    <section className="section" id="pricing" ref={ref}>
-      <div className="container">
+    <section id="pricing" ref={ref} style={{
+      background: 'var(--bg-void)',
+      borderTop: '1px solid var(--border-subtle)',
+      padding: '120px 0',
+    }}>
+      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 32px' }}>
+
         {/* Header */}
-        <div className={`section-header center reveal${inView ? ' visible' : ''}`}>
-          <div className="signal-tag">Pricing</div>
-          <h2 className="section-title">透明定价，按需选择</h2>
-          <p className="section-desc">
-            基于 SKU 的模型调用成本核算，会员分层覆盖不同使用场景。平台生产环境已上线：{' '}
-            <a href="https://StudyFlow.1037solo.com" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--green)' }}>
-              StudyFlow.1037solo.com
-            </a>
+        <div style={{ marginBottom: 64, textAlign: 'center' }}>
+          <div className="label-green" style={{ marginBottom: 20, justifyContent: 'center' }}>
+            TRANSPARENT PRICING
+          </div>
+          <h2 style={{
+            fontFamily: 'var(--font-display)',
+            fontWeight: 800,
+            fontSize: 'clamp(36px, 5vw, 52px)',
+            letterSpacing: '-0.03em',
+            color: 'var(--text-primary)',
+            lineHeight: 1.1,
+            marginBottom: 16,
+          }}>
+            透明定价，无隐藏费用
+          </h2>
+          <p style={{ fontSize: 16, color: 'var(--text-secondary)', maxWidth: 520, margin: '0 auto' }}>
+            不卖黑盒服务。基于底层模型调用成本透明核算。
+            收益直接反哺算力采购，让高质量学习服务可持续运营。
           </p>
         </div>
 
-        {/* Pricing grid */}
-        <div className={`pricing-grid reveal reveal-delay-2${inView ? ' visible' : ''}`}>
-          {TIERS.map(tier => (
-            <div key={tier.id} className={`pricing-card${tier.featured ? ' featured' : ''}`}>
-              {/* Tier label */}
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                  <div className="pricing-tier">{tier.tier}</div>
-                  {tier.note && (
-                    <div style={{
-                      fontFamily: 'var(--font-mono)',
-                      fontSize: '0.65rem',
-                      color: 'var(--green)',
-                      background: 'rgba(0,232,122,0.1)',
-                      border: '1px solid var(--border-green)',
-                      padding: '0.15rem 0.5rem',
-                      borderRadius: 'var(--radius-sm)',
-                    }}>
-                      {tier.note}
-                    </div>
+        {/* Pricing Grid */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, 1fr)',
+          gap: 1,
+          background: 'var(--border-subtle)',
+          opacity: inView ? 1 : 0,
+          transform: inView ? 'translateY(0)' : 'translateY(24px)',
+          transition: 'opacity 0.7s ease, transform 0.7s ease',
+        }}>
+          {PLANS.map((plan) => (
+            <div key={plan.id} style={{
+              background: plan.highlight ? 'var(--bg-surface)' : 'var(--bg-panel)',
+              padding: '40px 32px',
+              position: 'relative',
+              borderTop: `3px solid ${plan.highlight ? plan.accent : 'var(--border-subtle)'}`,
+              display: 'flex',
+              flexDirection: 'column',
+            }}>
+              {/* Badge */}
+              {plan.badge && (
+                <div style={{
+                  position: 'absolute',
+                  top: -1,
+                  right: 32,
+                  background: 'var(--accent-green)',
+                  color: 'var(--bg-void)',
+                  fontFamily: 'var(--font-mono)',
+                  fontWeight: 700,
+                  fontSize: 10,
+                  letterSpacing: '0.1em',
+                  padding: '3px 10px',
+                }}>
+                  {plan.badge}
+                </div>
+              )}
+
+              {/* Plan Header */}
+              <div style={{ marginBottom: 32 }}>
+                <div style={{
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 11,
+                  color: plan.color,
+                  letterSpacing: '0.12em',
+                  marginBottom: 8,
+                }}>
+                  {plan.name.toUpperCase()}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 8 }}>
+                  <span style={{
+                    fontFamily: 'var(--font-display)',
+                    fontWeight: 800,
+                    fontSize: 42,
+                    color: 'var(--text-primary)',
+                    letterSpacing: '-0.03em',
+                    lineHeight: 1,
+                  }}>
+                    {plan.price}
+                  </span>
+                  {plan.period && (
+                    <span style={{ fontSize: 14, color: 'var(--text-secondary)' }}>{plan.period}</span>
                   )}
                 </div>
-                <div className="pricing-price">
-                  {tier.price}
-                  <span className="unit">{tier.period}</span>
-                </div>
+                <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{plan.desc}</div>
               </div>
 
-              <p className="pricing-desc">{tier.desc}</p>
-
-              <div className="pricing-divider" />
-
-              {/* Features */}
-              <div className="pricing-features">
-                {tier.features.map(f => (
-                  <div key={f} className="pricing-feature">
-                    <span className="check">✓</span>
-                    <span>{f}</span>
-                  </div>
+              {/* Feature List */}
+              <div style={{ flex: 1, marginBottom: 32 }}>
+                {plan.features.map((f, i) => (
+                  <FeatureItem key={i} feature={f} />
                 ))}
               </div>
 
               {/* CTA */}
-              <a
-                href={tier.ctaUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={`btn ${tier.featured ? 'btn-primary' : 'btn-outline'} w-full`}
-                style={{ marginTop: 'auto' }}
+              <button
+                className={plan.ctaStyle === 'primary' ? 'btn-primary' : 'btn-secondary'}
+                style={{ width: '100%', justifyContent: 'center', fontSize: 14, padding: '14px' }}
               >
-                {tier.cta}
-              </a>
+                {plan.cta}
+              </button>
             </div>
           ))}
         </div>
 
-        {/* Footer note */}
-        <div className={`reveal reveal-delay-3${inView ? ' visible' : ''}`} style={{
-          marginTop: '2rem',
-          padding: '1rem 1.5rem',
-          border: '1px solid var(--border)',
-          borderRadius: 'var(--radius-sm)',
-          display: 'flex',
-          alignItems: 'flex-start',
-          gap: '0.75rem',
-        }}>
-          <span style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontSize: '0.8rem', flexShrink: 0 }}>ⓘ</span>
-          <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.7 }}>
-            定价方案仍在优化中，以平台实际展示为准。计费基于 AI 模型调用 SKU 成本，精确到模型调用次数。管理后台提供完整的使用量统计和费用明细。如有合作或定制需求，欢迎{' '}
-            <a href="mailto:contact@1037solo.com" style={{ color: 'var(--green)' }}>联系我们</a>。
-          </p>
+        {/* Footer Note */}
+        <div style={{ marginTop: 32, textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-dim)' }}>
+          所有方案均不含平台级 AI API 成本，实际调用按量计费。竞赛期间 Pro 版本对参赛学生免费开放。
         </div>
+
       </div>
     </section>
   );

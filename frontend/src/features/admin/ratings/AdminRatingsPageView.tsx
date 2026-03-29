@@ -37,20 +37,25 @@ export function AdminRatingsPageView() {
   }, [fetchAll]);
 
   return (
-    <div className="mx-auto min-h-full max-w-[1600px] space-y-6 bg-[#f4f4f0] px-8 py-8">
+    <div className="mx-auto min-h-full max-w-[1600px] space-y-6 bg-slate-50 px-8 py-8">
       <PageHeader
         title="评分数据"
         description={overview ? `共 ${overview.nps_count + overview.csat_count} 条用户反馈` : '查看 NPS 与 CSAT 评分情况'}
       />
 
       {error ? (
-        <div className="rounded-none border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 shadow-sm">
-          <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center justify-between rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 shadow-sm">
+          <div className="flex items-center gap-3">
+            <span className="material-symbols-outlined text-[20px] text-red-500">error</span>
             <span>{error}</span>
-            <button onClick={() => void fetchAll()} className="text-xs underline">
-              重新加载
-            </button>
           </div>
+          <button 
+            onClick={() => void fetchAll()} 
+            className="flex items-center gap-1 text-xs font-semibold text-red-700 hover:text-red-800 transition-colors"
+          >
+            <span className="material-symbols-outlined text-[16px]">refresh</span>
+            重试
+          </button>
         </div>
       ) : null}
 

@@ -1,84 +1,103 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
-interface NavbarProps {
-  isDark?: boolean;
-  toggleTheme?: () => void;
-}
-
-const NAV_ITEMS = [
-  { label: '工作流示例', id: 'workflow' },
-  { label: '核心特性', id: 'features' },
-  { label: '技术架构', id: 'architecture' },
-  { label: '定价', id: 'pricing' },
-];
-
-export default function Navbar({ }: NavbarProps) {
+export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
-    const handler = () => setScrolled(window.scrollY > 24);
-    window.addEventListener('scroll', handler, { passive: true });
-    return () => window.removeEventListener('scroll', handler);
+    const onScroll = () => setScrolled(window.scrollY > 40);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  const scrollTo = (id: string) => {
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
-    setMobileOpen(false);
-  };
-
   return (
-    <nav className={`navbar${scrolled ? ' scrolled' : ''}`}>
-      <div className="navbar-inner">
+    <nav
+      style={{
+        position: 'fixed',
+        top: 0,
+        width: '100%',
+        zIndex: 100,
+        borderBottom: scrolled ? '1px solid rgba(255,255,255,0.06)' : '1px solid transparent',
+        backgroundColor: scrolled ? 'rgba(3,7,18,0.92)' : 'transparent',
+        backdropFilter: scrolled ? 'blur(12px)' : 'none',
+        transition: 'all 0.3s ease',
+        padding: '0 32px',
+      }}
+    >
+      <div style={{
+        maxWidth: 1280,
+        margin: '0 auto',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        height: 60,
+      }}>
+
         {/* Logo */}
-        <div className="navbar-logo" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} style={{ cursor: 'pointer' }}>
-          <img
-            src={`${import.meta.env.BASE_URL}StudySolo.png`}
-            alt="StudySolo"
-            className="navbar-logo-icon"
-          />
-          <span className="navbar-logo-name">StudySolo</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }} onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+          <div style={{
+            width: 28,
+            height: 28,
+            border: '1px solid rgba(0,255,136,0.4)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+            <img src={`${import.meta.env.BASE_URL}StudySolo.png`} alt="Logo" style={{ width: 18, height: 18, objectFit: 'contain' }} />
+          </div>
+          <span style={{
+            fontFamily: 'var(--font-display)',
+            fontWeight: 700,
+            fontSize: 16,
+            color: 'var(--text-primary)',
+            letterSpacing: '0.02em',
+          }}>
+            Study<span style={{ color: 'var(--accent-green)' }}>Solo</span>
+          </span>
         </div>
 
-        {/* Nav links */}
-        <div className={`navbar-nav${mobileOpen ? ' open' : ''}`}>
-          {NAV_ITEMS.map(item => (
-            <button
-              key={item.id}
-              className="navbar-link"
-              onClick={() => scrollTo(item.id)}
+        {/* Nav Links */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 32 }}>
+          {[
+            { label: 'How It Works', href: '#how-it-works' },
+            { label: 'Features', href: '#features' },
+            { label: 'Architecture', href: '#arch' },
+            { label: 'Pricing', href: '#pricing' },
+          ].map(link => (
+            <a
+              key={link.href}
+              href={link.href}
+              style={{
+                fontFamily: 'var(--font-body)',
+                fontSize: 13,
+                fontWeight: 500,
+                color: 'var(--text-secondary)',
+                textDecoration: 'none',
+                letterSpacing: '0.01em',
+                transition: 'color 0.15s',
+              }}
+              onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')}
+              onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-secondary)')}
             >
-              {item.label}
-            </button>
+              {link.label}
+            </a>
           ))}
         </div>
 
-        {/* Right side */}
-        <div className="navbar-actions">
-          {/* Live status badge */}
-          <div className="navbar-status">
-            <div className="navbar-status-dot" />
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem' }}>LIVE</span>
-          </div>
-
+        {/* CTA */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <span className="label-green" style={{ gap: 6 }}>
+            <span className="dot-live" />
+            LIVE
+          </span>
           <a
-            href="https://StudyFlow.1037solo.com"
+            href="https://studyflow.1037solo.com"
             target="_blank"
-            rel="noopener noreferrer"
-            className="btn btn-primary"
-            style={{ fontSize: '0.82rem', padding: '0.45rem 1rem' }}
+            rel="noreferrer"
+            className="btn-primary"
+            style={{ padding: '8px 20px', fontSize: 13 }}
           >
-            立即体验 →
+            打开工作流 ↗
           </a>
-
-          {/* Mobile toggle */}
-          <button
-            className="navbar-mobile-toggle"
-            onClick={() => setMobileOpen(v => !v)}
-            aria-label="Toggle menu"
-          >
-            {mobileOpen ? '✕' : '☰'}
-          </button>
         </div>
       </div>
     </nav>

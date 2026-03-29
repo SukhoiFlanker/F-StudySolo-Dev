@@ -14,8 +14,7 @@ from app.api.auth._helpers import (
     resolve_client_ip,
 )
 from app.api.auth.captcha import consume_captcha_token
-from app.core.deps import get_supabase_client
-from app.core.database import get_anon_db
+from app.core.deps import get_anon_supabase_client, get_supabase_client
 from app.models.user import (
     CURRENT_PRIVACY_VERSION,
     CURRENT_TOS_VERSION,
@@ -78,6 +77,7 @@ async def register(
     body: UserRegister,
     request: Request,
     db: AsyncClient = Depends(get_supabase_client),
+    anon_db: AsyncClient = Depends(get_anon_supabase_client),
 ):
     """Create a new user via Supabase Auth."""
 
@@ -120,8 +120,7 @@ async def register(
     # will link the email+password identity to the existing user instead of
     # creating a duplicate auth.users row.
     try:
-        anon_db_client = await get_anon_db()
-        result = await anon_db_client.auth.sign_up(
+        result = await anon_db.auth.sign_up(
             {
                 "email": body.email,
                 "password": body.password,

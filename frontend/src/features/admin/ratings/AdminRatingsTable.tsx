@@ -27,18 +27,18 @@ export function AdminRatingsTable({
   onNextPage,
 }: AdminRatingsTableProps) {
   return (
-    <div className="overflow-hidden rounded-none border border-[#c4c6cf] bg-[#f4f4f0] shadow-sm">
-      <div className="flex items-center justify-between border-b border-[#c4c6cf] px-4 py-3">
-        <h2 className="text-sm font-semibold text-[#002045]">评分明细</h2>
-        <div className="flex items-center gap-2">
+    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm ring-1 ring-slate-900/5">
+      <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4 bg-slate-50/50">
+        <h2 className="text-base font-bold text-slate-900">评分明细</h2>
+        <div className="flex items-center rounded-lg border border-slate-200 bg-slate-100 p-0.5">
           {(['', 'nps', 'csat'] as RatingTypeFilter[]).map((filter) => (
             <button
               key={filter || 'all'}
               onClick={() => onFilterChange(filter)}
-              className={`rounded-none border px-3 py-1 text-xs shadow-sm ${
+              className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-all ${
                 typeFilter === filter
-                  ? 'border-[#002045] bg-[#002045] text-white'
-                  : 'border-[#c4c6cf] bg-[#f4f4f0] text-[#002045]'
+                  ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200'
+                  : 'text-slate-500 hover:text-slate-700'
               }`}
             >
               {filter === '' ? '全部' : filter.toUpperCase()}
@@ -50,40 +50,44 @@ export function AdminRatingsTable({
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-[#c4c6cf]">
+            <tr className="border-b border-slate-200 bg-slate-50/50">
               {['类型', '分值', '分类', '评论', '时间'].map((header) => (
-                <th key={header} className="px-4 py-3 text-left font-mono text-[10px] tracking-widest text-[#002045]">
+                <th key={header} className="px-6 py-3.5 text-left text-[11px] font-bold tracking-wider text-slate-500 uppercase">
                   {header}
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-slate-100 bg-white">
             {loading ? (
               Array.from({ length: 5 }).map((_, row) => (
-                <tr key={row} className="border-b border-[#ddd8cf]">
+                <tr key={row}>
                   {Array.from({ length: 5 }).map((_, col) => (
-                    <td key={col} className="px-4 py-3">
-                      <div className="h-3 w-20 animate-pulse bg-[#e1ded1]" />
+                    <td key={col} className="px-6 py-4">
+                      <div className="h-4 w-20 animate-pulse rounded bg-slate-200" />
                     </td>
                   ))}
                 </tr>
               ))
             ) : ratingList && ratingList.ratings.length > 0 ? (
               ratingList.ratings.map((rating) => (
-                <tr key={rating.id} className="border-b border-[#ddd8cf] last:border-b-0">
-                  <td className="px-4 py-3 text-sm text-[#002045]">{rating.rating_type.toUpperCase()}</td>
-                  <td className="px-4 py-3 font-mono text-xs text-[#002045]">{rating.score}</td>
-                  <td className="px-4 py-3 text-sm text-[#74777f]">
+                <tr key={rating.id} className="transition-colors hover:bg-slate-50/50">
+                  <td className="px-6 py-4 text-sm font-medium text-slate-900">
+                    <span className="inline-flex items-center rounded-md bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-600 ring-1 ring-inset ring-slate-500/10">
+                      {rating.rating_type.toUpperCase()}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 font-mono text-sm font-semibold text-slate-700">{rating.score}</td>
+                  <td className="px-6 py-4 text-sm text-slate-600">
                     {rating.rating_type === 'nps' ? resolveNpsCategory(rating.score) : '满意度评分'}
                   </td>
-                  <td className="max-w-xs truncate px-4 py-3 text-sm text-[#74777f]">{rating.comment ?? '—'}</td>
-                  <td className="px-4 py-3 font-mono text-xs text-[#74777f]">{formatDate(rating.created_at, 'zh-CN')}</td>
+                  <td className="max-w-xs truncate px-6 py-4 text-sm text-slate-600">{rating.comment ?? '—'}</td>
+                  <td className="px-6 py-4 text-xs font-medium text-slate-500">{formatDate(rating.created_at, 'zh-CN')}</td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan={5} className="p-6">
+                <td colSpan={5} className="p-8">
                   <EmptyState title="暂无评分数据" description="当前筛选条件下没有评分记录。" />
                 </td>
               </tr>
@@ -93,16 +97,18 @@ export function AdminRatingsTable({
       </div>
 
       {ratingList ? (
-        <Pagination
-          page={page}
-          totalPages={ratingList.total_pages}
-          total={ratingList.total}
-          loading={loading}
-          onPageChange={(targetPage) => {
-            if (targetPage < page) onPrevPage();
-            if (targetPage > page) onNextPage();
-          }}
-        />
+        <div className="border-t border-slate-100 p-2">
+          <Pagination
+            page={page}
+            totalPages={ratingList.total_pages}
+            total={ratingList.total}
+            loading={loading}
+            onPageChange={(targetPage) => {
+              if (targetPage < page) onPrevPage();
+              if (targetPage > page) onNextPage();
+            }}
+          />
+        </div>
       ) : null}
     </div>
   );

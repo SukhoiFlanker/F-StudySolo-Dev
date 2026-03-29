@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -108,11 +108,9 @@ export function AdminNoticesPageView() {
         action={
           <button
             onClick={() => router.push('/admin-analysis/notices/create')}
-            className="flex items-center gap-2 rounded-none bg-[#002045] px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:opacity-90"
+            className="flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:bg-indigo-500 hover:shadow disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
           >
-            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
+            <span className="material-symbols-outlined text-[18px]">add</span>
             新建公告
           </button>
         }
@@ -133,9 +131,16 @@ export function AdminNoticesPageView() {
       </div>
 
       {error ? (
-        <div className="flex items-center justify-between rounded-none border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 shadow-sm">
-          <span>{error}</span>
-          <button onClick={() => void fetchNotices()} className="ml-4 text-xs text-red-700 underline hover:text-red-800">
+        <div className="flex items-center justify-between rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 shadow-sm">
+          <div className="flex items-center gap-3">
+            <span className="material-symbols-outlined text-[20px] text-red-500">error</span>
+            <span>{error}</span>
+          </div>
+          <button 
+            onClick={() => void fetchNotices()} 
+            className="flex items-center gap-1 text-xs font-semibold text-red-700 hover:text-red-800 transition-colors"
+          >
+            <span className="material-symbols-outlined text-[16px]">refresh</span>
             重试
           </button>
         </div>

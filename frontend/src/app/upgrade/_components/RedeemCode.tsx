@@ -59,7 +59,7 @@ export default function RedeemCode() {
     <div className="w-full max-w-sm mx-auto mb-10 flex flex-col items-center gap-2">
       <form onSubmit={handleSubmit} className="relative w-full flex items-center group">
         {/* Ticket icon */}
-        <div className="absolute left-3 text-[#4a5568] group-focus-within:text-[#2c5282] transition-colors pointer-events-none">
+        <div className="absolute left-3 text-[#4a5568] dark:text-muted-foreground group-focus-within:text-[#2c5282] dark:text-indigo-400 transition-colors pointer-events-none">
           <Ticket className="w-4 h-4" />
         </div>
 
@@ -69,13 +69,13 @@ export default function RedeemCode() {
           onChange={(e) => setCode(e.target.value.toUpperCase())}
           placeholder="输入兑换码 / Redemption Code"
           disabled={isSubmitting}
-          className="w-full pl-10 pr-12 py-2.5 bg-white border border-[#e2e2d5] text-sm text-[#1a202c] font-mono tracking-widest placeholder:text-[#a0aec0] placeholder:tracking-normal focus:outline-none focus:border-[#2c5282] focus:ring-1 focus:ring-[#2c5282]/20 transition-all rounded shadow-sm disabled:opacity-70 disabled:cursor-not-allowed"
+          className="w-full pl-10 pr-12 py-2.5 bg-white dark:bg-card border border-[#e2e2d5] dark:border-border text-sm text-[#1a202c] dark:text-foreground font-mono tracking-widest placeholder:text-[#a0aec0] placeholder:tracking-normal focus:outline-none focus:border-[#2c5282] dark:border-indigo-500 focus:ring-1 focus:ring-[#2c5282] dark:ring-indigo-500/20 transition-all rounded shadow-sm disabled:opacity-70 disabled:cursor-not-allowed"
         />
 
         <button
           type="submit"
           disabled={!code.trim() || isSubmitting}
-          className="absolute right-2 p-1.5 text-[#4a5568] hover:bg-[#f5f3ef] hover:text-[#2c5282] rounded transition-colors disabled:opacity-50 disabled:hover:bg-transparent"
+          className="absolute right-2 p-1.5 text-[#4a5568] dark:text-muted-foreground hover:bg-[#f5f3ef] hover:text-[#2c5282] dark:text-indigo-400 rounded transition-colors disabled:opacity-50 disabled:hover:bg-transparent"
           aria-label="验证兑换码"
         >
           {iconNode()}

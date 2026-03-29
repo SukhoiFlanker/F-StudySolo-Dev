@@ -19,19 +19,19 @@ export default function SubscriptionPage() {
   const [cycle, setCycle] = useState<BillingCycle>('yearly');
 
   return (
-    <div className="graph-paper-bg text-[#1a202c] min-h-screen flex flex-col selection:bg-[#2c5282]/10 selection:text-[#2c5282]">
+    <div className="graph-paper-bg text-[#1a202c] dark:text-foreground min-h-screen flex flex-col selection:bg-[#2c5282]/10 dark:selection:bg-indigo-500/30 selection:text-[#2c5282] dark:selection:text-indigo-200">
       {/* ── Top Nav (极简连线风) ── */}
       <header className="sticky top-0 z-50 flex items-center justify-between p-6 bg-[#fcfcfb]/80 dark:bg-background/80 backdrop-blur-md border-b border-border/40">
         <button
           onClick={() => router.back()}
-          className="flex items-center gap-2 text-[13px] font-serif font-semibold tracking-widest uppercase transition-colors hover:text-[#2c5282] group"
+          className="flex items-center gap-2 text-[13px] font-serif font-semibold tracking-widest uppercase transition-colors hover:text-[#2c5282] dark:hover:text-indigo-400 group text-inherit"
         >
           <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1 stroke-[1.5]" />
           返回案台
         </button>
         <div className="flex items-center gap-3">
-          <span className="font-serif text-lg tracking-tight font-black italic pr-3 border-r-[1.5px] border-[#2c5282]/30 text-[#1a202c]">StudySolo</span>
-          <span className="text-xs font-serif font-bold tracking-[0.2em] text-[#4a5568]">会员序列</span>
+          <span className="font-serif text-lg tracking-tight font-black italic pr-3 border-r-[1.5px] border-[#2c5282]/30 dark:border-indigo-500/30 text-[#1a202c] dark:text-foreground">StudySolo</span>
+          <span className="text-xs font-serif font-bold tracking-[0.2em] text-[#4a5568] dark:text-muted-foreground">会员序列</span>
         </div>
       </header>
 
@@ -39,15 +39,15 @@ export default function SubscriptionPage() {
 
         {/* ── Hero ── */}
         <div className="text-center max-w-3xl mx-auto mb-12">
-          <div className="academic-badge inline-flex items-center gap-2 px-3 py-1 bg-white text-[#2c5282] text-[10px] font-bold mb-6 tracking-widest shadow-sm uppercase">
+          <div className="academic-badge inline-flex items-center gap-2 px-3 py-1 bg-white dark:bg-card text-[#2c5282] dark:text-indigo-400 text-[10px] font-bold mb-6 tracking-widest shadow-sm uppercase">
             Subscription Matrix / 订阅中心
           </div>
-          <h2 className="text-4xl md:text-5xl font-bold text-[#1a202c] mb-6 tracking-tight leading-tight font-serif">
+          <h2 className="text-4xl md:text-5xl font-bold text-[#1a202c] dark:text-foreground mb-6 tracking-tight leading-tight font-serif">
             升级您的生产力
             <br />
-            <span className="text-[#2c5282]">释放 AI 的无限潜能</span>
+            <span className="text-[#2c5282] dark:text-indigo-400">释放 AI 的无限潜能</span>
           </h2>
-          <p className="text-lg text-[#4a5568] max-w-2xl mx-auto leading-relaxed mb-8 italic font-serif">
+          <p className="text-lg text-[#4a5568] dark:text-muted-foreground max-w-2xl mx-auto leading-relaxed mb-8 italic font-serif">
             专为专业人士与学者打造的高端 AI 工作流平台。
           </p>
         </div>

@@ -13,9 +13,9 @@ interface PlanCardProps {
 function FeatureIcon({ icon }: { icon: PlanFeature['icon'] }) {
   if (icon === 'slash') return null;
   if (icon === 'check-square')
-    return <CheckSquare className="w-3.5 h-3.5 text-[#2c5282] mt-0.5 shrink-0" />;
+    return <CheckSquare className="w-3.5 h-3.5 text-[#2c5282] dark:text-indigo-400 mt-0.5 shrink-0" />;
   if (icon === 'check-circle')
-    return <CheckCircle2 className="w-3.5 h-3.5 text-[#065f46] mt-0.5 shrink-0" />;
+    return <CheckCircle2 className="w-3.5 h-3.5 text-[#065f46] dark:text-emerald-400 mt-0.5 shrink-0" />;
   if (icon === 'bolt')
     return <Zap className="w-3.5 h-3.5 mt-0.5 shrink-0" />;
   return null;
@@ -41,63 +41,63 @@ export default function PlanCard({ plan, cycle, region }: PlanCardProps) {
     'paper-card stitched-border rounded-none p-6 flex flex-col h-full relative',
     'group/card transition-all duration-300',
     plan.rotation,
-    isProPlus && 'ring-2 ring-[#2c5282] scale-105 z-20 shadow-xl',
-    isUltra && 'border-[#065f46]/30',
+    isProPlus && 'ring-2 ring-[#2c5282] dark:ring-indigo-500 scale-105 z-20 shadow-xl',
+    isUltra && 'border-[#065f46] dark:border-emerald-500/30',
   ].filter(Boolean).join(' ');
 
   return (
     <div className={cardCls}>
       {/* ── Hover overlay: book animation + subscribe CTA ── */}
       {!isFree && (
-        <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-white/95 opacity-0 group-hover/card:opacity-100 transition-all duration-300 pointer-events-none group-hover/card:pointer-events-auto rounded-none">
+        <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-white dark:bg-card/95 opacity-0 group-hover/card:opacity-100 transition-all duration-300 pointer-events-none group-hover/card:pointer-events-auto rounded-none">
           {/* Book flip animation */}
           <div className="relative w-16 h-16 mb-5">
             {/* Spine */}
-            <div className="absolute left-1/2 -translate-x-1/2 top-2 w-1 h-12 bg-[#2c5282]/20 rounded-full" />
+            <div className="absolute left-1/2 -translate-x-1/2 top-2 w-1 h-12 bg-[#2c5282] dark:bg-indigo-600/20 rounded-full" />
             {/* Left page */}
             <div
-              className="absolute left-[calc(50%-2px)] top-0 w-8 h-14 origin-left bg-[#f8f7f4] border border-[#e2e2d5] rounded-r-sm shadow-sm
+              className="absolute left-[calc(50%-2px)] top-0 w-8 h-14 origin-left bg-[#f8f7f4] dark:bg-card border border-[#e2e2d5] dark:border-border rounded-r-sm shadow-sm
                          transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]
                          group-hover/card:-rotate-[30deg] group-hover/card:translate-x-[-2px]"
               style={{ transformOrigin: 'left center' }}
             >
               <div className="mt-3 ml-1.5 space-y-1">
-                <div className="w-4 h-[2px] bg-[#2c5282]/15 rounded" />
-                <div className="w-3 h-[2px] bg-[#2c5282]/10 rounded" />
-                <div className="w-5 h-[2px] bg-[#2c5282]/15 rounded" />
+                <div className="w-4 h-[2px] bg-[#2c5282] dark:bg-indigo-600/15 rounded" />
+                <div className="w-3 h-[2px] bg-[#2c5282] dark:bg-indigo-600/10 rounded" />
+                <div className="w-5 h-[2px] bg-[#2c5282] dark:bg-indigo-600/15 rounded" />
               </div>
             </div>
             {/* Right page */}
             <div
-              className="absolute right-[calc(50%-2px)] top-0 w-8 h-14 origin-right bg-[#fdfcf8] border border-[#e2e2d5] rounded-l-sm shadow-sm
+              className="absolute right-[calc(50%-2px)] top-0 w-8 h-14 origin-right bg-[#fdfcf8] dark:bg-card border border-[#e2e2d5] dark:border-border rounded-l-sm shadow-sm
                          transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] delay-75
                          group-hover/card:rotate-[30deg] group-hover/card:translate-x-[2px]"
               style={{ transformOrigin: 'right center' }}
             >
               <div className="mt-3 mr-1.5 space-y-1 flex flex-col items-end">
-                <div className="w-4 h-[2px] bg-[#065f46]/15 rounded" />
-                <div className="w-5 h-[2px] bg-[#065f46]/10 rounded" />
-                <div className="w-3 h-[2px] bg-[#065f46]/15 rounded" />
+                <div className="w-4 h-[2px] bg-[#065f46] dark:bg-emerald-600/15 rounded" />
+                <div className="w-5 h-[2px] bg-[#065f46] dark:bg-emerald-600/10 rounded" />
+                <div className="w-3 h-[2px] bg-[#065f46] dark:bg-emerald-600/15 rounded" />
               </div>
             </div>
             {/* Book icon center */}
             <BookOpen
-              className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 text-[#2c5282]/60
+              className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 text-[#2c5282] dark:text-indigo-400/60
                          transition-all duration-500 delay-200
-                         group-hover/card:scale-110 group-hover/card:text-[#2c5282]"
+                         group-hover/card:scale-110 group-hover/card:text-[#2c5282] dark:text-indigo-400"
             />
           </div>
 
           {/* CTA text reveal */}
           <span
-            className="font-serif font-bold text-sm tracking-widest text-[#2c5282]
+            className="font-serif font-bold text-sm tracking-widest text-[#2c5282] dark:text-indigo-400
                        translate-y-3 opacity-0 transition-all duration-400 delay-200
                        group-hover/card:translate-y-0 group-hover/card:opacity-100"
           >
             {plan.cta.variant === 'outline-emerald' ? '联系销售团队' : '点击订购'}
           </span>
           <span
-            className="font-mono text-[10px] text-[#4a5568] mt-1.5
+            className="font-mono text-[10px] text-[#4a5568] dark:text-muted-foreground mt-1.5
                        translate-y-2 opacity-0 transition-all duration-400 delay-300
                        group-hover/card:translate-y-0 group-hover/card:opacity-70"
           >
@@ -108,13 +108,13 @@ export default function PlanCard({ plan, cycle, region }: PlanCardProps) {
 
       {/* ── Top badge ── */}
       {plan.badge && plan.badge.variant === 'red' && (
-        <div className="absolute -top-3 right-4 bg-[#9b2c2c] text-white text-[9px] font-mono font-bold px-2 py-0.5 tracking-tighter uppercase flex items-center gap-1 z-10">
+        <div className="absolute -top-3 right-4 bg-[#9b2c2c] text-white dark:text-foreground text-[9px] font-mono font-bold px-2 py-0.5 tracking-tighter uppercase flex items-center gap-1 z-10">
           <Sparkles className="w-2.5 h-2.5" />
           {region === 'domestic' ? plan.badge.text : 'New user: $0.5 first month'}
         </div>
       )}
       {plan.badge && plan.badge.variant === 'blue' && (
-        <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-[#2c5282] text-white text-[10px] font-mono font-bold px-4 py-1 tracking-widest uppercase z-10">
+        <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-[#2c5282] dark:bg-indigo-600 text-white dark:text-foreground text-[10px] font-mono font-bold px-4 py-1 tracking-widest uppercase z-10">
           {plan.badge.text}
         </div>
       )}
@@ -127,18 +127,18 @@ export default function PlanCard({ plan, cycle, region }: PlanCardProps) {
         >
           {plan.slug}
         </h3>
-        <h4 className="text-xl font-bold text-[#1a202c] mb-2 flex items-center gap-2 font-serif">
+        <h4 className="text-xl font-bold text-[#1a202c] dark:text-foreground mb-2 flex items-center gap-2 font-serif">
           {plan.name}
-          {isProPlus && <BadgeCheck className="w-[18px] h-[18px] text-[#2c5282]" />}
-          {isUltra && <Crown className="w-4 h-4 text-[#065f46]" />}
+          {isProPlus && <BadgeCheck className="w-[18px] h-[18px] text-[#2c5282] dark:text-indigo-400" />}
+          {isUltra && <Crown className="w-4 h-4 text-[#065f46] dark:text-emerald-400" />}
         </h4>
 
         {/* Price */}
         <div className="flex items-baseline gap-1 font-mono">
-          <span className={`font-bold text-[#1a202c] ${isProPlus ? 'text-4xl text-[#2c5282]' : 'text-3xl'}`}>
+          <span className={`font-bold text-[#1a202c] dark:text-foreground ${isProPlus ? 'text-4xl text-[#2c5282] dark:text-indigo-400' : 'text-3xl'}`}>
             {symbol}{price}
           </span>
-          <span className="text-xs text-[#4a5568]">{suffix}</span>
+          <span className="text-xs text-[#4a5568] dark:text-muted-foreground">{suffix}</span>
           {otherCycleRef && (
             <span
               className={`text-[10px] ml-2 ${isProPlus ? 'font-bold text-[11px]' : ''}`}
@@ -149,28 +149,28 @@ export default function PlanCard({ plan, cycle, region }: PlanCardProps) {
           )}
         </div>
 
-        <p className="text-[11px] text-[#4a5568] mt-3 h-8 font-serif">{plan.tagline}</p>
+        <p className="text-[11px] text-[#4a5568] dark:text-muted-foreground mt-3 h-8 font-serif">{plan.tagline}</p>
       </div>
 
       {/* ── CTA Button ── */}
       {plan.cta.variant === 'default' && (
-        <button className="w-full py-2.5 bg-slate-50 border border-[#e2e2d5] text-[#4a5568] font-bold text-xs uppercase tracking-widest mb-6 cursor-default font-mono">
+        <button className="w-full py-2.5 bg-slate-50 dark:bg-muted border border-[#e2e2d5] dark:border-border text-[#4a5568] dark:text-muted-foreground font-bold text-xs uppercase tracking-widest mb-6 cursor-default font-mono">
           {plan.cta.text}
         </button>
       )}
       {plan.cta.variant === 'outline-blue' && (
-        <button className="w-full py-2.5 embossed-btn bg-white text-[#2c5282] font-bold text-xs uppercase tracking-widest mb-6 hover:bg-[#2c5282]/5 font-mono transition-colors">
+        <button className="w-full py-2.5 embossed-btn bg-white dark:bg-card text-[#2c5282] dark:text-indigo-400 font-bold text-xs uppercase tracking-widest mb-6 hover:bg-[#2c5282] dark:bg-indigo-600/5 font-mono transition-colors">
           {plan.cta.text}
         </button>
       )}
       {plan.cta.variant === 'filled-blue' && (
-        <button className="w-full py-3 bg-[#2c5282] text-white font-bold text-xs uppercase tracking-widest shadow-lg flex items-center justify-center gap-2 hover:bg-[#1a202c] transition-all mb-6 font-mono">
+        <button className="w-full py-3 bg-[#2c5282] dark:bg-indigo-600 text-white dark:text-foreground font-bold text-xs uppercase tracking-widest shadow-lg flex items-center justify-center gap-2 hover:bg-[#1a202c] transition-all mb-6 font-mono">
           {plan.cta.text}
           <ArrowRight className="w-3.5 h-3.5" />
         </button>
       )}
       {plan.cta.variant === 'outline-emerald' && (
-        <button className="w-full py-2.5 bg-white border border-[#065f46] text-[#065f46] font-bold text-xs uppercase tracking-widest mb-6 hover:bg-[#065f46]/5 transition-colors font-mono">
+        <button className="w-full py-2.5 bg-white dark:bg-card border border-[#065f46] dark:border-emerald-500 text-[#065f46] dark:text-emerald-400 font-bold text-xs uppercase tracking-widest mb-6 hover:bg-[#065f46] dark:bg-emerald-600/5 transition-colors font-mono">
           {plan.cta.text}
         </button>
       )}
@@ -180,7 +180,7 @@ export default function PlanCard({ plan, cycle, region }: PlanCardProps) {
         {plan.features.map((f) => {
           if (f.highlight) {
             return (
-              <div key={f.text} className="flex items-start gap-2 text-xs text-[#2c5282] font-mono p-2 bg-[#2c5282]/5 border border-dashed border-[#2c5282]/30 italic">
+              <div key={f.text} className="flex items-start gap-2 text-xs text-[#2c5282] dark:text-indigo-400 font-mono p-2 bg-[#2c5282] dark:bg-indigo-600/5 border border-dashed border-[#2c5282] dark:border-indigo-500/30 italic">
                 <FeatureIcon icon={f.icon} />
                 <span>{f.text}</span>
               </div>
@@ -188,13 +188,13 @@ export default function PlanCard({ plan, cycle, region }: PlanCardProps) {
           }
           if (f.icon === 'slash') {
             return (
-              <div key={f.text} className="flex items-start gap-2 text-xs text-[#4a5568] font-mono">
+              <div key={f.text} className="flex items-start gap-2 text-xs text-[#4a5568] dark:text-muted-foreground font-mono">
                 / {f.text}
               </div>
             );
           }
           return (
-            <div key={f.text} className={`flex items-start gap-2 text-xs text-[#1a202c] font-mono ${f.bold ? 'font-bold' : ''}`}>
+            <div key={f.text} className={`flex items-start gap-2 text-xs text-[#1a202c] dark:text-foreground font-mono ${f.bold ? 'font-bold' : ''}`}>
               <FeatureIcon icon={f.icon} />
               <span>{f.text}</span>
             </div>

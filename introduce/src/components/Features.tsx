@@ -1,207 +1,265 @@
 import { useState } from 'react';
 import { useInView } from '../hooks/useInView';
 
-// All data strictly from README.md and competition spec
 const FEATURES = [
   {
-    id: 'nlp',
-    icon: '▸',
-    title: '自然语言驱动',
-    short: '说出目标，AI 自动生成工作流',
-    desc: '用户无需了解 DAG、节点、连线等工程概念。在侧边栏 AI 面板用自然语言描述学习目标，系统完成从意图分类到工作流生成的全链路自动化。支持从零构建、增量修改、规划建议三种交互模式。',
-    demo: [
-      { type: 'user', content: '帮我系统学习机器学习基础，输出学习材料' },
-      { type: 'sys', content: '意图: BUILD 已识别\n规划层激活中...' },
-      { type: 'gen', content: '生成 6 节点工作流:\ntrigger → analyzer → outline_gen\n→ summary → flashcard → export_file' },
+    id: 'dag',
+    title: 'DAG 图结构执行引擎',
+    tag: 'CORE ENGINE',
+    tagColor: 'var(--accent-green)',
+    desc: '系统内部对工作流执行拓扑排序（Topological Sort），严格按照节点依赖关系顺序调度 AI 模型。支持串行、并行、条件分支三种执行策略，任一节点失败将触发全局回滚。',
+    detail: '自研 Python DAG Executor，完整支持：\n• 18 种执行节点类型\n• 拓扑排序 + 依赖解析\n• 并行组（Parallel Group）调度\n• 节点执行状态追踪',
+    metrics: [
+      { label: 'Node Types', value: '18' },
+      { label: 'Max Parallel', value: '∞' },
+      { label: 'Execution', value: 'SSE' },
     ],
-    tags: ['Intent Classifier', 'AI Planner', 'Action Executor'],
-  },
-  {
-    id: 'canvas',
-    icon: '⊞',
-    title: '可视化节点画布',
-    short: '拖拽式 DAG 编辑，Undo/Redo',
-    desc: '基于 @xyflow/react 的工业级节点画布，支持拖动、增删节点、连线，以及分组操作。画布状态实时序列化，IndexedDB 防抖 500ms 本地快照 + Supabase 5s 节流云端同步，保障崩溃恢复。',
-    demo: [
-      { type: 'sys', content: 'Canvas State Monitor' },
-      { type: 'info', content: 'nodes: 6  edges: 5  dirty: true' },
-      { type: 'info', content: 'IndexedDB snapshot @ 300ms debounce' },
-      { type: 'info', content: 'Supabase sync @ 5s throttle' },
-      { type: 'ok', content: 'Undo stack: 12 snapshots' },
-    ],
-    tags: ['@xyflow/react', 'Zustand', 'IndexedDB'],
-  },
-  {
-    id: 'nodes',
-    icon: '◈',
-    title: '18 种专业学习节点',
-    short: '覆盖学习全流程的专用节点体系',
-    desc: '平台预置 18 种节点，涵盖输入类（trigger / knowledge_base / web_search）、分析类（ai_analyzer / ai_planner / content_extract / compare）、生成类（outline_gen / summary / flashcard / quiz_gen / mind_map / merge_polish）、交互类、输出类、控制流六大类别。',
-    demo: [
-      { type: 'sys', content: '// 节点体系 (18种)' },
-      { type: 'info', content: '输入类: trigger, knowledge_base, web_search' },
-      { type: 'info', content: '分析类: ai_analyzer, ai_planner...' },
-      { type: 'info', content: '生成类: outline_gen, summary, flashcard...' },
-      { type: 'info', content: '控制流: logic_switch, loop_group' },
-    ],
-    tags: ['6 大类别', '用户可自建', '社区共享'],
   },
   {
     id: 'router',
-    icon: '⟳',
-    title: '多平台 AI 模型路由',
-    short: '8 平台 17+ 模型，自动容灾降级',
-    desc: '后端 AI Router 对接 8 个主流大模型平台（DeepSeek、通义千问、智谱 GLM、豆包、Kimi、七牛云、硅基流动、火山引擎），支持 native_first / proxy_first / capability_fixed 三种路由策略。单平台宕机自动切换，每个节点类型配置 2-3 个候选 SKU。',
-    demo: [
-      { type: 'sys', content: '// 路由策略: native_first' },
-      { type: 'info', content: 'PRIMARY: DeepSeek-V3  [OK]' },
-      { type: 'warn', content: 'FALLBACK: Qwen-Max  [TIMEOUT]' },
-      { type: 'info', content: 'FALLBACK-2: GLM-4  [OK]' },
-      { type: 'ok', content: 'Routed to GLM-4 in 89ms' },
+    title: '多 AI 模型智能路由',
+    tag: 'AI ROUTER',
+    tagColor: 'var(--accent-cyan)',
+    desc: '不依赖单一模型。根据节点类型和任务复杂度，自动路由至最适合的 AI 模型：分析用 DeepSeek-V3，推导用 Qwen-MAX，长文本用专用模型。',
+    detail: '基于注册表驱动的 AI 路由系统：\n• DeepSeek-V3（分析 + 规划节点）\n• Qwen-MAX（内容生成节点）\n• 多模型 Fallback 容错链\n• Token 成本优化路由策略',
+    metrics: [
+      { label: 'AI Providers', value: '8+' },
+      { label: 'Routing', value: 'Auto' },
+      { label: 'Fallback', value: 'Yes' },
     ],
-    tags: ['8 AI 平台', '17+ 模型 SKU', '自动容灾'],
   },
   {
     id: 'sse',
-    icon: '◉',
-    title: '流式执行追踪',
-    short: 'SSE 全程可观测，不是黑盒',
-    desc: '执行时各节点按 DAG 依赖顺序逐步运行，通过 SSE 推送 7 种事件：node_input / node_status / node_token / node_done / loop_iteration / save_error / workflow_done。前端执行面板实时渲染状态、流式输出与链路血缘追踪。',
-    demo: [
-      { type: 'sys', content: 'SSE Stream Active' },
-      { type: 'info', content: 'event: node_status\ndata: {node:"ai_analyzer",status:"running"}' },
-      { type: 'info', content: 'event: node_token\ndata: {token:"机器学习是..."}' },
-      { type: 'ok', content: 'event: node_done\ndata: {duration:2341,tokens:847}' },
+    title: '实时 SSE 执行日志流推',
+    tag: 'STREAMING',
+    tagColor: 'var(--accent-orange)',
+    desc: '不是黑盒转圈圈。工作流从触发到完成的每一步：节点状态变更、模型推理输出、分支判定结果，都以毫秒级流式推送至前端实时展现。',
+    detail: 'FastAPI StreamingResponse 实现：\n• SSE (Server-Sent Events) 协议\n• 节点 PENDING → RUNNING → DONE 状态机\n• 前端 fetch + ReadableStream 解析\n• 生产环境 Nginx 无缓冲配置',
+    metrics: [
+      { label: 'Latency', value: '<800ms' },
+      { label: 'Protocol', value: 'SSE' },
+      { label: 'Format', value: 'NDJSON' },
     ],
-    tags: ['7 种事件', 'Root-to-leaf 追踪', 'FastAPI SSE'],
   },
   {
-    id: 'community',
-    icon: '⊹',
-    title: '社区共享与开放节点',
-    short: '工作流与节点双重社区生态',
-    desc: '工作流可发布至社区，其他用户可收藏、点赞、Fork 形成自己的版本。用户还可自定义并发布提示词节点：定义节点名称、Prompt、输出格式（支持 AI 辅助生成 JSON Schema），发布后进入社区节点商店，Prompt 对使用者不可见保护知识产权。',
-    demo: [
-      { type: 'sys', content: '// 社区数据' },
-      { type: 'info', content: '发布工作流 "ML入门完整学习路径"' },
-      { type: 'ok', content: 'status: 审核通过，已上线' },
-      { type: 'info', content: 'forks: 12  likes: 47  usage: 389' },
+    id: 'rls',
+    title: 'RLS 行级安全数据隔离',
+    tag: 'SECURITY',
+    tagColor: '#ff4444',
+    desc: '完全基于 Supabase 的 Row Level Security 策略。每个用户只能访问并操作自己的工作流、知识库和导出文件。数据库层强制隔离，绕不过去。',
+    detail: 'Supabase RLS 实现方案：\n• JWT 令牌绑定用户身份\n• Policy: auth.uid() = user_id\n• API 层 + DB 层双重防护\n• IP 登录安全锁定（失败 5次封 10min）',
+    metrics: [
+      { label: 'Auth', value: 'JWT' },
+      { label: 'Isolation', value: 'Row-Level' },
+      { label: 'Lock', value: '5-attempt' },
     ],
-    tags: ['Fork 分叉', '节点商店', '版权保护'],
+  },
+  {
+    id: 'canvas',
+    title: '工业级 DAG 可视化画布',
+    tag: 'UI/UX',
+    tagColor: 'var(--accent-cyan)',
+    desc: '基于 @xyflow/react 构建的拖拽式工作流编辑器。节点间连线自动布局，支持画布缩放/平移、小地图导航、节点属性面板实时编辑，全程零代码。',
+    detail: '@xyflow/react 定制实现：\n• 18 种节点自定义渲染器\n• 拖拽添加/连接/删除\n• 小地图缩略图导航\n• 节点属性侧边栏编辑器',
+    metrics: [
+      { label: 'Library', value: 'XYFlow' },
+      { label: 'Node Types', value: '18' },
+      { label: 'Interaction', value: 'Drag & Drop' },
+    ],
+  },
+  {
+    id: 'export',
+    title: '多格式学习成果导出',
+    tag: 'OUTPUT',
+    tagColor: '#f59e0b',
+    desc: '工作流执行完成后，自动将知识大纲、核心总结、闪卡、思维导图、测验题等内容整合打包，支持 Markdown / TXT / DOCX 格式导出，一键归档。',
+    detail: '导出节点能力矩阵：\n• 大纲生成（structured outline）\n• 核心总结（key summary）\n• 闪卡包（flashcard JSON）\n• 思维导图（Markdown structure）\n• 测验题（Q&A pairs）',
+    metrics: [
+      { label: 'Formats', value: 'MD/TXT/DOCX' },
+      { label: 'Auto-merge', value: 'Yes' },
+      { label: 'Async', value: 'Background' },
+    ],
   },
 ];
 
 export default function Features() {
-  const [activeIdx, setActiveIdx] = useState(0);
-  const [ref, inView] = useInView<HTMLDivElement>(0.1);
-
-  const active = FEATURES[activeIdx];
+  const [active, setActive] = useState(0);
+  const [panelRef, panelInView] = useInView<HTMLDivElement>(0.2);
+  const current = FEATURES[active];
 
   return (
-    <section className="section" id="features" ref={ref}>
-      <div className="container">
+    <section id="features" style={{
+      background: 'var(--bg-void)',
+      borderTop: '1px solid var(--border-subtle)',
+      padding: '120px 0',
+    }}>
+      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 32px' }}>
+
         {/* Header */}
-        <div className={`section-header reveal${inView ? ' visible' : ''}`}>
-          <div className="signal-tag">Core Features</div>
-          <h2 className="section-title">核心特性体系</h2>
-          <p className="section-desc">
-            从自然语言到 DAG 执行，从单一模型到多平台路由，StudySolo 构建了完整的学习智能体平台能力。
+        <div className="reveal" style={{ marginBottom: 64 }}>
+          <div className="label-green" style={{ marginBottom: 20 }}>
+            PLATFORM CAPABILITIES
+          </div>
+          <h2 style={{
+            fontFamily: 'var(--font-display)',
+            fontWeight: 800,
+            fontSize: 'clamp(36px, 5vw, 56px)',
+            letterSpacing: '-0.03em',
+            color: 'var(--text-primary)',
+            lineHeight: 1.1,
+            marginBottom: 16,
+          }}>
+            核心引擎特性
+          </h2>
+          <p style={{ fontSize: 16, color: 'var(--text-secondary)', maxWidth: 480 }}>
+            不只是调用 API 的聊天工具。我们提供完整的平台级工程架构。
           </p>
         </div>
 
-        {/* Interactive feature panel */}
-        <div className={`features-layout reveal reveal-delay-2${inView ? ' visible' : ''}`}>
-          {/* Left: Tab list */}
-          <div className="features-list">
+        {/* Interactive 2-Column Layout */}
+        <div ref={panelRef} style={{
+          display: 'grid',
+          gridTemplateColumns: '340px 1fr',
+          gap: 1,
+          background: 'var(--border-subtle)',
+          minHeight: 520,
+          opacity: panelInView ? 1 : 0,
+          transform: panelInView ? 'translateY(0)' : 'translateY(24px)',
+          transition: 'opacity 0.7s ease, transform 0.7s ease',
+        }}>
+
+          {/* Left: Feature Selector */}
+          <div style={{ background: 'var(--bg-panel)', overflow: 'hidden' }}>
             {FEATURES.map((f, i) => (
-              <button
+              <div
                 key={f.id}
-                className={`feature-tab${i === activeIdx ? ' active' : ''}`}
-                onClick={() => setActiveIdx(i)}
+                onClick={() => setActive(i)}
+                style={{
+                  padding: '20px 24px',
+                  borderBottom: '1px solid var(--border-subtle)',
+                  cursor: 'pointer',
+                  background: active === i ? 'var(--bg-hover)' : 'transparent',
+                  borderLeft: active === i ? '2px solid var(--accent-green)' : '2px solid transparent',
+                  transition: 'all 0.15s ease',
+                }}
               >
-                <div className="feature-tab-icon">{f.icon}</div>
-                <div className="feature-tab-text">
-                  <div className="feature-tab-title">{f.title}</div>
-                  <div className="feature-tab-desc">{f.short}</div>
+                <div style={{
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 10,
+                  color: active === i ? f.tagColor : 'var(--text-dim)',
+                  letterSpacing: '0.12em',
+                  marginBottom: 6,
+                  transition: 'color 0.15s',
+                }}>
+                  {f.tag}
                 </div>
-                {i === activeIdx && (
-                  <span style={{
-                    color: 'var(--green)',
-                    fontSize: '0.7rem',
-                    fontFamily: 'var(--font-mono)',
-                    flexShrink: 0,
-                  }}>→</span>
-                )}
-              </button>
+                <div style={{
+                  fontFamily: 'var(--font-display)',
+                  fontWeight: 600,
+                  fontSize: 14,
+                  color: active === i ? 'var(--text-primary)' : 'var(--text-secondary)',
+                  lineHeight: 1.4,
+                  transition: 'color 0.15s',
+                }}>
+                  {f.title}
+                </div>
+              </div>
             ))}
           </div>
 
-          {/* Right: Detail panel */}
-          <div className="feature-panel" key={active.id}>
-            {/* Title */}
+          {/* Right: Detail Panel */}
+          <div style={{
+            background: 'var(--bg-surface)',
+            padding: 48,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 32,
+          }}>
+
+            {/* Tag + Title */}
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.75rem' }}>
-                <span style={{ fontSize: '1.4rem' }}>{active.icon}</span>
-                <h3 className="feature-panel-title">{active.title}</h3>
+              <div style={{
+                fontFamily: 'var(--font-mono)',
+                fontSize: 11,
+                color: current.tagColor,
+                letterSpacing: '0.15em',
+                marginBottom: 12,
+              }}>
+                {current.tag}
               </div>
-              <p className="feature-panel-body">{active.desc}</p>
+              <h3 style={{
+                fontFamily: 'var(--font-display)',
+                fontWeight: 700,
+                fontSize: 28,
+                color: 'var(--text-primary)',
+                letterSpacing: '-0.02em',
+                marginBottom: 16,
+              }}>
+                {current.title}
+              </h3>
+              <p style={{ fontSize: 15, color: 'var(--text-secondary)', lineHeight: 1.75 }}>
+                {current.desc}
+              </p>
             </div>
 
-            {/* Terminal demo */}
-            <div className="terminal">
-              <div className="terminal-header">
-                <div style={{ display: 'flex', gap: '0.4rem' }}>
-                  {['#ff5f57','#febc2e','#28c840'].map(c => (
-                    <div key={c} style={{ width: 8, height: 8, borderRadius: '50%', background: c }} />
-                  ))}
-                </div>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--text-muted)', marginLeft: '0.5rem' }}>
-                  {active.id}.demo
-                </span>
-              </div>
-              <div className="terminal-body">
-                {active.demo.map((line, i) => (
-                  <div
-                    key={i}
-                    className="terminal-line"
-                    style={{
-                      animationDelay: `${i * 150}ms`,
-                      color: line.type === 'user' ? 'var(--text-primary)'
-                        : line.type === 'ok' ? 'var(--green)'
-                        : line.type === 'warn' ? 'var(--orange)'
-                        : line.type === 'sys' ? 'var(--text-muted)'
-                        : 'var(--ice)',
-                    }}
-                  >
-                    {line.type === 'sys' && <span style={{ color: 'var(--text-muted)' }}># </span>}
-                    {line.type === 'user' && <span style={{ color: 'var(--green)' }}>{'> '}</span>}
-                    {line.type !== 'sys' && line.type !== 'user' && <span style={{ color: 'var(--text-muted)' }}>  </span>}
-                    {line.content}
-                  </div>
-                ))}
-                <div className="terminal-line">
-                  <span style={{ color: 'var(--green)' }}>{'> '}</span>
-                  <span className="terminal-cursor">_</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Tags */}
-            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-              {active.tags.map(tag => (
-                <span key={tag} style={{
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: '0.7rem',
-                  color: 'var(--green)',
-                  background: 'rgba(0,232,122,0.07)',
-                  border: '1px solid var(--border-green)',
-                  padding: '0.2rem 0.6rem',
-                  borderRadius: 'var(--radius-sm)',
+            {/* Metrics */}
+            <div style={{ display: 'flex', gap: 1, background: 'var(--border-subtle)' }}>
+              {current.metrics.map(m => (
+                <div key={m.label} style={{
+                  flex: 1,
+                  background: 'var(--bg-panel)',
+                  padding: '16px 20px',
+                  textAlign: 'center',
                 }}>
-                  {tag}
-                </span>
+                  <div style={{
+                    fontFamily: 'var(--font-mono)',
+                    fontWeight: 700,
+                    fontSize: 20,
+                    color: 'var(--accent-green)',
+                    marginBottom: 4,
+                  }}>
+                    {m.value}
+                  </div>
+                  <div style={{
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: 10,
+                    color: 'var(--text-dim)',
+                    letterSpacing: '0.1em',
+                    textTransform: 'uppercase',
+                  }}>
+                    {m.label}
+                  </div>
+                </div>
               ))}
             </div>
+
+            {/* Tech Detail */}
+            <div style={{
+              background: 'var(--bg-panel)',
+              border: '1px solid var(--border-subtle)',
+              padding: '20px 24px',
+            }}>
+              <div style={{
+                fontFamily: 'var(--font-mono)',
+                fontSize: 11,
+                color: 'var(--text-dim)',
+                letterSpacing: '0.1em',
+                marginBottom: 12,
+              }}>
+                {'>'} TECHNICAL SPEC
+              </div>
+              <pre style={{
+                fontFamily: 'var(--font-mono)',
+                fontSize: 13,
+                color: 'var(--text-secondary)',
+                lineHeight: 1.8,
+                whiteSpace: 'pre-wrap',
+                margin: 0,
+              }}>
+                {current.detail}
+              </pre>
+            </div>
+
           </div>
         </div>
       </div>

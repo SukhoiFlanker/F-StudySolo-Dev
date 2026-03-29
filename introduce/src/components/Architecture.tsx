@@ -1,192 +1,219 @@
 import { useInView } from '../hooks/useInView';
 
-// Tech stack strictly from README.md
-const ARCH_CELLS = [
+/* Architecture based strictly on actual system */
+const STACK = [
   {
-    layer: 'FRONTEND',
-    title: 'Next.js 16 + React 19',
-    tech: 'TypeScript · Tailwind CSS v4',
-    desc: 'App Router，SSR + CSR 混合渲染。@xyflow/react 工业级画布，Zustand 全局状态，Framer Motion 动画，IndexedDB 离线缓存。',
+    tier: 'FRONTEND',
     port: ':2037',
-    color: 'var(--ice)',
+    color: '#00d4ff',
+    tech: 'Next.js 14 + React 19',
+    items: ['App Router (SSR + CSR)', 'Zustand 状态管理', '@xyflow/react 工作流画布', 'Tailwind CSS v4', 'TypeScript 5.x'],
+    note: 'Deployed as Node.js server (Nginx → :2037)',
   },
   {
-    layer: 'BACKEND',
-    title: 'Python FastAPI',
-    tech: 'uvicorn · Pydantic',
-    desc: '高性能异步框架，原生支持 SSE 流式推送。自研 DAG Executor（拓扑排序 + ExecutionContext 黑板模型）。Prompt 模块化系统（Markdown + 变量渲染 + LRU 缓存）。',
+    tier: 'BACKEND',
     port: ':2038',
-    color: 'var(--orange)',
+    color: '#00ff88',
+    tech: 'Python FastAPI',
+    items: ['Uvicorn ASGI Server', 'SSE StreamingResponse', 'DAG Executor (自研)', 'Pydantic v2 数据校验', 'AI Router 分发层'],
+    note: 'uvicorn --workers 2 (Nginx → /api/)',
   },
   {
-    layer: 'DATABASE',
-    title: 'Supabase PostgreSQL',
-    tech: 'Row Level Security · JWT',
-    desc: '多租户数据隔离，RLS 全覆盖。Supabase Auth + JWT + Canvas 拼图验证码 + IP 登录锁定。10+ 核心数据库表。',
-    port: 'SUPABASE',
-    color: 'var(--green)',
+    tier: 'DATABASE',
+    port: 'PG',
+    color: '#7c3aed',
+    tech: 'Supabase PostgreSQL',
+    items: ['Row Level Security (RLS)', 'Supabase Auth (JWT)', 'profiles / workflows / nodes 表', 'knowledge_bases 知识库', 'IP 登录锁定记录表'],
+    note: 'Supabase Cloud (us-east-1)',
   },
   {
-    layer: 'AI ROUTER',
-    title: '8 平台 · 17+ 模型',
-    tech: 'DeepSeek · Qwen · GLM · Kimi...',
-    desc: '统一 AI Router 对接 8 个主流大模型平台。3 种路由策略：native_first / proxy_first / capability_fixed。每节点 2-3 个候选 SKU，单平台宕机自动降级。',
-    port: 'ROUTER',
-    color: 'var(--ice)',
-  },
-  {
-    layer: 'EXECUTION',
-    title: 'DAG Executor',
-    tech: 'SSE · ExecutionContext',
-    desc: '自研执行引擎：拓扑排序确定顺序，ExecutionContext 黑板模型传递中间结果。推送 7 种 SSE 事件，链路血缘全程可视。双缓冲同步：IndexedDB(300ms) + Supabase(5s)。',
-    port: 'ENGINE',
-    color: 'var(--green)',
-  },
-  {
-    layer: 'HOSTING',
-    title: '阿里云 ECS + Nginx',
-    tech: 'PM2 · Baota · HTTPS',
-    desc: '已生产部署上线：StudyFlow.1037solo.com。Nginx 统一网关分发：前端(2037) / API(2038) / 介绍页(静态)。PM2 进程守护，宝塔 Python 管理器。',
-    port: ':443',
-    color: 'var(--text-muted)',
+    tier: 'INFRASTRUCTURE',
+    port: 'ECS',
+    color: '#ff6b35',
+    tech: 'Aliyun ECS + Nginx',
+    items: ['Nginx 统一反向代理网关', '1C/2G 轻量云服务器', 'PM2 进程管理', 'SSL/HTTPS 全站加密', '*.1037solo.com 泛域名'],
+    note: '1037solo.com ecosystem',
   },
 ];
 
-const DEPLOY_PATH = [
-  { label: 'studyflow.1037solo.com/', target: 'Next.js :2037', icon: '⊞' },
-  { label: '/api/', target: 'FastAPI :2038', icon: '◈' },
-  { label: '/introduce/', target: 'Vite SPA (静态)', icon: '▸' },
-  { label: '/wiki/', target: 'Next.js :2039 (开发中)', icon: '⊹' },
+const ROUTING = [
+  { from: 'studyflow.1037solo.com/', to: 'Next.js :2037', protocol: 'HTTP PROXY', active: true },
+  { from: 'studyflow.1037solo.com/api/', to: 'FastAPI :2038', protocol: 'HTTP PROXY', active: true },
+  { from: '1037solo.com/introduce/', to: 'Vite SPA (Static)', protocol: 'STATIC FILE', active: true },
+  { from: '→ Supabase', to: 'PostgreSQL DB', protocol: 'SUPABASE SDK', active: true },
 ];
 
 export default function Architecture() {
-  const [ref, inView] = useInView<HTMLDivElement>(0.1);
+  const [ref, inView] = useInView<HTMLDivElement>(0.15);
 
   return (
-    <section className="section" id="architecture" ref={ref}>
-      <div className="container">
+    <section id="arch" style={{
+      background: 'var(--bg-void)',
+      borderTop: '1px solid var(--border-subtle)',
+      padding: '120px 0',
+    }}>
+      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 32px' }}>
+
         {/* Header */}
-        <div className={`section-header center reveal${inView ? ' visible' : ''}`}>
-          <div className="signal-tag">System Architecture</div>
-          <h2 className="section-title">Polyglot Monorepo 架构</h2>
-          <p className="section-desc">
-            多语言单仓架构，前后端完全独立部署，Nginx 统一网关分发。已在阿里云 ECS 生产运行。
+        <div style={{ marginBottom: 64 }}>
+          <div className="label-cyan" style={{ marginBottom: 20 }}>
+            SYSTEM ARCHITECTURE
+          </div>
+          <h2 style={{
+            fontFamily: 'var(--font-display)',
+            fontWeight: 800,
+            fontSize: 'clamp(36px, 5vw, 52px)',
+            letterSpacing: '-0.03em',
+            color: 'var(--text-primary)',
+            lineHeight: 1.1,
+            marginBottom: 16,
+          }}>
+            Polyglot Monorepo 架构
+          </h2>
+          <p style={{ fontSize: 16, color: 'var(--text-secondary)', maxWidth: 480 }}>
+            多语言单仓库架构，前后端完全独立部署。生产环境运行于阿里云 ECS，Nginx 统一网关分发。
           </p>
         </div>
 
-        {/* Nginx routing diagram */}
-        <div className={`reveal reveal-delay-1${inView ? ' visible' : ''}`} style={{ marginBottom: '2rem' }}>
+        {/* Nginx Routing Table */}
+        <div ref={ref} style={{
+          background: 'var(--bg-panel)',
+          border: '1px solid var(--border-subtle)',
+          marginBottom: 1,
+          opacity: inView ? 1 : 0,
+          transform: inView ? 'translateY(0)' : 'translateY(24px)',
+          transition: 'opacity 0.7s ease, transform 0.7s ease',
+        }}>
           <div style={{
-            background: 'var(--black-2)',
-            border: '1px solid var(--border)',
-            borderRadius: 'var(--radius-md)',
-            overflow: 'hidden',
+            padding: '12px 24px',
+            borderBottom: '1px solid var(--border-subtle)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
           }}>
-            <div style={{
-              padding: '0.6rem 1rem',
-              borderBottom: '1px solid var(--border)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              background: 'rgba(255,255,255,0.02)',
-            }}>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                nginx.conf — 生产路由
-              </span>
-              <span style={{ marginLeft: 'auto', fontFamily: 'var(--font-mono)', fontSize: '0.65rem', color: 'var(--green)' }}>
-                LIVE ◉
-              </span>
-            </div>
-            <div style={{ padding: '1.25rem 1.5rem', display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
-              {DEPLOY_PATH.map(item => (
-                <div key={item.label} style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '1rem',
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: '0.8rem',
-                }}>
-                  <span style={{ color: 'var(--ice)', minWidth: 280 }}>{item.label}</span>
-                  <span style={{ color: 'var(--text-muted)' }}>→</span>
-                  <span style={{ color: 'var(--green)' }}>{item.icon}</span>
-                  <span style={{ color: 'var(--text-secondary)' }}>{item.target}</span>
-                </div>
-              ))}
-            </div>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-dim)', letterSpacing: '0.1em' }}>
+              nginx.conf — 生产路由映射
+            </span>
+            <span style={{ marginLeft: 'auto', fontFamily: 'var(--font-mono)', fontSize: 11 }}>
+              <span className="dot-live" style={{ marginRight: 6 }} />
+              <span style={{ color: 'var(--accent-green)' }}>PRODUCTION</span>
+            </span>
+          </div>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                  {['Request Path', 'Routes To', 'Protocol', 'Status'].map(h => (
+                    <th key={h} style={{
+                      padding: '10px 24px',
+                      textAlign: 'left',
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: 10,
+                      color: 'var(--text-dim)',
+                      letterSpacing: '0.12em',
+                      textTransform: 'uppercase',
+                      fontWeight: 600,
+                    }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {ROUTING.map((r, i) => (
+                  <tr key={i} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                    <td style={{ padding: '14px 24px', fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--accent-cyan)' }}>{r.from}</td>
+                    <td style={{ padding: '14px 24px', fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--text-primary)' }}>{r.to}</td>
+                    <td style={{ padding: '14px 24px', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-dim)' }}>{r.protocol}</td>
+                    <td style={{ padding: '14px 24px' }}>
+                      <span style={{
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: 11,
+                        color: 'var(--accent-green)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
+                      }}>
+                        <span className="dot-live" style={{ width: 5, height: 5 }} />
+                        ONLINE
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
 
-        {/* Tech grid */}
-        <div className={`arch-grid reveal reveal-delay-2${inView ? ' visible' : ''}`}>
-          {ARCH_CELLS.map(cell => (
-            <div key={cell.layer} className="arch-cell">
-              <div className="arch-cell-glow" />
-              <div className="arch-cell-layer">{cell.layer}</div>
-              <div className="arch-cell-title">{cell.title}</div>
-              <div className="arch-cell-tech" style={{ color: cell.color }}>
-                {cell.tech}
+        {/* Stack Cards Grid */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(4, 1fr)',
+          gap: 1,
+          background: 'var(--border-subtle)',
+        }}>
+          {STACK.map((s, i) => (
+            <div key={s.tier} style={{
+              background: 'var(--bg-panel)',
+              padding: 28,
+              borderTop: `3px solid ${s.color}`,
+              opacity: inView ? 1 : 0,
+              transform: inView ? 'translateY(0)' : 'translateY(20px)',
+              transition: `opacity 0.6s ease ${i * 0.1}s, transform 0.6s ease ${i * 0.1}s`,
+            }}>
+              {/* Tier Label + Port */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: s.color, letterSpacing: '0.12em' }}>
+                  {s.tier}
+                </span>
+                <span style={{
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 11,
+                  color: 'var(--bg-void)',
+                  background: s.color,
+                  padding: '2px 8px',
+                }}>
+                  {s.port}
+                </span>
               </div>
-              <div className="arch-cell-desc">{cell.desc}</div>
+
+              {/* Tech Name */}
               <div style={{
-                marginTop: '1rem',
-                fontFamily: 'var(--font-mono)',
-                fontSize: '0.68rem',
-                color: 'var(--text-faint)',
-                borderTop: '1px solid var(--border)',
-                paddingTop: '0.75rem',
+                fontFamily: 'var(--font-display)',
+                fontWeight: 700,
+                fontSize: 16,
+                color: 'var(--text-primary)',
+                marginBottom: 20,
+                lineHeight: 1.3,
               }}>
-                {cell.port}
+                {s.tech}
+              </div>
+
+              {/* Items */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
+                {s.items.map(item => (
+                  <div key={item} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                    <span style={{ color: s.color, flexShrink: 0, marginTop: 2 }}>›</span>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                      {item}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Note */}
+              <div style={{
+                borderTop: '1px solid var(--border-subtle)',
+                paddingTop: 14,
+                fontFamily: 'var(--font-mono)',
+                fontSize: 10,
+                color: 'var(--text-dim)',
+                letterSpacing: '0.05em',
+              }}>
+                {s.note}
               </div>
             </div>
           ))}
         </div>
 
-        {/* Scale metrics */}
-        <div className={`reveal reveal-delay-3${inView ? ' visible' : ''}`} style={{ marginTop: '2rem' }}>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
-            gap: '1px',
-            border: '1px solid var(--border)',
-            borderRadius: 'var(--radius-md)',
-            overflow: 'hidden',
-            background: 'var(--border)',
-          }}>
-            {[
-              { v: '60+', l: 'React 组件' },
-              { v: '27+', l: 'API 端点' },
-              { v: '18', l: '节点类型' },
-              { v: '10+', l: '数据库表 (RLS)' },
-              { v: '10', l: '管理后台模块' },
-              { v: '7', l: 'SSE 事件类型' },
-            ].map(m => (
-              <div key={m.l} style={{
-                background: 'var(--black-3)',
-                padding: '1.25rem 1rem',
-                textAlign: 'center',
-              }}>
-                <div style={{
-                  fontFamily: 'var(--font-display)',
-                  fontSize: '1.75rem',
-                  fontWeight: 800,
-                  color: 'var(--text-primary)',
-                  letterSpacing: '-0.03em',
-                  lineHeight: 1,
-                }}>
-                  {m.v}
-                </div>
-                <div style={{
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: '0.7rem',
-                  color: 'var(--text-muted)',
-                  marginTop: '0.4rem',
-                }}>
-                  {m.l}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
       </div>
     </section>
   );

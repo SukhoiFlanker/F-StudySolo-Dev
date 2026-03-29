@@ -16,21 +16,21 @@
   display: flex;
   flex-direction: row;
   gap: 2px;
-  background: rgba(15, 23, 42, 0.85);
+  background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 12px;
   padding: 4px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.06);
   bottom: 16px;
   right: 16px;
 }
 
-.light .workflow-controls.react-flow__controls {
-  background: rgba(255, 255, 255, 0.92);
-  border-color: rgba(0, 0, 0, 0.08);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.06);
+.dark .workflow-controls.react-flow__controls {
+  background: rgba(15, 23, 42, 0.85);
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
 }
 
 .workflow-controls .react-flow__controls-button {
@@ -42,22 +42,22 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #94a3b8;
+  color: #78716c;
   transition: all 0.2s ease;
 }
 
 .workflow-controls .react-flow__controls-button:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: #f1f5f9;
-}
-
-.light .workflow-controls .react-flow__controls-button {
-  color: #78716c;
-}
-
-.light .workflow-controls .react-flow__controls-button:hover {
   background: rgba(0, 0, 0, 0.06);
   color: #1c1917;
+}
+
+.dark .workflow-controls .react-flow__controls-button {
+  color: #94a3b8;
+}
+
+.dark .workflow-controls .react-flow__controls-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #f1f5f9;
 }
 
 .workflow-controls .react-flow__controls-button svg {
@@ -99,106 +99,107 @@
 
 /* Edge marker (arrowhead) color custom property */
 .workflow-canvas {
-  --edge-marker-color: #78716c;
+  --edge-marker-color: #57534e;
 }
 
-.light .workflow-canvas {
-  --edge-marker-color: #57534e;
+.dark .workflow-canvas {
+  --edge-marker-color: #78716c;
 }
 
 /* Main pencil stroke */
 .pencil-edge-main {
-  stroke: #78716c;
+  stroke: #57534e;
   stroke-width: 2.5;
-  stroke-opacity: 0.7;
+  stroke-opacity: 0.6;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
-.light .pencil-edge-main {
-  stroke: #57534e;
-  stroke-opacity: 0.6;
+.dark .pencil-edge-main {
+  stroke: #78716c;
+  stroke-opacity: 0.7;
 }
 
 /* Background shadow stroke for depth */
 .pencil-edge-bg {
-  stroke: #78716c;
+  stroke: #44403c;
   stroke-width: 5;
-  stroke-opacity: 0.08;
+  stroke-opacity: 0.06;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
-.light .pencil-edge-bg {
-  stroke: #44403c;
-  stroke-opacity: 0.06;
+.dark .pencil-edge-bg {
+  stroke: #78716c;
+  stroke-opacity: 0.08;
 }
 
 /* Active edge — slight glow */
 .pencil-edge-active {
-  stroke: #6366f1;
-  stroke-opacity: 0.85;
+  stroke: #4f46e5;
+  stroke-opacity: 0.75;
   animation: edge-pulse 2s ease-in-out infinite;
 }
 
-.light .pencil-edge-active {
-  stroke: #4f46e5;
-  stroke-opacity: 0.75;
+.dark .pencil-edge-active {
+  stroke: #6366f1;
+  stroke-opacity: 0.85;
 }
 
 /* Glow layer for running edges */
 .pencil-edge-glow {
-  stroke: #6366f1;
+  stroke: #4f46e5;
   stroke-width: 8;
-  stroke-opacity: 0.12;
+  stroke-opacity: 0.08;
   stroke-linecap: round;
   animation: edge-pulse 2s ease-in-out infinite;
 }
 
-.light .pencil-edge-glow {
-  stroke: #4f46e5;
-  stroke-opacity: 0.08;
+.dark .pencil-edge-glow {
+  stroke: #6366f1;
+  stroke-opacity: 0.12;
 }
 
 /* Override default React Flow edge-path */
 .workflow-canvas .react-flow__edge-path {
-  stroke: #78716c;
-  stroke-opacity: 0.7;
+  stroke: #57534e;
+  stroke-opacity: 0.6;
   stroke-width: 2.5;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
-.light .workflow-canvas .react-flow__edge-path {
-  stroke: #57534e;
-  stroke-opacity: 0.6;
+.dark .workflow-canvas .react-flow__edge-path {
+  stroke: #78716c;
+  stroke-opacity: 0.7;
 }
 
 /* Arrowhead marker color override */
 .workflow-canvas .react-flow__edge .react-flow__arrowhead {
-  fill: #78716c;
+  fill: #57534e;
 }
 
-.light .workflow-canvas .react-flow__edge .react-flow__arrowhead {
-  fill: #57534e;
+.dark .workflow-canvas .react-flow__edge .react-flow__arrowhead {
+  fill: #78716c;
 }
 
 /* ─── MiniMap ─── */
 .workflow-canvas .react-flow__minimap {
-  background: rgba(15, 23, 42, 0.82);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 12px;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   overflow: hidden;
   bottom: 16px;
   left: 16px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
 }
 
-.light .workflow-canvas .react-flow__minimap {
-  background: rgba(255, 255, 255, 0.88);
-  border-color: rgba(0, 0, 0, 0.08);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+.dark .workflow-canvas .react-flow__minimap {
+  background: rgba(15, 23, 42, 0.82);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: none;
 }
 
 /* ─── Selection glow ─── */

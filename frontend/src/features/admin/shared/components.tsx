@@ -26,23 +26,23 @@ export function PageHeader({
   title,
   description,
   action,
-  eyebrow = '后台管理协议',
+  eyebrow = '后台管理组件',
 }: PageHeaderProps) {
   return (
     <motion.div
       {...FADE_UP}
-      className="mb-8 flex flex-col gap-4 border-l-8 border-[#002045] pl-6 sm:flex-row sm:items-end sm:justify-between"
+      className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"
     >
       <div className="space-y-3">
-        <p className="font-mono text-[10px] font-bold tracking-[0.28em] text-[#74777f]">
+        <p className="text-xs font-semibold tracking-widest text-slate-400 uppercase">
           {eyebrow}
         </p>
-        <div className="space-y-2">
-          <h1 className="font-serif text-3xl font-black tracking-tight text-[#002045] md:text-4xl">
+        <div className="space-y-1">
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">
             {title}
           </h1>
           {description ? (
-            <p className="font-mono text-[11px] tracking-[0.18em] text-[#74777f]">
+            <p className="text-sm text-slate-500 max-w-2xl mt-2 leading-relaxed">
               {description}
             </p>
           ) : null}
@@ -65,24 +65,18 @@ export function KpiCard({ label, value, sub }: KpiCardProps) {
       {...FADE_UP}
       whileHover={{ y: -3 }}
       transition={{ duration: 0.2, ease: 'easeOut' }}
-      className="group relative overflow-hidden border border-[#c4c6cf] bg-[#f4f4f0] p-6 shadow-sm"
+      className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm ring-1 ring-slate-900/5 transition-all hover:shadow-md hover:ring-slate-900/10"
     >
-      <div
-        className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-        style={{
-          backgroundImage:
-            'repeating-linear-gradient(45deg, rgba(0,32,69,0.05), rgba(0,32,69,0.05) 1px, transparent 1px, transparent 12px)',
-        }}
-      />
-      <div className="absolute left-0 top-0 h-1 w-16 bg-[#002045]" />
-      <div className="relative z-10">
-        <p className="mb-3 inline-block border-b border-[#002045]/10 pb-2 font-mono text-[10px] font-bold tracking-[0.18em] text-[#002045]/60">
+      <div className="relative z-10 flex flex-col h-full justify-between">
+        <p className="mb-4 text-sm font-medium tracking-wide text-slate-500">
           {label}
         </p>
-        <p className="font-serif text-3xl font-black text-[#002045] md:text-4xl">{value}</p>
-        {sub ? (
-          <p className="mt-3 font-mono text-[10px] tracking-[0.14em] text-[#74777f]">{sub}</p>
-        ) : null}
+        <div>
+          <p className="text-3xl font-bold text-slate-900 md:text-4xl tracking-tight">{value}</p>
+          {sub ? (
+            <p className="mt-2 text-xs font-medium text-slate-400">{sub}</p>
+          ) : null}
+        </div>
       </div>
     </motion.section>
   );
@@ -106,7 +100,7 @@ export function AdminSelect({
       <select
         value={value}
         onChange={onChange}
-        className="peer w-full appearance-none border border-[#c4c6cf] bg-[#f4f4f0] px-4 py-3 pr-11 font-['Space_Grotesk'] text-[15px] font-medium text-[#002045] shadow-sm outline-none transition-colors hover:bg-[#efeeea] focus:border-[#002045]"
+        className="peer w-full appearance-none rounded-xl border border-slate-200 bg-white px-4 py-2.5 pr-11 text-sm font-medium text-slate-700 shadow-sm outline-none ring-1 ring-transparent transition-all hover:border-slate-300 hover:bg-slate-50 focus:border-indigo-500 focus:ring-indigo-500 focus:ring-offset-1"
       >
         {options.map((option) => (
           <option key={`${option.value || 'empty'}-${option.label}`} value={option.value}>
@@ -114,7 +108,7 @@ export function AdminSelect({
           </option>
         ))}
       </select>
-      <span className="material-symbols-outlined pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[20px] text-[#002045]/70 transition-transform peer-focus:-translate-y-[55%]">
+      <span className="material-symbols-outlined pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[20px] text-slate-400 transition-transform peer-focus:-translate-y-[55%] peer-focus:text-indigo-500">
         expand_more
       </span>
     </label>
@@ -130,10 +124,10 @@ export function TableSkeletonRows({ rows, cols }: TableSkeletonRowsProps) {
   return (
     <>
       {Array.from({ length: rows }).map((_, rowIndex) => (
-        <tr key={rowIndex} className="border-b border-[#c4c6cf]/30">
+        <tr key={rowIndex} className="border-b border-slate-100 last:border-0">
           {Array.from({ length: cols }).map((_, colIndex) => (
             <td key={colIndex} className="px-5 py-4">
-              <div className="h-4 w-20 animate-pulse bg-[#002045]/10" />
+              <div className="h-4 w-20 animate-pulse rounded bg-slate-100" />
             </td>
           ))}
         </tr>
@@ -162,22 +156,23 @@ export function Pagination({
   }
 
   return (
-    <div className="flex items-center justify-between border-t border-[#c4c6cf] bg-[#f4f4f0] px-5 py-4">
-      <span className="font-mono text-[10px] tracking-[0.16em] text-[#74777f]">
-        第 {page} / {totalPages} 页{total != null ? ` · 共 ${total.toLocaleString('zh-CN')} 条` : ''}
+    <div className="flex items-center justify-between border-t border-slate-200 bg-slate-50/50 px-6 py-4 rounded-b-2xl">
+      <span className="text-xs font-medium text-slate-500">
+        第 <span className="text-slate-900 font-semibold">{page}</span> / {totalPages} 页
+        {total != null ? ` · 共 ${total.toLocaleString('zh-CN')} 条记录` : ''}
       </span>
       <div className="flex gap-2">
         <button
           disabled={page <= 1 || loading}
           onClick={() => onPageChange(page - 1)}
-          className="border border-[#c4c6cf] bg-[#f4f4f0] px-4 py-2 font-mono text-[10px] tracking-[0.16em] text-[#002045] transition-colors hover:bg-[#ebe9df] disabled:cursor-not-allowed disabled:opacity-30"
+          className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-medium text-slate-700 shadow-sm transition-all hover:bg-slate-50 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-50"
         >
           上一页
         </button>
         <button
           disabled={page >= totalPages || loading}
           onClick={() => onPageChange(page + 1)}
-          className="border border-[#002045] bg-[#002045] px-4 py-2 font-mono text-[10px] tracking-[0.16em] text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-30"
+          className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-medium text-slate-700 shadow-sm transition-all hover:bg-slate-50 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-50"
         >
           下一页
         </button>
@@ -194,7 +189,7 @@ interface StatusBadgeProps {
 export function StatusBadge({ label, className = '' }: StatusBadgeProps) {
   return (
     <span
-      className={`inline-flex items-center border px-2 py-0.5 font-mono text-[10px] font-bold tracking-[0.16em] ${className}`}
+      className={`inline-flex items-center rounded-md px-2.5 py-1 text-xs font-medium ring-1 ring-inset ${className}`}
     >
       {label}
     </span>
@@ -210,12 +205,13 @@ export function EmptyState({ title, description }: EmptyStateProps) {
   return (
     <motion.div
       {...FADE_UP}
-      className="relative overflow-hidden border border-[#c4c6cf] bg-[#f4f4f0] px-6 py-12 text-center shadow-sm"
+      className="flex flex-col items-center justify-center overflow-hidden rounded-2xl border border-dashed border-slate-300 bg-slate-50/50 px-6 py-16 text-center"
     >
-      <div className="absolute left-4 top-4 h-5 w-5 border-l border-t border-[#002045]/25" />
-      <div className="absolute bottom-4 right-4 h-5 w-5 border-b border-r border-[#002045]/25" />
-      <p className="font-serif text-lg font-bold text-[#002045]">{title}</p>
-      <p className="mt-2 text-sm leading-6 text-[#74777f]">{description}</p>
+      <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-indigo-50 shadow-sm ring-1 ring-indigo-500/10">
+        <span className="material-symbols-outlined text-indigo-500">inbox</span>
+      </div>
+      <p className="text-base font-semibold text-slate-900">{title}</p>
+      <p className="mt-2 text-sm text-slate-500 max-w-sm">{description}</p>
     </motion.div>
   );
 }
@@ -237,9 +233,15 @@ export function ToastStack({ toasts, onDismiss }: ToastStackProps) {
   }
 
   const colorMap = {
-    success: 'border-emerald-200 bg-emerald-50 text-emerald-800',
-    error: 'border-red-200 bg-red-50 text-red-800',
-    info: 'border-blue-200 bg-blue-50 text-[#002045]',
+    success: 'border-emerald-200 bg-white text-emerald-800 shadow-emerald-500/5 ring-emerald-500/20',
+    error: 'border-red-200 bg-white text-red-800 shadow-red-500/5 ring-red-500/20',
+    info: 'border-blue-200 bg-white text-blue-800 shadow-blue-500/5 ring-blue-500/20',
+  };
+
+  const iconMap = {
+    success: 'check_circle',
+    error: 'error',
+    info: 'info',
   };
 
   return (
@@ -247,19 +249,19 @@ export function ToastStack({ toasts, onDismiss }: ToastStackProps) {
       {toasts.map((toast) => (
         <motion.div
           key={toast.id}
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: 20 }}
-          className={`flex items-center gap-4 border border-l-4 p-4 font-mono text-sm tracking-wide shadow-sm ${colorMap[toast.kind] ?? colorMap.info}`}
-          style={{
-            borderLeftColor:
-              toast.kind === 'error' ? '#ef4444' : toast.kind === 'success' ? '#10b981' : '#002045',
-          }}
+          initial={{ opacity: 0, y: 20, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.95 }}
+          transition={{ duration: 0.2 }}
+          className={`flex items-start gap-3 rounded-xl border p-4 shadow-lg ring-1 ring-inset ${colorMap[toast.kind] ?? colorMap.info} min-w-[300px]`}
         >
-          <span className="flex-1">{toast.message}</span>
+          <span className="material-symbols-outlined mt-0.5 text-[20px] opacity-80">
+            {iconMap[toast.kind]}
+          </span>
+          <span className="flex-1 text-sm font-medium leading-relaxed">{toast.message}</span>
           <button
             onClick={() => onDismiss(toast.id)}
-            className="material-symbols-outlined text-lg text-current opacity-50 transition-opacity hover:opacity-100"
+            className="material-symbols-outlined -mr-1 -mt-1 rounded-lg p-1 text-[18px] opacity-50 transition-all hover:bg-black/5 hover:opacity-100"
           >
             close
           </button>
@@ -268,3 +270,4 @@ export function ToastStack({ toasts, onDismiss }: ToastStackProps) {
     </div>
   );
 }
+

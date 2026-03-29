@@ -80,14 +80,14 @@ export default function NoticeEditor({
   };
 
   const inputClass =
-    'w-full bg-[#f4f4f0] border border-[#c4c6cf] rounded-none px-3 py-2 text-[#002045] text-sm placeholder:text-stone-400 focus:outline-none focus:border-[#002045] transition shadow-sm';
-  const errorClass = 'mt-1 text-xs text-red-700';
+    'w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 text-sm placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all shadow-sm';
+  const errorClass = 'mt-1.5 flex items-center gap-1 text-xs text-red-600 font-medium';
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div>
-        <label className="mb-1.5 block text-xs font-medium tracking-wider text-[#002045]">
-          标题 <span className="text-red-700">*</span>
+        <label className="mb-2 flex items-center gap-1 text-sm font-semibold text-slate-900">
+          标题 <span className="text-red-500">*</span>
         </label>
         <input
           type="text"
@@ -97,13 +97,18 @@ export default function NoticeEditor({
           maxLength={200}
           className={inputClass}
         />
-        {errors.title ? <p className={errorClass}>{errors.title}</p> : null}
-        <p className="mt-1 text-xs text-[#74777f]">{title.length}/200</p>
+        {errors.title ? (
+          <p className={errorClass}>
+            <span className="material-symbols-outlined text-[14px]">error</span>
+            {errors.title}
+          </p>
+        ) : null}
+        <p className="mt-1.5 text-right text-[11px] text-slate-400 font-medium">{title.length}/200</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <div>
-          <label className="mb-1.5 block text-xs font-medium tracking-wider text-[#002045]">公告类型</label>
+          <label className="mb-2 flex items-center gap-1 text-sm font-semibold text-slate-900">公告类型</label>
           <AdminSelect
             value={type}
             options={TYPE_OPTIONS}
@@ -112,7 +117,7 @@ export default function NoticeEditor({
         </div>
 
         <div>
-          <label className="mb-1.5 block text-xs font-medium tracking-wider text-[#002045]">状态</label>
+          <label className="mb-2 flex items-center gap-1 text-sm font-semibold text-slate-900">状态</label>
           <AdminSelect
             value={status}
             options={STATUS_OPTIONS}
@@ -122,33 +127,39 @@ export default function NoticeEditor({
       </div>
 
       <div>
-        <label className="mb-1.5 block text-xs font-medium tracking-wider text-[#002045]">失效时间</label>
+        <label className="mb-2 flex items-center gap-1 text-sm font-semibold text-slate-900">失效时间</label>
         <input
           type="datetime-local"
           value={expiresAt}
           onChange={(event) => setExpiresAt(event.target.value)}
           className={inputClass}
         />
-        {errors.expires_at ? <p className={errorClass}>{errors.expires_at}</p> : null}
+        {errors.expires_at ? (
+          <p className={errorClass}>
+            <span className="material-symbols-outlined text-[14px]">error</span>
+            {errors.expires_at}
+          </p>
+        ) : null}
       </div>
 
       <div>
-        <div className="mb-1.5 flex items-center justify-between">
-          <label className="text-xs font-medium tracking-wider text-[#002045]">
-            公告正文 <span className="text-red-700">*</span>
+        <div className="mb-2 flex items-center justify-between">
+          <label className="flex items-center gap-1 text-sm font-semibold text-slate-900">
+            公告正文 <span className="text-red-500">*</span>
           </label>
           <button
             type="button"
             onClick={() => setPreview((value) => !value)}
-            className="text-xs text-[#002045] transition-colors hover:underline"
+            className="flex items-center gap-1 text-xs font-semibold text-indigo-600 transition-colors hover:text-indigo-700"
           >
+            <span className="material-symbols-outlined text-[16px]">{preview ? 'edit' : 'visibility'}</span>
             {preview ? '返回编辑' : '预览内容'}
           </button>
         </div>
 
         {preview ? (
-          <div className="prose min-h-[300px] max-w-none rounded-none border border-[#c4c6cf] bg-[#f4f4f0] p-4 text-sm text-[#002045] shadow-sm">
-            {content ? <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown> : <p className="text-[#74777f]">暂无预览内容。</p>}
+          <div className="prose min-h-[300px] max-w-none rounded-xl border border-slate-200 bg-slate-50 p-6 text-sm text-slate-800 shadow-inner">
+            {content ? <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown> : <p className="text-slate-500 italic">暂无预览内容。</p>}
           </div>
         ) : (
           <textarea
@@ -156,20 +167,35 @@ export default function NoticeEditor({
             onChange={(event) => setContent(event.target.value)}
             placeholder="请使用 Markdown 编写公告内容"
             rows={14}
-            className={`${inputClass} min-h-[300px] resize-y py-3`}
+            className={`${inputClass} min-h-[300px] resize-y py-3 font-mono`}
           />
         )}
-        {errors.content ? <p className={errorClass}>{errors.content}</p> : null}
-        <p className="mt-1 text-xs text-[#74777f]">{content.length}/10000</p>
+        {errors.content ? (
+          <p className={errorClass}>
+            <span className="material-symbols-outlined text-[14px]">error</span>
+            {errors.content}
+          </p>
+        ) : null}
+        <p className="mt-1.5 text-right text-[11px] text-slate-400 font-medium">{content.length}/10000</p>
       </div>
 
-      <div className="flex justify-end gap-3 border-t border-[#c4c6cf] pt-4">
+      <div className="flex justify-end gap-3 pt-6 border-t border-slate-100">
         <button
           type="submit"
           disabled={isLoading}
-          className="rounded-none bg-[#002045] px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex items-center gap-2 rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-indigo-500 hover:shadow disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {isLoading ? '保存中...' : submitLabel}
+          {isLoading ? (
+            <>
+              <span className="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>
+              保存中...
+            </>
+          ) : (
+            <>
+              <span className="material-symbols-outlined text-[18px]">save</span>
+              {submitLabel}
+            </>
+          )}
         </button>
       </div>
     </form>

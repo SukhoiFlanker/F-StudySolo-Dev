@@ -17,7 +17,7 @@ export function resolveBadgeStyle(
 
   return {
     label: fallbackLabel ?? key ?? '未知',
-    className: 'border border-[#c4c6cf] bg-[#f4f4f0] text-[#74777f]',
+    className: 'border border-slate-200 bg-slate-50 text-slate-500',
   };
 }
 

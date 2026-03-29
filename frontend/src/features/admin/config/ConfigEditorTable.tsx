@@ -23,42 +23,66 @@ export function ConfigEditorTable({
   }
 
   return (
-    <div className="overflow-hidden rounded-none border border-[#c4c6cf] bg-[#f4f4f0] shadow-sm">
+    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm ring-1 ring-slate-900/5">
       <div className="overflow-x-auto">
-        <table className="w-full text-left">
+        <table className="w-full text-left border-collapse">
           <thead>
-            <tr className="border-b border-[#c4c6cf]">
-              {['配置键', '配置值', '说明', '最后更新时间', '操作'].map((header) => (
-                <th key={header} className="px-5 py-4 font-mono text-[10px] tracking-widest text-[#002045]">
+            <tr className="border-b border-slate-200 bg-slate-50/80">
+              {['配置键', '配置值', '说明', '最后更新', '操作'].map((header) => (
+                <th key={header} className="px-6 py-4 text-[11px] font-bold tracking-wider text-slate-500 uppercase whitespace-nowrap">
                   {header}
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-slate-100">
             {loading ? (
               <TableSkeletonRows rows={6} cols={5} />
             ) : (
               configs.map((entry) => (
-                <tr key={entry.key} className="border-b border-[#ddd8cf] align-top last:border-b-0">
-                  <td className="px-5 py-4 font-mono text-xs text-[#002045]">{entry.key}</td>
-                  <td className="px-5 py-4">
+                <tr key={entry.key} className="align-top transition-colors hover:bg-slate-50/50">
+                  <td className="px-6 py-5">
+                    <div className="flex items-center gap-2">
+                      <span className="material-symbols-outlined text-[16px] text-slate-400">tune</span>
+                      <span className="font-mono text-sm font-medium text-slate-900">{entry.key}</span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-5">
                     <textarea
                       value={draftValues[entry.key] ?? JSON.stringify(entry.value, null, 2)}
                       onChange={(event) => onChangeDraft(entry.key, event.target.value)}
                       rows={4}
-                      className="w-full rounded-none border border-[#c4c6cf] bg-[#f4f4f0] p-3 font-mono text-xs text-[#002045] shadow-sm focus:border-[#002045] focus:outline-none"
+                      className="w-full min-w-[300px] rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 font-mono text-xs leading-relaxed text-slate-700 shadow-sm transition-all focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
                     />
                   </td>
-                  <td className="px-5 py-4 text-sm text-[#74777f]">{entry.description ?? '—'}</td>
-                  <td className="px-5 py-4 font-mono text-xs text-[#74777f]">{formatDateTime(entry.updated_at)}</td>
-                  <td className="px-5 py-4">
+                  <td className="px-6 py-5">
+                    <span className="inline-block max-w-[200px] text-sm text-slate-500">
+                      {entry.description ?? '—'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-5 whitespace-nowrap">
+                    <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                      <span className="material-symbols-outlined text-[14px]">calendar_today</span>
+                      {formatDateTime(entry.updated_at)}
+                    </div>
+                  </td>
+                  <td className="px-6 py-5 whitespace-nowrap">
                     <button
                       onClick={() => onSave(entry)}
                       disabled={savingKey === entry.key}
-                      className="rounded-none border border-[#002045] bg-[#002045] px-4 py-2 text-sm font-medium text-white shadow-sm hover:opacity-90 disabled:opacity-50"
+                      className="flex items-center justify-center gap-1.5 rounded-xl bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 transition-all hover:bg-indigo-50 hover:text-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      {savingKey === entry.key ? '保存中...' : '保存'}
+                      {savingKey === entry.key ? (
+                        <>
+                          <span className="material-symbols-outlined animate-spin text-[16px]">progress_activity</span>
+                          保存中...
+                        </>
+                      ) : (
+                        <>
+                          <span className="material-symbols-outlined text-[16px]">save</span>
+                          保存
+                        </>
+                      )}
                     </button>
                   </td>
                 </tr>

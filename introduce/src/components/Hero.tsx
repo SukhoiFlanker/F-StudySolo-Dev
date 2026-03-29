@@ -1,203 +1,259 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useInView } from '../hooks/useInView';
-import { useScramble } from '../hooks/useScramble';
 
-interface HeroProps {
-  onStart?: () => void;
-  onGuide?: () => void;
+/* === MOUSE PARALLAX HOOK === */
+function useParallax() {
+  const [pos, setPos] = useState({ x: 0, y: 0 });
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      const x = (e.clientX / window.innerWidth - 0.5) * 20;
+      const y = (e.clientY / window.innerHeight - 0.5) * 20;
+      setPos({ x, y });
+    };
+    window.addEventListener('mousemove', handler, { passive: true });
+    return () => window.removeEventListener('mousemove', handler);
+  }, []);
+  return pos;
 }
 
+/* === ANIMATED COUNTER === */
+function Counter({ to, suffix = '', duration = 2000 }: { to: number; suffix?: string; duration?: number }) {
+  const [count, setCount] = useState(0);
+  const [ref, inView] = useInView<HTMLSpanElement>(0.5);
+  const started = useRef(false);
+
+  useEffect(() => {
+    if (!inView || started.current) return;
+    started.current = true;
+    const start = performance.now();
+    const frame = (now: number) => {
+      const progress = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setCount(Math.round(eased * to));
+      if (progress < 1) requestAnimationFrame(frame);
+    };
+    requestAnimationFrame(frame);
+  }, [inView]);
+
+  return <span ref={ref}>{count}{suffix}</span>;
+}
+
+/* === TICKER ITEMS === */
 const TICKER_ITEMS = [
-  { label: 'DAG Executor', value: 'ONLINE' },
-  { label: '18 种工作流节点', value: 'ACTIVE' },
-  { label: '8 AI 平台 × 17+ 模型', value: 'ROUTING' },
-  { label: 'SSE 流式推送', value: 'STREAMING' },
-  { label: 'Supabase + RLS', value: 'SECURED' },
-  { label: '前端 React 19 + Next.js', value: 'RUNNING' },
-  { label: '后端 Python FastAPI', value: 'PORT 2038' },
-  { label: '华科 AI 智能体大赛', value: 'HUST 2025' },
-  { label: 'StudyFlow.1037solo.com', value: 'LIVE' },
+  '18 exectuion node types', 'DAG topology sort engine', 'SSE real-time streaming',
+  'DeepSeek V3 router', 'Qwen-MAX parallel execution', 'RLS row-level security',
+  'FastAPI async backend', 'Next.js 14 SSR frontend', 'Supabase Postgres DB',
+  'Multi-tenant isolation', 'HUST AI Agent Competition', 'Open Source on GitHub',
 ];
 
 const STATS = [
-  { value: '18', label: '种专业学习节点', suffix: '' },
-  { value: '8', label: 'AI 平台接入', suffix: '' },
-  { value: '17', label: '+ 模型 SKU', suffix: '' },
-  { value: '7', label: '种 SSE 事件类型', suffix: '' },
+  { label: 'Execution Nodes', value: 18, suffix: '' },
+  { label: 'AI Models Routed', value: 8, suffix: '+' },
+  { label: 'Workflow Steps', value: 12, suffix: '+' },
+  { label: 'Response Latency', value: 800, suffix: 'ms' },
 ];
 
+interface HeroProps {
+  onStart: () => void;
+  onGuide: () => void;
+}
+
 export default function Hero({ onStart, onGuide }: HeroProps) {
-  const [ref] = useInView<HTMLDivElement>(0.1);
-  const titleText = '可视化编排\nAI学习智能体';
-  const scrambled = useScramble('StudySolo', true, 35);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const parallax = useParallax();
+  const [titleVisible, setTitleVisible] = useState(false);
 
-  // Grid dot animation
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    let animId: number;
-    let t = 0;
-
-    const resize = () => {
-      canvas.width = canvas.offsetWidth;
-      canvas.height = canvas.offsetHeight;
-    };
-    resize();
-    window.addEventListener('resize', resize);
-
-    const draw = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      const spacing = 60;
-      const cols = Math.ceil(canvas.width / spacing);
-      const rows = Math.ceil(canvas.height / spacing);
-
-      for (let x = 0; x <= cols; x++) {
-        for (let y = 0; y <= rows; y++) {
-          const px = x * spacing;
-          const py = y * spacing;
-          const wave = Math.sin(x * 0.5 + t) * Math.cos(y * 0.5 + t * 0.7);
-          const alpha = Math.max(0, Math.min(0.35, 0.05 + wave * 0.12));
-          ctx.beginPath();
-          ctx.arc(px, py, 1.5, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(0, 232, 122, ${alpha})`;
-          ctx.fill();
-        }
-      }
-      t += 0.008;
-      animId = requestAnimationFrame(draw);
-    };
-    draw();
-
-    return () => {
-      window.removeEventListener('resize', resize);
-      cancelAnimationFrame(animId);
-    };
+    const t = setTimeout(() => setTitleVisible(true), 300);
+    return () => clearTimeout(t);
   }, []);
 
   return (
-    <section className="hero" ref={ref}>
-      {/* Animated dot grid */}
-      <canvas
-        ref={canvasRef}
-        style={{
+    <section
+      id="hero"
+      className="grid-bg"
+      style={{
+        position: 'relative',
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center',
+        overflow: 'hidden',
+        paddingTop: 80,
+      }}
+    >
+      {/* Parallax Background Glow */}
+      <div style={{
+        position: 'absolute',
+        inset: 0,
+        pointerEvents: 'none',
+        transform: `translate(${parallax.x * 0.3}px, ${parallax.y * 0.3}px)`,
+        transition: 'transform 0.1s ease-out',
+      }}>
+        <div style={{
           position: 'absolute',
-          inset: 0,
-          width: '100%',
-          height: '100%',
-          opacity: 0.6,
-          pointerEvents: 'none',
-        }}
-      />
+          top: '30%',
+          left: '20%',
+          width: 600,
+          height: 600,
+          background: 'radial-gradient(circle, rgba(0,255,136,0.04) 0%, transparent 70%)',
+          borderRadius: '50%',
+        }} />
+        <div style={{
+          position: 'absolute',
+          bottom: '20%',
+          right: '15%',
+          width: 400,
+          height: 400,
+          background: 'radial-gradient(circle, rgba(0,212,255,0.04) 0%, transparent 70%)',
+          borderRadius: '50%',
+        }} />
+      </div>
 
-      {/* Grid line bg */}
-      <div className="hero-grid-bg" />
+      {/* Status Bar */}
+      <div style={{ position: 'absolute', top: 72, left: 0, right: 0, display: 'flex', justifyContent: 'center' }}>
+        <div className="label-green">
+          <span className="dot-live" />
+          SIGNAL: CONNECTED · HUST AI AGENT COMPETITION 2025
+        </div>
+      </div>
 
-      {/* Scan line */}
-      <div className="hero-scan-line" />
+      {/* Main Content */}
+      <div style={{ position: 'relative', zIndex: 10, textAlign: 'center', padding: '0 24px', maxWidth: 900 }}>
 
-      {/* Main content */}
-      <div className="hero-content">
         {/* Eyebrow */}
-        <div className="hero-eyebrow animate-in">
-          <div className="signal-tag">华科 AI 智能体大赛参赛作品</div>
-          <div style={{
-            fontFamily: 'var(--font-mono)',
-            fontSize: '0.72rem',
-            color: 'var(--text-muted)',
-          }}>
-            <span style={{ color: 'var(--green)' }}>{scrambled}</span>
-            <span className="terminal-cursor">_</span>
-          </div>
+        <div style={{
+          fontFamily: 'var(--font-mono)',
+          fontSize: 12,
+          color: 'var(--text-dim)',
+          letterSpacing: '0.15em',
+          marginBottom: 32,
+          opacity: titleVisible ? 1 : 0,
+          transition: 'opacity 0.6s ease',
+        }}>
+          {'>'} STUDYSOLO v2.0 — AI WORKFLOW ENGINE
         </div>
 
-        {/* Main title */}
-        <h1 className="hero-title animate-in animate-in-delay-1">
-          {titleText.split('\n').map((line, i) => (
-            <span key={i} style={{ display: 'block' }}>
-              {i === 1 ? (
-                <>
-                  <span className="hero-title-accent">{line.slice(0, 2)}</span>
-                  {line.slice(2)}
-                </>
-              ) : line}
-            </span>
-          ))}
+        {/* Main Title */}
+        <h1 style={{
+          fontFamily: 'var(--font-display)',
+          fontWeight: 800,
+          fontSize: 'clamp(48px, 8vw, 88px)',
+          lineHeight: 1.05,
+          letterSpacing: '-0.03em',
+          color: 'var(--text-primary)',
+          marginBottom: 16,
+          opacity: titleVisible ? 1 : 0,
+          transform: titleVisible ? 'translateY(0)' : 'translateY(20px)',
+          transition: 'opacity 0.8s ease 0.1s, transform 0.8s ease 0.1s',
+        }}>
+          把学习
+          <br />
+          <span style={{ color: 'var(--accent-green)' }}>变成系统</span>
         </h1>
 
-        {/* Subtitle */}
-        <p className="hero-subtitle animate-in animate-in-delay-2">
-          用自然语言描述学习目标，系统自动生成多节点 DAG 工作流。18 种专业学习节点在执行引擎调度下按依赖顺序运行，全程 SSE 实时可观测。不是对话助手，是完整的学习智能体平台。
+        {/* Subtitle - terminal style */}
+        <div style={{
+          fontFamily: 'var(--font-mono)',
+          fontSize: 'clamp(13px, 2vw, 16px)',
+          color: 'var(--accent-cyan)',
+          marginBottom: 40,
+          opacity: titleVisible ? 1 : 0,
+          transition: 'opacity 0.8s ease 0.2s',
+          letterSpacing: '0.02em',
+        }}>
+          {'> '}18 nodes · 8 AI platforms · SSE real-time streaming · RLS security
+        </div>
+
+        {/* Description */}
+        <p style={{
+          fontSize: 17,
+          color: 'var(--text-secondary)',
+          maxWidth: 560,
+          margin: '0 auto 48px',
+          lineHeight: 1.7,
+          opacity: titleVisible ? 1 : 0,
+          transition: 'opacity 0.8s ease 0.3s',
+        }}>
+          专为华科 AI 智能体大赛打造。不是对话框，是真实的 DAG 算子引擎。
+          用一句自然语言，驱动数十个节点自动串联执行完整学习工作流。
         </p>
 
-        {/* CTAs */}
-        <div className="hero-cta animate-in animate-in-delay-3">
-          <a
-            href="https://StudyFlow.1037solo.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn btn-primary"
-          >
-            <span>立即体验平台</span>
-            <span>↗</span>
-          </a>
-          <a
-            href="https://github.com/AIMFllys/StudySolo"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn btn-outline"
-          >
-            <span>⊹</span>
-            <span>GitHub 开源</span>
-          </a>
-          <button className="btn btn-ghost" onClick={onGuide}>
-            文档中心 →
+        {/* CTA Buttons */}
+        <div style={{
+          display: 'flex',
+          gap: 16,
+          justifyContent: 'center',
+          flexWrap: 'wrap',
+          opacity: titleVisible ? 1 : 0,
+          transition: 'opacity 0.8s ease 0.4s',
+        }}>
+          <button className="btn-primary" onClick={onStart} style={{ fontSize: 15, padding: '14px 36px' }}>
+            立即体验平台 →
+          </button>
+          <button className="btn-secondary" onClick={onGuide} style={{ fontSize: 15, padding: '14px 36px' }}>
+            查看 GitHub 源码
           </button>
         </div>
-
-        {/* Meta info */}
-        <div className="hero-meta animate-in animate-in-delay-4">
-          {[
-            ['b23.tv/uPd6KUr', 'Demo 视频'],
-            ['StudyFlow.1037solo.com', '生产环境'],
-            ['AIMFllys/StudySolo', 'GitHub'],
-          ].map(([url, label]) => (
-            <div key={label} className="hero-meta-item">
-              <span>◈</span>
-              <span>{label}:</span>
-              <span style={{ color: 'var(--green)', fontSize: '0.7rem' }}>{url}</span>
-            </div>
-          ))}
-        </div>
       </div>
 
-      {/* Stats ticker */}
-      <div className="ticker-wrapper animate-in animate-in-delay-5">
+      {/* Stats Row */}
+      <div style={{
+        position: 'relative',
+        zIndex: 10,
+        marginTop: 80,
+        width: '100%',
+        maxWidth: 900,
+        padding: '0 24px',
+        display: 'grid',
+        gridTemplateColumns: 'repeat(4, 1fr)',
+        gap: 1,
+        background: 'var(--border-subtle)',
+        opacity: titleVisible ? 1 : 0,
+        transition: 'opacity 0.8s ease 0.5s',
+      }}>
+        {STATS.map((s) => (
+          <div key={s.label} style={{
+            background: 'var(--bg-panel)',
+            padding: '24px 20px',
+            textAlign: 'center',
+            borderTop: '1px solid var(--border-subtle)',
+          }}>
+            <div className="counter-number" style={{ fontSize: 32, marginBottom: 6 }}>
+              <Counter to={s.value} suffix={s.suffix} />
+            </div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-dim)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+              {s.label}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Ticker */}
+      <div style={{
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        borderTop: '1px solid var(--border-subtle)',
+        backgroundColor: 'var(--bg-panel)',
+        padding: '10px 0',
+        overflow: 'hidden',
+      }}>
         <div className="ticker-track">
           {[...TICKER_ITEMS, ...TICKER_ITEMS].map((item, i) => (
-            <div key={i} className="ticker-item">
-              <span>{item.label}</span>
-              <span className="accent">·</span>
-              <span className="accent">{item.value}</span>
-              <span style={{ color: 'var(--text-faint)', marginLeft: '1rem' }}>／</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Stats row */}
-      <div style={{ marginTop: '3rem', maxWidth: 1180, margin: '3rem auto 0', padding: '0 1.5rem', position: 'relative', zIndex: 2 }}>
-        <div className="stats-bar animate-in animate-in-delay-5">
-          {STATS.map(stat => (
-            <div key={stat.label} className="stat-cell">
-              <div className="stat-number">
-                {stat.value}<span className="accent">{stat.suffix}</span>
-              </div>
-              <div className="stat-label">{stat.label}</div>
-            </div>
+            <span key={i} style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: 11,
+              color: 'var(--text-dim)',
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              padding: '0 32px',
+              whiteSpace: 'nowrap',
+            }}>
+              <span style={{ color: 'var(--accent-green)', marginRight: 12 }}>◆</span>
+              {item}
+            </span>
           ))}
         </div>
       </div>

@@ -1,313 +1,418 @@
 import { useState, useEffect, useRef } from 'react';
 import { useInView } from '../hooks/useInView';
 
-// Accurate node data from competition spec
-const DAG_NODES = [
-  { id: 'trigger', label: 'trigger_input', type: '输入节点', icon: '▸', category: 'input' },
-  { id: 'analyzer', label: 'ai_analyzer', type: '分析节点', icon: '◈', category: 'analyze' },
-  { id: 'outline', label: 'outline_gen', type: '生成节点', icon: '⊞', category: 'generate' },
-  { id: 'summary', label: 'summary', type: '生成节点', icon: '◉', category: 'generate' },
-  { id: 'flashcard', label: 'flashcard', type: '生成节点', icon: '⊹', category: 'generate' },
-  { id: 'export', label: 'export_file', type: '输出节点', icon: '↓', category: 'output' },
+/* DAG execution steps based on real system architecture */
+const DAG_STEPS = [
+  {
+    id: 'trigger',
+    label: 'trigger_input',
+    type: 'INPUT',
+    color: '#00ff88',
+    desc: '接收自然语言学习目标，解析 constraint 参数',
+    output: '{ goal: "学习华科大学", depth: 4, style: "summary" }',
+    lines: ['Parsing user intent...', 'Extracting constraints...', 'Building context payload...', 'DONE ✓'],
+    duration: '12ms',
+  },
+  {
+    id: 'analyzer',
+    label: 'ai_analyzer',
+    type: 'AI',
+    color: '#00d4ff',
+    desc: '调用 DeepSeek-V3 进行学习目标意图分析',
+    output: '{ chapters: 6, topics: ["起源","建设","科研","荣誉"...], style: "academic" }',
+    lines: ['→ DeepSeek-V3 API call', 'Streaming response...', 'Parsing structured output...', 'DONE ✓'],
+    duration: '841ms',
+  },
+  {
+    id: 'outline',
+    label: 'outline_gen',
+    type: 'AI',
+    color: '#7c3aed',
+    desc: '生成包含 4-8 个高质量章节的学习大纲',
+    output: '{ outline: [...6 chapters with subtopics...], word_target: 12000 }',
+    lines: ['Activating Qwen-MAX...', 'Generating structured outline...', 'Validating chapter depth...', 'DONE ✓'],
+    duration: '1.2s',
+  },
+  {
+    id: 'parallel_exec',
+    label: '⎇ parallel_group',
+    type: 'PARALLEL',
+    color: '#ff6b35',
+    desc: '并行组：为每个章节同时启动内容推导任务',
+    output: '6 concurrent tasks spawned → [task_0, task_1, task_2, task_3, task_4, task_5]',
+    lines: ['Spawning 6 parallel tasks...', 'Line 1: RUNNING...', 'Line 2: RUNNING...', 'Joining all results...', 'DONE ✓'],
+    duration: '3.4s (parallel)',
+  },
+  {
+    id: 'flashcard',
+    label: 'flashcard_pkg',
+    type: 'PROCESSING',
+    color: '#00d4ff',
+    desc: '从各章节内容提取关键概念，构建记忆闪卡包',
+    output: '[{ front: "Q: ...", back: "A: ..." }, ...28 cards]',
+    lines: ['Processing chapter outputs...', 'Extracting key concepts...', 'Building card index...', 'DONE ✓'],
+    duration: '234ms',
+  },
+  {
+    id: 'export',
+    label: 'export_file',
+    type: 'OUTPUT',
+    color: '#00ff88',
+    desc: '整合所有输出，生成 Markdown 学习文档并归档',
+    output: '/exports/学习华科大学_2025.md (12,847 tokens, ~9,600 words)',
+    lines: ['Merging all chapter outputs...', 'Formatting Markdown...', 'Uploading to storage...', 'DONE ✓'],
+    duration: '89ms',
+  },
 ];
 
-const LOG_SEQUENCE = [
-  { ts: '00:00.000', type: 'info', msg: 'DAG Executor initialized' },
-  { ts: '00:00.012', type: 'info', msg: 'Topo sort: 6 nodes, 5 edges' },
-  { ts: '00:00.015', type: 'info', msg: '[trigger_input] → RUNNING' },
-  { ts: '00:00.089', type: 'ok',   msg: '[trigger_input] → DONE (74ms)' },
-  { ts: '00:00.091', type: 'info', msg: '[ai_analyzer] → RUNNING' },
-  { ts: '00:00.093', type: 'model', msg: 'Router: DeepSeek-V3 (native_first)' },
-  { ts: '00:02.341', type: 'ok',   msg: '[ai_analyzer] → DONE (2250ms, 847 tokens)' },
-  { ts: '00:02.343', type: 'info', msg: '[outline_gen] → RUNNING' },
-  { ts: '00:02.344', type: 'model', msg: 'Router: Qwen-MAX (capability_fixed)' },
-  { ts: '00:04.891', type: 'ok',   msg: '[outline_gen] → DONE (2548ms)' },
-  { ts: '00:04.892', type: 'info', msg: '[summary] → RUNNING' },
-  { ts: '00:07.234', type: 'ok',   msg: '[summary] → DONE (2342ms)' },
-  { ts: '00:07.235', type: 'info', msg: '[flashcard] → RUNNING' },
-  { ts: '00:09.102', type: 'ok',   msg: '[flashcard] → DONE (JSON structured output)' },
-  { ts: '00:09.104', type: 'info', msg: '[export_file] → RUNNING' },
-  { ts: '00:09.287', type: 'ok',   msg: '[export_file] → DONE (Markdown exported)' },
-  { ts: '00:09.290', type: 'info', msg: 'workflow_done · total: 9.29s · nodes: 6/6' },
-];
-
-const NODE_COLORS: Record<string, string> = {
-  input: 'var(--green)',
-  analyze: 'var(--ice)',
-  generate: 'var(--orange)',
-  output: 'var(--green)',
-};
-
-type NodeStatus = 'pending' | 'running' | 'done';
-
-export default function WorkflowDemo() {
-  const [ref, inView] = useInView<HTMLDivElement>(0.15);
-  const [isRunning, setIsRunning] = useState(false);
-  const [nodeStatuses, setNodeStatuses] = useState<Record<string, NodeStatus>>(
-    Object.fromEntries(DAG_NODES.map(n => [n.id, 'pending']))
-  );
-  const [nodeBars, setNodeBars] = useState<Record<string, number>>(
-    Object.fromEntries(DAG_NODES.map(n => [n.id, 0]))
-  );
-  const [logs, setLogs] = useState<typeof LOG_SEQUENCE>([]);
-  const logRef = useRef<HTMLDivElement>(null);
-  const timeoutRefs = useRef<ReturnType<typeof setTimeout>[]>([]);
-
-  const reset = () => {
-    timeoutRefs.current.forEach(clearTimeout);
-    timeoutRefs.current = [];
-    setIsRunning(false);
-    setNodeStatuses(Object.fromEntries(DAG_NODES.map(n => [n.id, 'pending'])));
-    setNodeBars(Object.fromEntries(DAG_NODES.map(n => [n.id, 0])));
-    setLogs([]);
-  };
-
-  const run = () => {
-    reset();
-    setIsRunning(true);
-
-    const nodeTimings = [
-      { id: 'trigger',   start: 100,  end: 600   },
-      { id: 'analyzer',  start: 700,  end: 3200  },
-      { id: 'outline',   start: 3300, end: 5500  },
-      { id: 'summary',   start: 5600, end: 7800  },
-      { id: 'flashcard', start: 7900, end: 9800  },
-      { id: 'export',    start: 9900, end: 10500 },
-    ];
-
-    nodeTimings.forEach(({ id, start, end }) => {
-      const t1 = setTimeout(() => {
-        setNodeStatuses(prev => ({ ...prev, [id]: 'running' }));
-        // Progress bar
-        const step = 50;
-        const steps = Math.floor((end - start) / step);
-        for (let s = 1; s <= steps; s++) {
-          const tp = setTimeout(() => {
-            setNodeBars(prev => ({ ...prev, [id]: Math.min(100, (s / steps) * 100) }));
-          }, s * step);
-          timeoutRefs.current.push(tp);
-        }
-      }, start);
-
-      const t2 = setTimeout(() => {
-        setNodeStatuses(prev => ({ ...prev, [id]: 'done' }));
-        setNodeBars(prev => ({ ...prev, [id]: 100 }));
-      }, end);
-
-      timeoutRefs.current.push(t1, t2);
-    });
-
-    // Logs
-    let logDelay = 100;
-    LOG_SEQUENCE.forEach((log, i) => {
-      const delay = 100 + i * 580;
-      logDelay = delay;
-      const t = setTimeout(() => {
-        setLogs(prev => [...prev, log]);
-        if (logRef.current) {
-          logRef.current.scrollTop = logRef.current.scrollHeight;
-        }
-      }, delay);
-      timeoutRefs.current.push(t);
-    });
-
-    const tDone = setTimeout(() => setIsRunning(false), logDelay + 600);
-    timeoutRefs.current.push(tDone);
-  };
+/* Animated terminal-style log output */
+function LogLines({ lines, active }: { lines: string[]; active: boolean }) {
+  const [visibleCount, setVisibleCount] = useState(0);
 
   useEffect(() => {
-    return () => timeoutRefs.current.forEach(clearTimeout);
-  }, []);
+    if (!active) { setVisibleCount(0); return; }
+    let i = 0;
+    const interval = setInterval(() => {
+      i++;
+      setVisibleCount(i);
+      if (i >= lines.length) clearInterval(interval);
+    }, 350);
+    return () => clearInterval(interval);
+  }, [active, lines]);
 
   return (
-    <section className="section workflow-section" id="workflow" ref={ref}>
-      <div className="container">
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1.5rem', marginBottom: '2.5rem' }}>
-          <div className={`section-header reveal${inView ? ' visible' : ''}`} style={{ marginBottom: 0 }}>
-            <div className="signal-tag">Live Demo</div>
-            <h2 className="section-title">DAG 执行引擎实况</h2>
-            <p className="section-desc" style={{ maxWidth: 480 }}>
-              自研执行引擎将工作流图拓扑排序，通过 ExecutionContext 黑板模型在节点间传递结果，SSE 全程流式推送。
-            </p>
-          </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      {lines.slice(0, visibleCount).map((line, idx) => (
+        <div key={idx} style={{
+          fontFamily: 'var(--font-mono)',
+          fontSize: 12,
+          color: line.includes('DONE') ? 'var(--accent-green)' : 'var(--text-secondary)',
+          opacity: 1,
+          animation: 'fadeIn 0.2s ease',
+        }}>
+          {line}
+        </div>
+      ))}
+      {active && visibleCount < lines.length && (
+        <div className="cursor" style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--accent-green)' }} />
+      )}
+    </div>
+  );
+}
 
-          <div style={{ display: 'flex', gap: '0.75rem', flexShrink: 0 }}>
+export default function WorkflowDemo() {
+  const [ref, inView] = useInView<HTMLDivElement>(0.2);
+  const [activeStep, setActiveStep] = useState(0);
+  const [isRunning, setIsRunning] = useState(false);
+  const [completedSteps, setCompletedSteps] = useState<number[]>([]);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const startExecution = () => {
+    if (isRunning) return;
+    setIsRunning(true);
+    setCompletedSteps([]);
+    setActiveStep(0);
+    let step = 0;
+    intervalRef.current = setInterval(() => {
+      setCompletedSteps(prev => [...prev, step]);
+      step++;
+      if (step < DAG_STEPS.length) {
+        setActiveStep(step);
+      } else {
+        clearInterval(intervalRef.current!);
+        setIsRunning(false);
+      }
+    }, 2200);
+  };
+
+  const reset = () => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    setIsRunning(false);
+    setCompletedSteps([]);
+    setActiveStep(0);
+  };
+
+  useEffect(() => () => { if (intervalRef.current) clearInterval(intervalRef.current); }, []);
+
+  return (
+    <section id="workflow-demo" ref={ref} style={{
+      background: 'var(--bg-void)',
+      borderTop: '1px solid var(--border-subtle)',
+      padding: '120px 0',
+    }}>
+      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 32px' }}>
+
+        {/* Header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 48, flexWrap: 'wrap', gap: 24 }}>
+          <div>
+            <div className="label-green" style={{ marginBottom: 20 }}>
+              LIVE DAG EXECUTION
+            </div>
+            <h2 style={{
+              fontFamily: 'var(--font-display)',
+              fontWeight: 800,
+              fontSize: 'clamp(32px, 4vw, 48px)',
+              letterSpacing: '-0.03em',
+              color: 'var(--text-primary)',
+              lineHeight: 1.1,
+            }}>
+              工作流实况演示
+            </h2>
+          </div>
+          <div style={{ display: 'flex', gap: 12 }}>
             <button
-              className="btn btn-primary"
-              onClick={run}
+              onClick={startExecution}
               disabled={isRunning}
-              style={{ opacity: isRunning ? 0.6 : 1 }}
+              className="btn-primary"
+              style={{ opacity: isRunning ? 0.5 : 1 }}
             >
-              {isRunning ? (
-                <>
-                  <span style={{ display: 'inline-block', animation: 'rotate 0.8s linear infinite' }}>⟳</span>
-                  执行中...
-                </>
-              ) : '▶  运行工作流'}
+              {isRunning ? '▶ 执行中...' : '▶ 运行工作流'}
             </button>
-            <button className="btn btn-outline" onClick={reset}>↺ 重置</button>
+            <button onClick={reset} className="btn-secondary">
+              ↺ 重置
+            </button>
           </div>
         </div>
 
-        {/* Main layout */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-          {/* DAG Canvas */}
-          <div className={`dag-canvas reveal${inView ? ' visible' : ''} reveal-delay-1`}>
-            <div className="dag-header">
-              <div className="dag-dot" style={{ background: '#ff5f57' }} />
-              <div className="dag-dot" style={{ background: '#febc2e' }} />
-              <div className="dag-dot" style={{ background: '#28c840' }} />
-              <span className="dag-title">workflow_canvas.dag</span>
-              {isRunning && (
-                <span style={{
-                  marginLeft: 'auto',
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: '0.65rem',
-                  color: 'var(--green)',
-                }}>
-                  ◉ EXECUTING
-                </span>
-              )}
+        {/* Main Canvas */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 380px',
+          gap: 1,
+          background: 'var(--border-subtle)',
+          opacity: inView ? 1 : 0,
+          transform: inView ? 'translateY(0)' : 'translateY(24px)',
+          transition: 'opacity 0.7s ease, transform 0.7s ease',
+        }}>
+
+          {/* Left: DAG Node Timeline */}
+          <div style={{ background: 'var(--bg-surface)' }}>
+            {/* Canvas Header */}
+            <div style={{
+              padding: '12px 20px',
+              borderBottom: '1px solid var(--border-subtle)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+            }}>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-dim)', letterSpacing: '0.1em' }}>
+                WORKFLOW CANVAS
+              </span>
+              <span style={{ marginLeft: 'auto', fontFamily: 'var(--font-mono)', fontSize: 11 }}>
+                {isRunning
+                  ? <span style={{ color: 'var(--accent-orange)' }}>● EXECUTING</span>
+                  : completedSteps.length === DAG_STEPS.length
+                  ? <span style={{ color: 'var(--accent-green)' }}>● COMPLETED</span>
+                  : <span style={{ color: 'var(--text-dim)' }}>○ IDLE</span>
+                }
+              </span>
             </div>
 
-            <div className="dag-body">
-              {DAG_NODES.map((node, i) => {
-                const status = nodeStatuses[node.id];
-                const bar = nodeBars[node.id];
+            {/* Node List */}
+            <div style={{ padding: '24px 32px', display: 'flex', flexDirection: 'column', gap: 0 }}>
+              {DAG_STEPS.map((step, index) => {
+                const isDone = completedSteps.includes(index);
+                const isActive = activeStep === index && isRunning;
+
                 return (
-                  <div key={node.id}>
-                    <div className={`dag-node ${status}`}>
-                      <span className="dag-node-icon" style={{ color: NODE_COLORS[node.category] }}>
-                        {node.icon}
-                      </span>
-                      <div className="dag-node-info">
-                        <div className="dag-node-name">{node.label}</div>
-                        <div className="dag-node-type">{node.type}</div>
-                      </div>
-                      <div className={`dag-node-status ${status}`}>
-                        {status === 'running' ? 'RUNNING' : status === 'done' ? 'DONE' : 'PENDING'}
-                      </div>
-                      {status !== 'pending' && (
-                        <div className="dag-node-bar" style={{ width: `${bar}%` }} />
+                  <div key={step.id} style={{ display: 'flex', alignItems: 'stretch', gap: 0 }}>
+                    {/* Timeline Line + Node */}
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 32, marginRight: 16, flexShrink: 0 }}>
+                      {/* Connector Top */}
+                      {index > 0 && (
+                        <div style={{
+                          width: 2,
+                          flex: '0 0 20px',
+                          background: completedSteps.includes(index - 1) ? step.color : 'var(--border-subtle)',
+                          transition: 'background 0.4s ease',
+                        }} />
+                      )}
+                      {index === 0 && <div style={{ flex: '0 0 20px' }} />}
+
+                      {/* Node Dot */}
+                      <div style={{
+                        width: 12,
+                        height: 12,
+                        borderRadius: '50%',
+                        border: `2px solid ${isDone || isActive ? step.color : 'var(--text-dim)'}`,
+                        background: isDone ? step.color : isActive ? `${step.color}33` : 'var(--bg-void)',
+                        boxShadow: isActive ? `0 0 10px ${step.color}` : 'none',
+                        transition: 'all 0.3s ease',
+                        flexShrink: 0,
+                      }} />
+
+                      {/* Connector Bottom */}
+                      {index < DAG_STEPS.length - 1 && (
+                        <div style={{
+                          width: 2,
+                          flex: 1,
+                          minHeight: 20,
+                          background: isDone ? step.color : 'var(--border-subtle)',
+                          transition: 'background 0.4s ease 0.5s',
+                        }} />
                       )}
                     </div>
 
-                    {/* Connector */}
-                    {i < DAG_NODES.length - 1 && (
-                      <div className="dag-connector">
-                        {[0,1,2].map(d => (
-                          <div
-                            key={d}
-                            className={`dag-connector-dot${status === 'done' ? ' active' : ''}`}
-                            style={{ transitionDelay: `${d * 100}ms` }}
-                          />
-                        ))}
+                    {/* Node Card */}
+                    <div
+                      onClick={() => setActiveStep(index)}
+                      style={{
+                        flex: 1,
+                        padding: '16px 20px',
+                        marginBottom: 8,
+                        background: isActive ? 'var(--bg-hover)' : 'var(--bg-panel)',
+                        border: `1px solid ${isActive ? step.color + '55' : 'var(--border-subtle)'}`,
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        boxShadow: isActive ? `0 0 20px ${step.color}11` : 'none',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6 }}>
+                        <span style={{
+                          fontFamily: 'var(--font-mono)',
+                          fontSize: 11,
+                          color: isDone || isActive ? step.color : 'var(--text-dim)',
+                          letterSpacing: '0.08em',
+                          fontWeight: 600,
+                        }}>
+                          {step.type}
+                        </span>
+                        <span style={{
+                          fontFamily: 'var(--font-mono)',
+                          fontSize: 13,
+                          color: 'var(--text-primary)',
+                          fontWeight: 600,
+                        }}>
+                          {step.label}
+                        </span>
+                        <span style={{ marginLeft: 'auto', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-dim)' }}>
+                          {isDone ? `✓ ${step.duration}` : step.duration}
+                        </span>
                       </div>
-                    )}
+                      <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                        {step.desc}
+                      </div>
+                    </div>
                   </div>
                 );
               })}
             </div>
           </div>
 
-          {/* Terminal log */}
-          <div className={`reveal reveal-delay-2${inView ? ' visible' : ''}`}>
-            <div className="terminal" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-              <div className="terminal-header">
-                <div style={{ display: 'flex', gap: '0.4rem' }}>
-                  {['#ff5f57','#febc2e','#28c840'].map(c => (
-                    <div key={c} style={{ width: 8, height: 8, borderRadius: '50%', background: c }} />
-                  ))}
-                </div>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--text-muted)', marginLeft: '0.5rem' }}>
-                  executor.log — SSE Stream
+          {/* Right: Live Output Panel */}
+          <div style={{ background: 'var(--bg-panel)', display: 'flex', flexDirection: 'column' }}>
+            {/* Panel Header */}
+            <div style={{
+              padding: '12px 20px',
+              borderBottom: '1px solid var(--border-subtle)',
+              fontFamily: 'var(--font-mono)',
+              fontSize: 11,
+              color: 'var(--text-dim)',
+              letterSpacing: '0.1em',
+            }}>
+              NODE OUTPUT — {DAG_STEPS[activeStep].label}
+            </div>
+
+            <div style={{ padding: 24, flex: 1, display: 'flex', flexDirection: 'column', gap: 20 }}>
+              {/* Node Type Badge */}
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '4px 12px',
+                background: `${DAG_STEPS[activeStep].color}11`,
+                border: `1px solid ${DAG_STEPS[activeStep].color}44`,
+                width: 'fit-content',
+              }}>
+                <div style={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: '50%',
+                  background: DAG_STEPS[activeStep].color,
+                  boxShadow: `0 0 6px ${DAG_STEPS[activeStep].color}`,
+                }} />
+                <span style={{
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 11,
+                  color: DAG_STEPS[activeStep].color,
+                  letterSpacing: '0.1em',
+                }}>
+                  {DAG_STEPS[activeStep].type}
                 </span>
-                {isRunning && (
-                  <span style={{
-                    marginLeft: 'auto',
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: '0.65rem',
-                    color: 'var(--green)',
-                  }}>● LIVE</span>
-                )}
               </div>
 
-              <div
-                className="terminal-body"
-                ref={logRef}
-                style={{ flex: 1, height: 'auto', maxHeight: 480 }}
-              >
-                {logs.length === 0 && (
-                  <div style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontSize: '0.75rem' }}>
-                    {'// 点击"运行工作流"开始演示'}
-                  </div>
-                )}
-                {logs.map((log, i) => (
-                  <div key={i} className="terminal-line">
-                    <span className="ts">[{log.ts}]</span>{' '}
-                    <span className={log.type}>
-                      {log.type === 'ok' ? '✓' : log.type === 'model' ? '⟳' : '·'}
-                    </span>{' '}
-                    <span className="text">{log.msg}</span>
-                  </div>
-                ))}
-                {isRunning && (
-                  <div className="terminal-line">
-                    <span className="ts">[--:--.---]</span>{' '}
-                    <span className="info">{'>'}</span>{' '}
-                    <span className="terminal-cursor">_</span>
-                  </div>
-                )}
-                {!isRunning && logs.length > 0 && (
-                  <div className="terminal-line" style={{ marginTop: '0.5rem' }}>
-                    <span style={{ color: 'var(--green)' }}>✓ Workflow completed successfully</span>
-                  </div>
-                )}
+              {/* Log Stream */}
+              <div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-dim)', letterSpacing: '0.1em', marginBottom: 12 }}>
+                  EXECUTION LOG
+                </div>
+                <div style={{
+                  background: 'var(--bg-void)',
+                  border: '1px solid var(--border-subtle)',
+                  padding: 16,
+                  minHeight: 120,
+                }}>
+                  <LogLines
+                    lines={DAG_STEPS[activeStep].lines}
+                    active={activeStep === activeStep && isRunning && completedSteps[completedSteps.length - 1] !== activeStep}
+                  />
+                  {!isRunning && (
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-dim)' }}>
+                      → Click "运行工作流" to see live output
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Output Preview */}
+              <div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-dim)', letterSpacing: '0.1em', marginBottom: 12 }}>
+                  OUTPUT PAYLOAD
+                </div>
+                <div style={{
+                  background: 'var(--bg-void)',
+                  border: '1px solid var(--border-subtle)',
+                  padding: 16,
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 11,
+                  color: 'var(--accent-cyan)',
+                  lineHeight: 1.7,
+                  wordBreak: 'break-all',
+                }}>
+                  {completedSteps.includes(activeStep)
+                    ? DAG_STEPS[activeStep].output
+                    : <span style={{ color: 'var(--text-dim)' }}>awaiting execution...</span>
+                  }
+                </div>
+              </div>
+
+              {/* Progress */}
+              <div style={{ marginTop: 'auto' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-dim)', letterSpacing: '0.1em' }}>
+                    WORKFLOW PROGRESS
+                  </span>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--accent-green)' }}>
+                    {completedSteps.length}/{DAG_STEPS.length}
+                  </span>
+                </div>
+                <div style={{ height: 4, background: 'var(--border-subtle)', overflow: 'hidden' }}>
+                  <div style={{
+                    height: '100%',
+                    background: 'var(--accent-green)',
+                    width: `${(completedSteps.length / DAG_STEPS.length) * 100}%`,
+                    transition: 'width 0.5s ease',
+                    boxShadow: '0 0 8px var(--accent-green)',
+                  }} />
+                </div>
               </div>
             </div>
           </div>
+
         </div>
 
-        {/* Info note */}
-        <div style={{
-          marginTop: '1.5rem',
-          padding: '0.85rem 1.25rem',
-          border: '1px solid var(--border)',
-          borderRadius: 'var(--radius-sm)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.75rem',
-          background: 'rgba(255,255,255,0.02)',
-        }}>
-          <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontFamily: 'var(--font-mono)' }}>ⓘ</span>
-          <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-            以上为前端演示动画，真实执行引擎位于{' '}
-            <code style={{ fontFamily: 'var(--font-mono)', color: 'var(--ice)', fontSize: '0.78rem' }}>
-              backend/app/engine/executor.py
-            </code>
-            ，可在{' '}
-            <a href="https://StudyFlow.1037solo.com" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--green)' }}>
-              StudyFlow.1037solo.com
-            </a>{' '}
-            体验真实工作流执行。
-          </span>
-        </div>
+        <style>{`@keyframes fadeIn { from { opacity:0; transform: translateX(-4px); } to { opacity:1; transform:translateX(0); } }`}</style>
       </div>
-
-      <style>{`
-        @media (max-width: 900px) {
-          .workflow-grid { grid-template-columns: 1fr !important; }
-        }
-        .dag-node-status.running { color: var(--green); background: rgba(0,232,122,0.1); }
-        .dag-node-status.done { color: var(--ice); background: rgba(0,212,255,0.1); }
-        .dag-node-status.pending { color: var(--text-muted); background: rgba(255,255,255,0.04); }
-        .terminal-line .ts { color: var(--text-muted); }
-        .terminal-line .info { color: var(--ice); }
-        .terminal-line .model { color: var(--orange); }
-        .terminal-line .ok { color: var(--green); }
-        .terminal-line .text { color: var(--text-secondary); }
-      `}</style>
     </section>
   );
 }

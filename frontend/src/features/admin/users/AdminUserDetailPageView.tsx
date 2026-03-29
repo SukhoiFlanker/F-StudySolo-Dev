@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useCallback, useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -95,13 +95,21 @@ export function AdminUserDetailPageView() {
       <div className="space-y-6">
         <button
           onClick={() => router.push('/admin-analysis/users')}
-          className="flex items-center gap-2 text-[#74777f] hover:text-[#002045] text-sm transition-colors"
+          className="flex items-center gap-1.5 text-sm font-medium text-slate-500 transition-colors hover:text-slate-900"
         >
+          <span className="material-symbols-outlined text-[18px]">arrow_back</span>
           返回用户列表
         </button>
-        <div className="rounded-none px-4 py-3 bg-red-50 border border-red-200 text-red-700 text-sm flex items-center justify-between shadow-sm">
-          <span>{error}</span>
-          <button onClick={() => void fetchUser()} className="text-red-700 hover:text-red-800 underline text-xs ml-4">
+        <div className="flex items-center justify-between rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 shadow-sm">
+          <div className="flex items-center gap-3">
+            <span className="material-symbols-outlined text-[20px] text-red-500">error</span>
+            <span>{error}</span>
+          </div>
+          <button 
+            onClick={() => void fetchUser()} 
+            className="flex items-center gap-1 text-xs font-semibold text-red-700 hover:text-red-800 transition-colors"
+          >
+            <span className="material-symbols-outlined text-[16px]">refresh</span>
             重试
           </button>
         </div>
@@ -117,16 +125,20 @@ export function AdminUserDetailPageView() {
     <div className="space-y-6">
       <ToastStack toasts={toasts} onDismiss={dismissToast} />
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-6">
         <button
           onClick={() => router.push('/admin-analysis/users')}
-          className="flex items-center gap-2 text-[#74777f] hover:text-[#002045] text-sm transition-colors"
+          className="group flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900"
+          aria-label="返回用户列表"
         >
-          返回
+          <span className="material-symbols-outlined text-[20px] transition-transform group-hover:-translate-x-0.5">arrow_back</span>
         </button>
+        
         <div>
-          <h1 className="text-[#002045] text-xl font-bold">{data.user.email}</h1>
-          <p className="text-[#74777f] text-sm mt-0.5">用户 ID：{data.user.id}</p>
+          <h1 className="text-xl font-bold text-slate-900">{data.user.email}</h1>
+          <p className="mt-1 flex items-center gap-2 text-sm text-slate-500">
+            <span className="font-mono text-xs font-medium text-slate-400">ID: {data.user.id}</span>
+          </p>
         </div>
       </div>
 

@@ -35,6 +35,7 @@ interface WorkflowTableSectionProps {
   emptyColSpan: number;
   accentClassName: string;
   children: ReactNode;
+  icon: string;
 }
 
 function WorkflowTableSection({
@@ -46,28 +47,34 @@ function WorkflowTableSection({
   emptyColSpan,
   accentClassName,
   children,
+  icon,
 }: WorkflowTableSectionProps) {
   return (
-    <section className="border border-[#c4c6cf] bg-[#f4f4f0] shadow-sm">
-      <div className={`flex items-center justify-between border-b-2 px-6 py-4 ${accentClassName}`}>
-        <h2 className="font-mono text-sm font-bold tracking-widest">{title}</h2>
-        <span className="font-mono text-[10px] tracking-widest">共 {total} 条</span>
+    <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm ring-1 ring-slate-900/5">
+      <div className={`flex items-center justify-between border-b px-6 py-4 bg-slate-50/50 ${accentClassName}`}>
+        <div className="flex items-center gap-2">
+          <span className="material-symbols-outlined text-[18px] opacity-70">{icon}</span>
+          <h2 className="text-sm font-semibold tracking-wide">{title}</h2>
+        </div>
+        <span className="rounded-full bg-white px-2.5 py-0.5 text-xs font-semibold text-slate-600 shadow-sm ring-1 ring-inset ring-slate-200">
+          共 {total} 条
+        </span>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full border-collapse text-left">
           <thead>
-            <tr className="border-b border-[#002045]/20 bg-[#ebe9df]">
+            <tr className="border-b border-slate-100 bg-slate-50/50">
               {headers.map((header) => (
                 <th
                   key={header}
-                  className="px-6 py-4 font-mono text-[10px] font-bold tracking-[0.2em] text-[#002045]/60"
+                  className="px-6 py-3.5 text-xs font-semibold tracking-wider text-slate-500 uppercase"
                 >
                   {header}
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-slate-100">
             {loading ? (
               <TableSkeletonRows rows={3} cols={emptyColSpan} />
             ) : (
@@ -75,7 +82,7 @@ function WorkflowTableSection({
                 <tr>
                   <td
                     colSpan={emptyColSpan}
-                    className="bg-[#f4f4f0] px-6 py-12 text-center font-mono text-xs tracking-widest text-[#74777f]"
+                    className="bg-white px-6 py-12 text-center text-sm font-medium tracking-wide text-slate-500"
                   >
                     {emptyText}
                   </td>
@@ -124,7 +131,7 @@ export function AdminWorkflowsPageView() {
   const stats = statsData?.stats;
 
   return (
-    <div className="mx-auto min-h-full max-w-[1600px] space-y-10 px-8 py-8 md:px-12">
+    <div className="mx-auto min-h-full max-w-[1600px] space-y-8 px-8 py-8 md:px-12">
       <PageHeader
         title="工作流监控"
         description={
@@ -133,15 +140,15 @@ export function AdminWorkflowsPageView() {
             : '查看工作流运行状态、失败记录与时间范围统计。'
         }
         action={
-          <div className="flex items-center gap-2 border border-[#c4c6cf] bg-[#f4f4f0] p-1 shadow-sm">
+          <div className="flex items-center gap-1 overflow-hidden rounded-xl border border-slate-200 bg-slate-50 p-1 shadow-sm">
             {TIME_RANGE_OPTIONS.map(([value, label]) => (
               <button
                 key={value}
                 onClick={() => setTimeRange(value)}
-                className={`px-4 py-2 font-mono text-[10px] font-bold tracking-widest transition-all ${
+                className={`rounded-lg px-4 py-1.5 text-xs font-bold tracking-wide transition-all ${
                   timeRange === value
-                    ? 'bg-[#002045] text-white'
-                    : 'text-[#74777f] hover:bg-[#ebe9df] hover:text-[#002045]'
+                    ? 'bg-white text-indigo-700 shadow-sm ring-1 ring-inset ring-slate-200'
+                    : 'text-slate-500 hover:text-slate-900'
                 }`}
               >
                 {label}
@@ -152,11 +159,14 @@ export function AdminWorkflowsPageView() {
       />
 
       {error ? (
-        <div className="flex items-center justify-between border border-[#c4c6cf] border-l-4 border-l-red-600 bg-[#f4f4f0] p-4 font-mono text-sm shadow-sm">
-          <span className="font-bold tracking-wide text-red-700">系统错误：{error}</span>
+        <div className="flex items-center justify-between rounded-xl border border-red-200 bg-red-50 p-4 shadow-sm">
+          <div className="flex items-center gap-3">
+            <span className="material-symbols-outlined text-red-500">error</span>
+            <span className="text-sm font-semibold tracking-wide text-red-800">系统错误：{error}</span>
+          </div>
           <button
             onClick={() => void fetchAll()}
-            className="text-[10px] font-bold tracking-widest text-[#002045] underline-offset-4 hover:text-red-700 hover:underline"
+            className="rounded-lg px-3 py-1.5 text-xs font-bold text-red-700 transition-colors hover:bg-red-100"
           >
             重新加载
           </button>
@@ -166,7 +176,7 @@ export function AdminWorkflowsPageView() {
       <div className="grid grid-cols-2 gap-6 lg:grid-cols-4">
         {loading ? (
           Array.from({ length: 4 }).map((_, index) => (
-            <div key={index} className="h-32 border border-[#c4c6cf]/60 bg-[#f4f4f0] p-6 shadow-sm" />
+            <div key={index} className="h-32 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm" />
           ))
         ) : stats ? (
           <>
@@ -181,18 +191,21 @@ export function AdminWorkflowsPageView() {
       {stats ? (
         <div className="grid gap-6 md:grid-cols-3">
           {[
-            ['已完成执行', stats.completed, 'border-t-emerald-700 text-[#002045]'],
-            ['运行中任务', stats.running, 'border-t-blue-600 text-[#002045]'],
-            ['失败任务', stats.failed, 'border-t-red-600 text-red-700'],
-          ].map(([label, value, accentClassName]) => (
+            ['已完成执行', stats.completed, 'border-emerald-200 bg-emerald-50/50 text-emerald-800', 'check_circle'],
+            ['运行中任务', stats.running, 'border-indigo-200 bg-indigo-50/50 text-indigo-800', 'cycle'],
+            ['失败任务', stats.failed, 'border-red-200 bg-red-50/50 text-red-800', 'cancel'],
+          ].map(([label, value, accentClassName, icon]) => (
             <section
-              key={label}
-              className={`flex flex-col items-center justify-center border border-[#c4c6cf] border-t-8 bg-[#f4f4f0] p-6 shadow-sm ${accentClassName}`}
+              key={label as string}
+              className={`flex flex-col items-center justify-center rounded-2xl border p-6 shadow-sm transition-all hover:shadow-md ${accentClassName}`}
             >
-              <p className="mb-4 font-mono text-[10px] font-bold tracking-[0.25em] text-[#002045]/60">
-                {label}
-              </p>
-              <p className="font-serif text-5xl font-black">{value}</p>
+              <div className="mb-3 flex items-center gap-2">
+                <span className="material-symbols-outlined text-[18px] opacity-70">{icon}</span>
+                <p className="text-xs font-bold tracking-wider uppercase opacity-80">
+                  {label}
+                </p>
+              </div>
+              <p className="text-4xl font-extrabold tracking-tight">{value}</p>
             </section>
           ))}
         </div>
@@ -205,30 +218,46 @@ export function AdminWorkflowsPageView() {
         loading={loading}
         emptyText="暂无运行中任务"
         emptyColSpan={6}
-        accentClassName="border-[#002045] bg-[#f4f4f0] text-[#002045]"
+        icon="cycle"
+        accentClassName="border-slate-200 text-indigo-900"
       >
         {runningData?.running.length
           ? runningData.running.map((workflow) => (
               <tr
                 key={workflow.id}
-                className="border-b border-[#c4c6cf]/30 transition-colors hover:bg-[#ebe9df]"
+                className="group transition-colors hover:bg-slate-50/80"
               >
-                <td className="px-6 py-4 font-mono text-xs font-bold uppercase tracking-wider text-[#002045]">
+                <td className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-900">
                   #{truncateId(workflow.id)}
                 </td>
-                <td className="px-6 py-4 font-mono text-xs uppercase tracking-wider text-[#43474e]">
+                <td className="px-6 py-4 text-xs font-medium uppercase tracking-wider text-slate-500">
                   {truncateId(workflow.workflow_id)}
                 </td>
-                <td className="px-6 py-4 font-mono text-xs uppercase tracking-wider text-[#43474e]">
+                <td className="px-6 py-4 text-xs font-medium uppercase tracking-wider text-slate-500">
                   {truncateId(workflow.user_id)}
                 </td>
-                <td className="px-6 py-4 font-mono text-[11px] tracking-wider text-[#74777f]">
+                <td className="px-6 py-4 text-[13px] text-slate-500">
                   {formatDateTime(workflow.started_at)}
                 </td>
-                <td className="px-6 py-4 font-mono text-xs font-bold tracking-widest text-[#002045]">
-                  {workflow.total_steps ? `${workflow.current_step ?? 0}/${workflow.total_steps}` : workflow.current_node ?? '等待中'}
+                <td className="px-6 py-4 text-xs font-bold text-slate-800">
+                  {workflow.total_steps ? (
+                    <div className="flex items-center gap-2">
+                      <div className="h-1.5 w-16 overflow-hidden rounded-full bg-slate-100">
+                        <div
+                          className="h-full rounded-full bg-indigo-500 transition-all"
+                          style={{ width: `${((workflow.current_step ?? 0) / workflow.total_steps) * 100}%` }}
+                        />
+                      </div>
+                      <span>{`${workflow.current_step ?? 0}/${workflow.total_steps}`}</span>
+                    </div>
+                  ) : (
+                    <span className="flex items-center gap-1.5 text-indigo-600">
+                      <span className="h-1.5 w-1.5 rounded-full animate-pulse bg-indigo-500" />
+                      {workflow.current_node ?? '等待中'}
+                    </span>
+                  )}
                 </td>
-                <td className="px-6 py-4 font-mono text-[11px] tracking-wide text-[#74777f]">
+                <td className="px-6 py-4 text-[13px] font-medium text-slate-600">
                   {formatDuration(workflow.elapsed_seconds)}
                 </td>
               </tr>
@@ -243,32 +272,33 @@ export function AdminWorkflowsPageView() {
         loading={loading}
         emptyText="暂无异常任务"
         emptyColSpan={6}
-        accentClassName="border-red-700 bg-red-50/40 text-red-800"
+        icon="warning"
+        accentClassName="border-red-100 bg-red-50/30 text-red-900"
       >
         {errorsData?.errors.length
           ? errorsData.errors.map((workflow) => (
               <tr
                 key={workflow.id}
-                className="border-b border-[#c4c6cf]/30 transition-colors hover:bg-red-50/40"
+                className="group transition-colors hover:bg-red-50/40"
               >
-                <td className="px-6 py-4 font-mono text-xs font-bold uppercase tracking-wider text-[#002045]">
+                <td className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-900">
                   #{truncateId(workflow.id)}
                 </td>
-                <td className="px-6 py-4 font-mono text-xs uppercase tracking-wider text-[#43474e]">
+                <td className="px-6 py-4 text-xs font-medium uppercase tracking-wider text-slate-500">
                   {truncateId(workflow.workflow_id)}
                 </td>
-                <td className="px-6 py-4 font-mono text-xs uppercase tracking-wider text-[#43474e]">
+                <td className="px-6 py-4 text-xs font-medium uppercase tracking-wider text-slate-500">
                   {truncateId(workflow.user_id)}
                 </td>
                 <td className="px-6 py-4">
-                  <span className="inline-flex items-center border border-red-200 bg-red-50 px-2 py-1 font-mono text-[10px] font-bold tracking-widest text-red-700">
+                  <span className="inline-flex items-center rounded-md border border-red-200/60 bg-red-50 px-2 py-1 text-[11px] font-semibold tracking-wide text-red-700 shadow-sm">
                     {workflow.status}
                   </span>
                 </td>
-                <td className="px-6 py-4 font-mono text-[11px] tracking-wider text-[#74777f]">
+                <td className="px-6 py-4 text-[13px] text-slate-500">
                   {formatDateTime(workflow.started_at)}
                 </td>
-                <td className="px-6 py-4 font-mono text-[11px] tracking-wide text-[#74777f]">
+                <td className="px-6 py-4 text-[13px] font-medium text-slate-600">
                   {formatDuration(workflow.elapsed_seconds)}
                 </td>
               </tr>

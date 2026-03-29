@@ -1,113 +1,140 @@
-import { useInView } from '../hooks/useInView';
-
-const FOOT_LINKS = {
-  '产品': [
-    { label: '在线体验', url: 'https://StudyFlow.1037solo.com', ext: true },
-    { label: 'Demo 视频', url: 'https://b23.tv/uPd6KUr', ext: true },
-    { label: '文档中心', url: 'https://docs.1037solo.com', ext: true },
-    { label: 'GitHub', url: 'https://github.com/AIMFllys/StudySolo', ext: true },
-  ],
-  '技术': [
-    { label: 'Next.js 16 + React 19', url: null },
-    { label: 'Python FastAPI', url: null },
-    { label: 'Supabase PostgreSQL', url: null },
-    { label: 'DAG Executor (自研)', url: null },
-  ],
-  '社区': [
-    { label: 'GitHub Issues', url: 'https://github.com/AIMFllys/StudySolo/issues', ext: true },
-    { label: 'Pull Requests', url: 'https://github.com/AIMFllys/StudySolo/pulls', ext: true },
-    { label: 'MIT License', url: 'https://github.com/AIMFllys/StudySolo/blob/main/LICENSE', ext: true },
-  ],
-};
-
-const TECH_PILLS = [
-  'React 19', 'Next.js 16', 'FastAPI', 'Supabase', 'SSE', 'DAG', 'Tailwind v4',
-];
-
 export default function Footer() {
-  const [ref, inView] = useInView<HTMLDivElement>(0.1);
+  const links = {
+    Product: [
+      { label: '工作流操作台', href: 'https://studyflow.1037solo.com' },
+      { label: '平台官方文档', href: 'https://docs.1037solo.com' },
+      { label: 'DAG 执行原理', href: '#workflow-demo' },
+      { label: '定价方案', href: '#pricing' },
+    ],
+    Project: [
+      { label: 'GitHub 源码', href: 'https://github.com/AIMFllys/StudySolo' },
+      { label: '竞赛说明书', href: '#' },
+      { label: '架构文档', href: '#arch' },
+      { label: '1037Solo 生态', href: 'https://1037solo.com' },
+    ],
+    Tech: [
+      { label: 'Next.js 14', href: 'https://nextjs.org' },
+      { label: 'FastAPI', href: 'https://fastapi.tiangolo.com' },
+      { label: 'Supabase', href: 'https://supabase.io' },
+      { label: '@xyflow/react', href: 'https://reactflow.dev' },
+    ],
+  };
 
   return (
-    <footer className="footer" ref={ref}>
-      <div className="container">
-        <div className={`footer-grid reveal${inView ? ' visible' : ''}`}>
+    <footer style={{
+      background: 'var(--bg-surface)',
+      borderTop: '1px solid var(--border-subtle)',
+    }}>
+      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '80px 32px 40px' }}>
+
+        {/* Top Row */}
+        <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: 80, marginBottom: 64, flexWrap: 'wrap' }}>
+
           {/* Brand */}
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.75rem' }}>
-              <img
-                src={`${import.meta.env.BASE_URL}StudySolo.png`}
-                alt="StudySolo"
-                style={{ width: 22, height: 22, objectFit: 'contain' }}
-              />
-              <div className="footer-brand-name">StudySolo</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+              <div style={{
+                width: 28,
+                height: 28,
+                border: '1px solid rgba(0,255,136,0.4)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}>
+                <img src={`${import.meta.env.BASE_URL}StudySolo.png`} alt="Logo" style={{ width: 18, height: 18, objectFit: 'contain' }} />
+              </div>
+              <span style={{
+                fontFamily: 'var(--font-display)',
+                fontWeight: 700,
+                fontSize: 16,
+                color: 'var(--text-primary)',
+              }}>
+                Study<span style={{ color: 'var(--accent-green)' }}>Solo</span>
+              </span>
             </div>
-            <p className="footer-brand-desc">
-              面向学习场景的 AI 工作流编排平台。<br />
-              华科 AI 智能体大赛参赛作品。<br />
-              MIT License · © 2026 1037Solo
+            <p style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.7, marginBottom: 24 }}>
+              华中科技大学 AI 智能体大赛参赛项目。
+              将个人碎片化学习整合升级为系统化、工程化的知识生产流水线。
             </p>
-
-            {/* Live status */}
+            {/* System Status */}
             <div style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.4rem',
-              fontFamily: 'var(--font-mono)',
-              fontSize: '0.68rem',
-              color: 'var(--green)',
-              background: 'rgba(0,232,122,0.06)',
-              border: '1px solid var(--border-green)',
-              padding: '0.25rem 0.6rem',
-              borderRadius: 'var(--radius-sm)',
+              background: 'var(--bg-panel)',
+              border: '1px solid var(--border-subtle)',
+              padding: '16px 20px',
             }}>
               <div style={{
-                width: 5, height: 5, borderRadius: '50%',
-                background: 'var(--green)',
-                boxShadow: '0 0 6px var(--green)',
-                animation: 'pulse-dot 2s ease-in-out infinite',
-              }} />
-              StudyFlow.1037solo.com LIVE
-            </div>
-          </div>
-
-          {/* Link columns */}
-          {Object.entries(FOOT_LINKS).map(([heading, links]) => (
-            <div key={heading}>
-              <div className="footer-heading">{heading}</div>
-              <div className="footer-links">
-                {links.map(link => (
-                  link.url ? (
-                    <a
-                      key={link.label}
-                      href={link.url}
-                      target={link.ext ? '_blank' : undefined}
-                      rel={link.ext ? 'noopener noreferrer' : undefined}
-                      className="footer-link"
-                    >
-                      {link.label}
-                      {link.ext && <span style={{ color: 'var(--text-faint)', marginLeft: '0.2rem', fontSize: '0.7rem' }}>↗</span>}
-                    </a>
-                  ) : (
-                    <span key={link.label} className="footer-link" style={{ cursor: 'default' }}>
-                      {link.label}
-                    </span>
-                  )
-                ))}
+                fontFamily: 'var(--font-mono)',
+                fontSize: 10,
+                color: 'var(--text-dim)',
+                letterSpacing: '0.1em',
+                marginBottom: 12,
+              }}>
+                SYSTEM STATUS
               </div>
+              {[
+                { name: 'API Gateway', status: 'ONLINE' },
+                { name: 'AI Router', status: 'ONLINE' },
+                { name: 'DAG Engine', status: 'ONLINE' },
+              ].map(s => (
+                <div key={s.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-secondary)' }}>{s.name}</span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span className="dot-live" style={{ width: 5, height: 5 }} />
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--accent-green)' }}>{s.status}</span>
+                  </span>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-
-        {/* Bottom bar */}
-        <div className="footer-bottom">
-          <div className="footer-copyright">
-            面向学习场景的 AI 智能体可视化编排平台 · An Open Platform for Creating, Running, Sharing and Governing Learning Agents
           </div>
-          <div className="footer-tech">
-            {TECH_PILLS.map(t => (
-              <span key={t} className="tech-pill">{t}</span>
+
+          {/* Links */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 40 }}>
+            {Object.entries(links).map(([category, items]) => (
+              <div key={category}>
+                <div style={{
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 10,
+                  color: 'var(--text-dim)',
+                  letterSpacing: '0.15em',
+                  textTransform: 'uppercase',
+                  marginBottom: 20,
+                }}>
+                  {category}
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {items.map(item => (
+                    <a
+                      key={item.label}
+                      href={item.href}
+                      style={{
+                        fontSize: 14,
+                        color: 'var(--text-secondary)',
+                        textDecoration: 'none',
+                        transition: 'color 0.15s',
+                      }}
+                      onMouseEnter={e => (e.currentTarget.style.color = 'var(--accent-green)')}
+                      onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-secondary)')}
+                    >
+                      {item.label}
+                    </a>
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
+        </div>
+
+        {/* Divider */}
+        <div className="divider" style={{ marginBottom: 32 }} />
+
+        {/* Bottom Bar */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-dim)' }}>
+            © 2026 1037Solo Team · HUST AI Agent Competition · All rights reserved
+          </span>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-dim)' }}>
+            Built with React 19 · FastAPI · Supabase · Deployed on Aliyun ECS
+          </span>
         </div>
       </div>
     </footer>

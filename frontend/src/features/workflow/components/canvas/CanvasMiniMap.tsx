@@ -92,7 +92,7 @@ export default function CanvasMiniMap() {
       <div className="absolute bottom-4 left-4 z-50">
         <button
           onClick={() => setIsMinimized(false)}
-          className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/[0.08] bg-card text-muted-foreground shadow-lg backdrop-blur-sm transition-all hover:border-white/[0.15] hover:text-foreground light:border-slate-200 light:bg-white light:hover:border-slate-300"
+          className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-card text-muted-foreground shadow-lg backdrop-blur-sm transition-all hover:border-slate-300 dark:hover:border-white/[0.15] hover:text-foreground"
           title="展开小地图"
         >
           <MapIcon className="h-5 w-5" />
@@ -116,14 +116,14 @@ export default function CanvasMiniMap() {
           width: isLarge ? 300 : 200,
           height: isLarge ? 220 : 150,
         }}
-        className="transition-all duration-300 ease-in-out !bg-card !border !border-white/[0.08] light:!border-slate-200 !rounded-2xl !shadow-lg cursor-context-menu"
+        className="transition-all duration-300 ease-in-out !bg-card !border border-slate-200 dark:!border-white/[0.08] !rounded-2xl !shadow-lg cursor-context-menu"
       />
 
       {/* Context Menu Overlay */}
       {contextMenu && (
         <div
           ref={menuRef}
-          className="fixed z-[100] w-48 overflow-hidden rounded-xl border border-white/[0.08] bg-card/[0.95] p-1 shadow-2xl backdrop-blur-lg light:border-slate-200 light:bg-white/[0.95]"
+          className="fixed z-[100] w-48 overflow-hidden rounded-xl border border-slate-200 dark:border-white/[0.08] bg-white/[0.95] dark:bg-card/[0.95] p-1 shadow-2xl backdrop-blur-lg"
           style={{ top: contextMenu.y, left: contextMenu.x }}
         >
           <div className="flex flex-col">
@@ -132,7 +132,7 @@ export default function CanvasMiniMap() {
                 setIsLarge(!isLarge);
                 setContextMenu(null);
               }}
-              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-foreground transition-colors hover:bg-white/5 light:hover:bg-slate-100"
+              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-foreground transition-colors hover:bg-slate-100 dark:hover:bg-white/5"
             >
               {isLarge ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
               {isLarge ? '缩小尺寸' : '放大尺寸'}
@@ -142,15 +142,15 @@ export default function CanvasMiniMap() {
                 setIsMinimized(true);
                 setContextMenu(null);
               }}
-              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-foreground transition-colors hover:bg-white/5 light:hover:bg-slate-100"
+              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-foreground transition-colors hover:bg-slate-100 dark:hover:bg-white/5"
             >
               <Settings2 className="h-4 w-4" />
               最小化隐藏
             </button>
-            <div className="my-1 h-px bg-white/[0.08] light:bg-slate-100" />
+            <div className="my-1 h-px bg-slate-100 dark:bg-white/[0.08]" />
             <button
               onClick={() => setContextMenu(null)}
-              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground light:hover:bg-slate-100"
+              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-slate-100 dark:hover:bg-white/5 hover:text-foreground"
             >
               <X className="h-4 w-4" />
               取消

@@ -39,10 +39,11 @@ const TIME_RANGE_OPTIONS: { value: AdminUsageRange; label: string }[] = [
 ];
 
 const tooltipStyle = {
-  backgroundColor: '#f4f4f0',
-  border: '1px solid #c4c6cf',
-  borderRadius: '0px',
-  color: '#002045',
+  backgroundColor: '#ffffff',
+  border: '1px solid #e2e8f0', // slate-200
+  borderRadius: '0.75rem',     // xl
+  color: '#0f172a',            // slate-900
+  boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
 };
 
 function formatCny(value: number) {
@@ -71,17 +72,19 @@ function ChartShell({
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.2 }}
       transition={{ duration: 0.35, ease: 'easeOut' }}
-      className="relative overflow-hidden border border-[#c4c6cf] bg-[#f4f4f0] p-6 shadow-sm"
+      className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm ring-1 ring-slate-900/5"
     >
-      <div className="relative z-10">
+      <div className="relative z-10 flex flex-col h-full">
         <div className="mb-6 flex items-start justify-between gap-4">
           <div>
-            <h2 className="font-serif text-xl font-bold text-[#002045]">{title}</h2>
-            <p className="mt-2 font-mono text-[10px] tracking-[0.16em] text-[#74777f]">{description}</p>
+            <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
+            <p className="mt-1 text-sm text-slate-500">{description}</p>
           </div>
           {action}
         </div>
-        {children}
+        <div className="flex-1 min-h-[300px]">
+          {children}
+        </div>
       </div>
     </motion.section>
   );
@@ -111,21 +114,25 @@ export function DashboardChartsSection({
 
   const topModels = modelBreakdown.items.slice(0, 8);
 
+  // Colors: Assistant -> Indigo-500, Workflow -> Teal-500
+  const colorAssistant = '#6366f1';
+  const colorWorkflow = '#14b8a6';
+
   return (
     <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
       <ChartShell
         title="调用次数趋势"
-        description="assistant 与 workflow 两本账的真实 provider 调用次数"
+        description="Assistant 与 Workflow 的真实 Provider 调用次数"
         action={(
-          <div className="flex gap-2">
+          <div className="flex gap-1 rounded-lg bg-slate-100 p-1 shadow-inner">
             {TIME_RANGE_OPTIONS.map((option) => (
               <button
                 key={option.value}
                 onClick={() => onTimeRangeChange(option.value)}
-                className={`border px-3 py-1.5 font-mono text-[10px] tracking-[0.16em] shadow-sm ${
+                className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
                   option.value === timeRange
-                    ? 'border-[#002045] bg-[#002045] text-white'
-                    : 'border-[#c4c6cf] bg-[#f4f4f0] text-[#002045] hover:bg-[#ebe9df]'
+                    ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-900/5'
+                    : 'text-slate-500 hover:text-slate-700'
                 }`}
               >
                 {option.label}
@@ -134,106 +141,104 @@ export function DashboardChartsSection({
           </div>
         )}
       >
-        <div className="h-[320px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData}>
-              <CartesianGrid stroke="#d5d0c6" strokeDasharray="3 3" />
-              <XAxis dataKey="ts" stroke="#74777f" fontSize={12} />
-              <YAxis stroke="#74777f" fontSize={12} />
-              <Tooltip contentStyle={tooltipStyle} />
-              <Legend />
-              <Bar dataKey="assistant_calls" fill="#0f4c81" name="Assistant" />
-              <Bar dataKey="workflow_calls" fill="#0f766e" name="Workflow" />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={chartData}>
+            <CartesianGrid stroke="#f1f5f9" strokeDasharray="3 3" vertical={false} />
+            <XAxis dataKey="ts" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} dy={8} />
+            <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
+            <Tooltip contentStyle={tooltipStyle} />
+            <Legend wrapperStyle={{ paddingTop: '20px' }} iconType="circle" />
+            <Bar dataKey="assistant_calls" fill={colorAssistant} name="Assistant" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="workflow_calls" fill={colorWorkflow} name="Workflow" radius={[4, 4, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
       </ChartShell>
 
-      <ChartShell title="Token 趋势" description="成功调用的 token 消耗，按账本拆分">
-        <div className="h-[320px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData}>
-              <CartesianGrid stroke="#d5d0c6" strokeDasharray="3 3" />
-              <XAxis dataKey="ts" stroke="#74777f" fontSize={12} />
-              <YAxis stroke="#74777f" fontSize={12} />
-              <Tooltip contentStyle={tooltipStyle} />
-              <Legend />
-              <Line type="monotone" dataKey="assistant_tokens" stroke="#0f4c81" strokeWidth={2} name="Assistant Tokens" />
-              <Line type="monotone" dataKey="workflow_tokens" stroke="#0f766e" strokeWidth={2} name="Workflow Tokens" />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
+      <ChartShell title="Token 趋势" description="成功调用的 Token 消耗分布">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={chartData}>
+            <CartesianGrid stroke="#f1f5f9" strokeDasharray="3 3" vertical={false} />
+            <XAxis dataKey="ts" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} dy={8} />
+            <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
+            <Tooltip contentStyle={tooltipStyle} />
+            <Legend wrapperStyle={{ paddingTop: '20px' }} iconType="circle" />
+            <Line type="monotone" dataKey="assistant_tokens" stroke={colorAssistant} strokeWidth={3} dot={false} name="Assistant Tokens" activeDot={{ r: 6 }} />
+            <Line type="monotone" dataKey="workflow_tokens" stroke={colorWorkflow} strokeWidth={3} dot={false} name="Workflow Tokens" activeDot={{ r: 6 }} />
+          </LineChart>
+        </ResponsiveContainer>
       </ChartShell>
 
-      <ChartShell title="费用趋势" description="CNY 成本口径，按 assistant / workflow 分开计算">
-        <div className="h-[320px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData}>
-              <CartesianGrid stroke="#d5d0c6" strokeDasharray="3 3" />
-              <XAxis dataKey="ts" stroke="#74777f" fontSize={12} />
-              <YAxis stroke="#74777f" fontSize={12} />
-              <Tooltip
-                contentStyle={tooltipStyle}
-                formatter={(value: number) => [formatCny(value), 'Cost']}
-              />
-              <Legend />
-              <Line type="monotone" dataKey="assistant_cost_cny" stroke="#8c6d1f" strokeWidth={2} name="Assistant Cost" />
-              <Line type="monotone" dataKey="workflow_cost_cny" stroke="#c05621" strokeWidth={2} name="Workflow Cost" />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
+      <ChartShell title="费用趋势" description="人民币 (CNY) 总成本走势">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={chartData}>
+            <CartesianGrid stroke="#f1f5f9" strokeDasharray="3 3" vertical={false} />
+            <XAxis dataKey="ts" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} dy={8} />
+            <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
+            <Tooltip
+              contentStyle={tooltipStyle}
+              formatter={(value: number) => [formatCny(value), 'Cost']}
+            />
+            <Legend wrapperStyle={{ paddingTop: '20px' }} iconType="circle" />
+            <Line type="monotone" dataKey="assistant_cost_cny" stroke={colorAssistant} strokeWidth={3} dot={false} name="Assistant Cost" activeDot={{ r: 6 }} />
+            <Line type="monotone" dataKey="workflow_cost_cny" stroke={colorWorkflow} strokeWidth={3} dot={false} name="Workflow Cost" activeDot={{ r: 6 }} />
+          </LineChart>
+        </ResponsiveContainer>
       </ChartShell>
 
-      <ChartShell title="成本拆分与模型排行" description="左侧看账本拆分，右侧看平台级 SKU 成本排行">
-        <div className="grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
-          <div className="h-[260px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Tooltip
-                  contentStyle={tooltipStyle}
-                  formatter={(value: number) => [formatCny(value), 'Cost']}
-                />
-                <Pie data={pieData} dataKey="value" nameKey="name" outerRadius={88} innerRadius={44}>
-                  {pieData.map((entry, index) => (
-                    <Cell key={entry.name} fill={index === 0 ? '#0f4c81' : '#0f766e'} />
-                  ))}
-                </Pie>
-              </PieChart>
-            </ResponsiveContainer>
+      <ChartShell title="成本拆分与模型排行" description="账单来源拆分与具体模型成本一览">
+        <div className="grid h-full gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
+          <div className="flex flex-col items-center justify-center h-full">
+            <div className="w-full h-[220px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Tooltip
+                    contentStyle={tooltipStyle}
+                    formatter={(value: number) => [formatCny(value), 'Cost']}
+                  />
+                  <Pie data={pieData} dataKey="value" nameKey="name" outerRadius={80} innerRadius={60} stroke="none">
+                    {pieData.map((entry, index) => (
+                      <Cell key={entry.name} fill={index === 0 ? colorAssistant : colorWorkflow} />
+                    ))}
+                  </Pie>
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
           </div>
 
-          <div className="overflow-hidden border border-[#c4c6cf]">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="border-b border-[#c4c6cf] bg-[#efeeea]">
-                  <th className="px-4 py-3 font-mono text-[10px] tracking-[0.16em] text-[#002045]">SKU</th>
-                  <th className="px-4 py-3 font-mono text-[10px] tracking-[0.16em] text-[#002045]">CALLS</th>
-                  <th className="px-4 py-3 font-mono text-[10px] tracking-[0.16em] text-[#002045]">TOKENS</th>
-                  <th className="px-4 py-3 font-mono text-[10px] tracking-[0.16em] text-[#002045]">COST</th>
-                </tr>
-              </thead>
-              <tbody>
-                {topModels.length === 0 ? (
-                  <tr>
-                    <td colSpan={4} className="px-4 py-8 text-center text-sm text-[#74777f]">
-                      暂无模型账本数据
-                    </td>
+          <div className="overflow-hidden rounded-xl border border-slate-200 shadow-sm bg-white">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead>
+                  <tr className="border-b border-slate-200 bg-slate-50/50">
+                    <th className="px-4 py-3 font-semibold text-slate-900">SKU / Model</th>
+                    <th className="px-4 py-3 font-semibold text-slate-900">Calls</th>
+                    <th className="px-4 py-3 font-semibold text-slate-900">Tokens</th>
+                    <th className="px-4 py-3 font-semibold text-slate-900">Cost</th>
                   </tr>
-                ) : (
-                  topModels.map((item) => (
-                    <tr key={item.sku_id ?? `${item.provider}-${item.model}`} className="border-b border-[#ddd8cf] last:border-b-0">
-                      <td className="px-4 py-3 text-sm text-[#002045]">
-                        <div>{item.provider}/{item.model}</div>
-                        <div className="text-[10px] text-[#74777f]">{item.vendor} · {item.billing_channel}</div>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {topModels.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="px-4 py-8 text-center text-sm text-slate-500">
+                        暂无模型账本数据
                       </td>
-                      <td className="px-4 py-3 font-mono text-xs text-[#74777f]">{item.provider_call_count.toLocaleString('zh-CN')}</td>
-                      <td className="px-4 py-3 font-mono text-xs text-[#74777f]">{item.total_tokens.toLocaleString('zh-CN')}</td>
-                      <td className="px-4 py-3 font-mono text-xs text-[#002045]">{formatCny(item.total_cost_cny)}</td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                  ) : (
+                    topModels.map((item) => (
+                      <tr key={item.sku_id ?? `${item.provider}-${item.model}`} className="transition-colors hover:bg-slate-50/50">
+                        <td className="px-4 py-3">
+                          <div className="font-medium text-slate-900">{item.provider}/{item.model}</div>
+                          <div className="mt-0.5 text-xs text-slate-500">{item.vendor} · {item.billing_channel}</div>
+                        </td>
+                        <td className="px-4 py-3 text-slate-600">{item.provider_call_count.toLocaleString('zh-CN')}</td>
+                        <td className="px-4 py-3 text-slate-600">{item.total_tokens.toLocaleString('zh-CN')}</td>
+                        <td className="px-4 py-3 font-medium text-slate-900">{formatCny(item.total_cost_cny)}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </ChartShell>

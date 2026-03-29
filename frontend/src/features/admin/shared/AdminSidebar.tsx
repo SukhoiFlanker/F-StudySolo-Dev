@@ -24,24 +24,24 @@ export function AdminSidebar() {
     <>
       {sidebarOpen ? (
         <div
-          className="fixed inset-0 z-30 bg-black/30 md:hidden"
+          className="fixed inset-0 z-30 bg-slate-900/50 backdrop-blur-sm md:hidden"
           onClick={closeSidebarOnMobileNavigate}
         />
       ) : null}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-[#c4c6cf] bg-[#f4f4f0] shadow-sm transition-transform md:static md:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-40 flex w-72 flex-col border-r border-slate-200 bg-slate-50 shadow-sm transition-transform md:static md:translate-x-0 ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <div className="border-b border-[#c4c6cf] px-8 py-6">
-          <h1 className="font-serif text-2xl font-black tracking-tight text-[#002045]">StudySolo</h1>
-          <p className="mt-1 font-mono text-[10px] tracking-[0.24em] text-[#74777f]">
-            后台管理面板
+        <div className="border-b border-slate-200 px-8 py-6 bg-white/50">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">StudySolo</h1>
+          <p className="mt-1 text-xs font-semibold tracking-wider text-slate-500 uppercase">
+            Admin Workspace
           </p>
         </div>
 
-        <nav className="flex-1 space-y-1 overflow-y-auto px-4 py-6">
+        <nav className="flex-1 space-y-1.5 overflow-y-auto px-4 py-6">
           {ADMIN_NAV_ITEMS.map((item, index) => {
             const active = isActive(item.href);
             return (
@@ -54,34 +54,33 @@ export function AdminSidebar() {
                 <Link
                   href={item.href}
                   onClick={closeSidebarOnMobileNavigate}
-                  className={`group relative flex items-center gap-3 border-l-4 px-4 py-3 transition-all ${
+                  className={`group relative flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all ${
                     active
-                      ? 'border-[#002045] bg-[#ebe9df] text-[#002045]'
-                      : 'border-transparent text-stone-500 hover:bg-[#efeeea] hover:text-[#002045]'
+                      ? 'bg-indigo-50 text-indigo-700 shadow-sm ring-1 ring-inset ring-indigo-500/20'
+                      : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                   }`}
                 >
-                  <span className="material-symbols-outlined text-[20px]">{item.icon}</span>
-                  <span className={active ? 'font-serif text-sm font-bold tracking-wide' : 'text-sm'}>
+                  <span className={`material-symbols-outlined text-[20px] transition-colors ${active ? 'text-indigo-600' : 'text-slate-400 group-hover:text-slate-600'}`}>
+                    {item.icon}
+                  </span>
+                  <span className={active ? 'text-sm font-semibold' : 'text-sm font-medium'}>
                     {item.label}
                   </span>
-                  {active ? (
-                    <span className="absolute right-3 top-1/2 h-1.5 w-1.5 -translate-y-1/2 bg-[#002045]" />
-                  ) : null}
                 </Link>
               </motion.div>
             );
           })}
         </nav>
 
-        <div className="border-t border-[#c4c6cf] px-8 py-6">
+        <div className="border-t border-slate-200 px-6 py-6 bg-white/50">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center bg-[#002045] font-mono text-xs font-bold text-white shadow-sm">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-sm font-bold text-white shadow-sm ring-1 ring-inset ring-indigo-500">
               AD
             </div>
             <div className="overflow-hidden">
-              <p className="truncate text-sm font-bold text-[#002045]">管理员资料</p>
-              <p className="font-mono text-[10px] tracking-[0.14em] text-[#74777f]">
-                当前会话在线
+              <p className="truncate text-sm font-semibold text-slate-900">管理员在线</p>
+              <p className="w-full truncate text-[11px] font-medium text-slate-500">
+                System Administrator
               </p>
             </div>
           </div>
