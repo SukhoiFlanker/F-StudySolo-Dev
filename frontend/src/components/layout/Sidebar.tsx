@@ -25,6 +25,7 @@ import SettingsPanel from './sidebar/SettingsPanel';
 import SharedWorkflowsPanel from './sidebar/SharedWorkflowsPanel';
 import InvitationList from './sidebar/InvitationList';
 import RightPanelContent from './sidebar/RightPanelContent';
+import KnowledgeBasePanel from './sidebar/KnowledgeBasePanel';
 import ResizableHandle from './ResizableHandle';
 import type { WorkflowMeta } from '@/types/workflow';
 
@@ -94,7 +95,8 @@ export default function Sidebar({ workflows }: SidebarProps) {
               )}
               {activeSidebarPanel === 'ai-chat'           && <SidebarAIPanel />}
               {activeSidebarPanel === 'node-store'        && <NodeStorePanel />}
-              {activeSidebarPanel === 'workflow-examples' && <WorkflowExamplesPanel />}
+              {activeSidebarPanel === 'workflow-examples' && <KnowledgeBasePanel />}
+              {activeSidebarPanel === 'knowledge-base'    && <WorkflowExamplesPanel />}
               {activeSidebarPanel === 'dashboard'         && <DashboardPanel />}
               {activeSidebarPanel === 'wallet'            && <WalletPanel />}
               {activeSidebarPanel === 'extensions'        && <ExtensionsPanel />}
