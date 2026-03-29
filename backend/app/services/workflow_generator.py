@@ -1,0 +1,245 @@
+"""Workflow generation logic — graph normalization, auto-layout, two-stage AI pipeline."""
+
+import json
+import logging
+import re
+from collections import defaultdict, deque
+
+from fastapi import HTTPException, status
+from pydantic import ValidationError
+
+from app.core.config_loader import get_config
+from app.models.ai import (
+    AnalyzerOutput,
+    GenerateWorkflowRequest,
+    GenerateWorkflowResponse,
+    ImplicitContext,
+    NodeData,
+    NodePosition,
+    NodeType,
+    PlannerOutput,
+    WorkflowEdgeSchema,
+    WorkflowNodeSchema,
+)
+from app.nodes._base import BaseNode
+from app.services.ai_router import AIRouterError, call_llm
+
+logger = logging.getLogger(__name__)
+
+
+# ── JSON extraction ──────────────────────────────────────────────────────────
+
+def extract_json(text: str) -> str:
+    """Extract JSON from a response that may contain markdown code fences."""
+    m = re.search(r"```(?:json)?\s*([\s\S]+?)```", text)
+    if m:
+        return m.group(1).strip()
+    m = re.search(r"(\{[\s\S]*\}|\[[\s\S]*\])", text)
+    if m:
+        return m.group(1).strip()
+    return text.strip()
+
+
+# ── Graph normalization ──────────────────────────────────────────────────────
+
+def normalize_edges(nodes: list[WorkflowNodeSchema], edges: list[WorkflowEdgeSchema]) -> list[WorkflowEdgeSchema]:
+    """Keep only valid edges; create sequential fallback when missing."""
+    node_ids = {n.id for n in nodes}
+    normalized: list[WorkflowEdgeSchema] = []
+    seen: set[tuple[str, str]] = set()
+    for e in edges:
+        if e.source not in node_ids or e.target not in node_ids or e.source == e.target:
+            continue
+        pair = (e.source, e.target)
+        if pair in seen:
+            continue
+        seen.add(pair)
+        normalized.append(WorkflowEdgeSchema(id=e.id or f"edge-{e.source}-{e.target}", source=e.source, target=e.target))
+    if normalized:
+        return normalized
+    return [
+        WorkflowEdgeSchema(id=f"edge-{nodes[i].id}-{nodes[i+1].id}", source=nodes[i].id, target=nodes[i+1].id)
+        for i in range(len(nodes) - 1)
+    ]
+
+
+def should_auto_layout(nodes: list[WorkflowNodeSchema], edges: list[WorkflowEdgeSchema]) -> bool:
+    if len(nodes) <= 1:
+        return False
+    positions = [n.position for n in nodes if n.position]
+    if len(positions) != len(nodes):
+        return True
+    snapped = {(round(p.x / 40), round(p.y / 40)) for p in positions}
+    if len(snapped) < len(nodes):
+        return True
+    unique_x = {round(p.x / 40) for p in positions}
+    unique_y = {round(p.y / 40) for p in positions}
+    indegree: dict[str, int] = defaultdict(int)
+    outdegree: dict[str, int] = defaultdict(int)
+    for e in edges:
+        indegree[e.target] += 1
+        outdegree[e.source] += 1
+    has_branching = any(outdegree[n.id] > 1 or indegree[n.id] > 1 for n in nodes)
+    if has_branching and (len(unique_x) <= 2 or len(unique_y) <= 1):
+        return True
+    return len(unique_x) == 1 or len(unique_y) == 1
+
+
+def auto_layout_nodes(nodes: list[WorkflowNodeSchema], edges: list[WorkflowEdgeSchema]) -> list[WorkflowNodeSchema]:
+    """Lay out workflow by dependency levels so branches become visible."""
+    adjacency: dict[str, list[str]] = defaultdict(list)
+    indeg: dict[str, int] = {n.id: 0 for n in nodes}
+    node_order = {n.id: i for i, n in enumerate(nodes)}
+    for e in edges:
+        adjacency[e.source].append(e.target)
+        indeg[e.target] = indeg.get(e.target, 0) + 1
+
+    roots = [n.id for n in nodes if indeg.get(n.id, 0) == 0]
+    queue = deque(sorted(roots, key=node_order.get))
+    levels: dict[str, int] = {nid: 0 for nid in roots}
+    visited: list[str] = []
+    while queue:
+        cur = queue.popleft()
+        visited.append(cur)
+        for nb in adjacency.get(cur, []):
+            levels[nb] = max(levels.get(nb, 0), levels.get(cur, 0) + 1)
+            indeg[nb] -= 1
+            if indeg[nb] == 0:
+                queue.append(nb)
+    if len(visited) != len(nodes):
+        nxt = max(levels.values(), default=-1) + 1
+        for n in nodes:
+            if n.id not in levels:
+                levels[n.id] = nxt
+                nxt += 1
+
+    columns: dict[int, list[WorkflowNodeSchema]] = defaultdict(list)
+    for n in nodes:
+        columns[levels.get(n.id, 0)].append(n)
+
+    laid_out: list[WorkflowNodeSchema] = []
+    for lv in sorted(columns.keys()):
+        col = sorted(columns[lv], key=lambda c: (round(c.position.y / 20) if c.position else 0, node_order[c.id]))
+        offset = 36 if len(col) > 1 and lv % 2 else 0
+        for row, n in enumerate(col):
+            laid_out.append(WorkflowNodeSchema(
+                id=n.id, type=n.type,
+                position=NodePosition(x=120 + lv * 340, y=120 + row * 220 + offset),
+                data=n.data,
+            ))
+    return sorted(laid_out, key=lambda n: node_order[n.id])
+
+
+# ── Retry-validated AI call ──────────────────────────────────────────────────
+
+async def call_with_retry(node_type: str, messages: list[dict], model_cls, max_retries: int = 3):
+    last_error: Exception | None = None
+    for attempt in range(1, max_retries + 1):
+        try:
+            raw = await call_llm(node_type, messages, stream=False)
+            return model_cls.model_validate_json(extract_json(raw))
+        except (ValidationError, json.JSONDecodeError, ValueError) as e:
+            logger.warning("Attempt %d/%d validation failed: %s", attempt, max_retries, e)
+            last_error = e
+            messages = messages + [
+                {"role": "assistant", "content": raw if "raw" in dir() else ""},
+                {"role": "user", "content": f"输出格式不正确，请重新生成严格的 JSON。错误：{e}"},
+            ]
+    raise HTTPException(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        detail=f"AI 输出验证失败（已重试 {max_retries} 次）：{last_error}",
+    )
+
+
+# ── Two-stage generation pipeline ────────────────────────────────────────────
+
+async def generate_workflow_core(body: GenerateWorkflowRequest, safe_input: str) -> GenerateWorkflowResponse:
+    cfg = get_config()
+    max_retries = cfg["engine"]["json_validation_retries"]
+
+    # Stage 1: AI_Analyzer
+    analyzer_messages = [
+        {"role": "system", "content": BaseNode.get_system_prompt_for_type("ai_analyzer")},
+        {"role": "user", "content": safe_input},
+    ]
+    try:
+        analyzer_output: AnalyzerOutput = await call_with_retry("ai_analyzer", analyzer_messages, AnalyzerOutput, max_retries)
+    except AIRouterError as e:
+        raise HTTPException(status_code=503, detail=f"AI 服务暂时不可用：{e}")
+
+    implicit_context = ImplicitContext(
+        global_theme=analyzer_output.goal,
+        language_style=analyzer_output.extras.get("language_style", "简洁专业"),
+        core_outline=analyzer_output.user_defined_steps,
+        target_audience=analyzer_output.extras.get("target_audience", "学习者"),
+        user_constraints=analyzer_output.constraints,
+    )
+
+    # Stage 2: AI_Planner
+    planner_messages = [
+        {"role": "system", "content": BaseNode.get_system_prompt_for_type("ai_planner")},
+        {"role": "user", "content": f"需求分析结果：\n{analyzer_output.model_dump_json(indent=2)}\n\n暗线上下文：\n{implicit_context.model_dump_json(indent=2)}"},
+    ]
+    try:
+        planner_output: PlannerOutput = await call_with_retry("ai_planner", planner_messages, PlannerOutput, max_retries)
+    except AIRouterError as e:
+        raise HTTPException(status_code=503, detail=f"AI 服务暂时不可用：{e}")
+
+    # Enrich nodes
+    enriched_nodes: list[WorkflowNodeSchema] = []
+    for node in planner_output.nodes:
+        try:
+            nt = NodeType(node.type)
+        except ValueError:
+            nt = NodeType.chat_response
+        enriched_nodes.append(WorkflowNodeSchema(
+            id=node.id, type=node.type,
+            position=node.position or NodePosition(x=0, y=0),
+            data=NodeData(
+                label=node.data.label, type=node.type,
+                system_prompt=BaseNode.get_system_prompt_for_type(nt.value),
+                model_route=node.data.model_route or f"{nt.value}/default",
+                status="pending", output="",
+            ),
+        ))
+
+    normalized_edges = normalize_edges(enriched_nodes, planner_output.edges)
+
+    # Inject input source nodes
+    input_source_types = {"trigger_input", "knowledge_base", "web_search"}
+    existing_types = {n.type for n in enriched_nodes}
+    injected_ids: list[str] = []
+
+    if "trigger_input" not in existing_types:
+        tid = "trigger-input-0"
+        enriched_nodes.insert(0, WorkflowNodeSchema(
+            id=tid, type="trigger_input", position=NodePosition(x=0, y=0),
+            data=NodeData(label=body.user_input.strip().replace("\n", " ")[:80], type="trigger_input", user_content=body.user_input),
+        ))
+        injected_ids.append(tid)
+
+    if analyzer_output.input_sources.need_knowledge_base and "knowledge_base" not in existing_types:
+        kid = "kb-input-0"
+        enriched_nodes.insert(1, WorkflowNodeSchema(
+            id=kid, type="knowledge_base", position=NodePosition(x=0, y=0),
+            data=NodeData(label="📚 知识库检索", type="knowledge_base", config={"top_k": 5, "threshold": 0.7}),
+        ))
+        injected_ids.append(kid)
+
+    if analyzer_output.input_sources.need_web_search and "web_search" not in existing_types:
+        wid = "ws-input-0"
+        enriched_nodes.insert(min(2, len(enriched_nodes)), WorkflowNodeSchema(
+            id=wid, type="web_search", position=NodePosition(x=0, y=0),
+            data=NodeData(label="🌐 联网搜索", type="web_search", config={"max_results": 5, "search_depth": "advanced"}),
+        ))
+        injected_ids.append(wid)
+
+    if injected_ids:
+        targets_with_incoming = {e.target for e in normalized_edges}
+        root_ids = [n.id for n in enriched_nodes if n.type not in input_source_types and n.id not in targets_with_incoming]
+        for sid in injected_ids:
+            for rid in root_ids:
+                normalized_edges.insert(0, WorkflowEdgeSchema(id=f"edge-{sid}-{rid}", source=sid, target=rid))
+
+    final_nodes = auto_layout_nodes(enriched_nodes, normalized_edges)
+    return GenerateWorkflowResponse(nodes=final_nodes, edges=normalized_edges, implicit_context=implicit_context)
