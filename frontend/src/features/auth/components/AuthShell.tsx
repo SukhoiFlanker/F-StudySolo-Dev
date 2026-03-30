@@ -13,12 +13,12 @@ interface AuthShellProps {
 }
 
 const floatingTexts = [
-  { text: '智能大纲辅助计算', top: '15%', left: '60%', rotate: 'rotate-3', mobileHidden: false },
-  { text: '核心知识提炼网络', top: '75%', left: '15%', rotate: '-rotate-6', mobileHidden: false },
-  { text: '高维度总结与归纳', top: '45%', left: '65%', rotate: '-rotate-2', mobileHidden: true },
-  { text: '间隔重复闪卡生成', top: '80%', left: '55%', rotate: 'rotate-12', mobileHidden: true },
-  { text: '构建结构化思维', top: '25%', left: '10%', rotate: '-rotate-12', mobileHidden: false },
-  { text: '化繁为简', top: '60%', left: '5%', rotate: 'rotate-6', mobileHidden: false },
+  { text: '自然语言生成工作流', top: '15%', left: '60%', rotate: 'rotate-3', mobileHidden: false },
+  { text: '18 种智能体节点', top: '75%', left: '15%', rotate: '-rotate-6', mobileHidden: false },
+  { text: 'DAG 可视化编排', top: '45%', left: '65%', rotate: '-rotate-2', mobileHidden: true },
+  { text: '社区共享与 Fork', top: '80%', left: '55%', rotate: 'rotate-12', mobileHidden: true },
+  { text: '多模型智能路由', top: '25%', left: '10%', rotate: '-rotate-12', mobileHidden: false },
+  { text: 'SSE 流式执行', top: '60%', left: '5%', rotate: 'rotate-6', mobileHidden: false },
 ];
 
 export function AuthShell({

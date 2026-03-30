@@ -129,13 +129,13 @@ export function RegisterForm() {
 
   return (
     <AuthShell
-      title="创建新笔记本"
-      description="开启你在 StudySolo 的专属结构化知识网络"
+      title="注册账号"
+      description="加入 StudySolo，用自然语言编排你的学习工作流"
       footer={
         <>
-          已经有专属笔记本了？{' '}
+          已有账号？{' '}
           <Link href="/login" className="text-blue-600 dark:text-blue-400 hover:text-blue-700 font-medium hover:underline underline-offset-4 transition-all">
-            直接翻开
+            登录
           </Link>
         </>
       }
@@ -353,7 +353,7 @@ export function RegisterForm() {
             disabled={loading || !agreedToTerms || !agreedToPrivacy}
             className="group relative mt-2 h-11 w-full bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm flex items-center justify-center gap-2"
           >
-            {loading ? '网络连接处理中...' : '注册并开启笔记'}
+            {loading ? '正在注册...' : '注册'}
             {!loading && <UserPlus className="w-4 h-4 group-hover:scale-110 transition-transform" />}
           </button>
         </form>

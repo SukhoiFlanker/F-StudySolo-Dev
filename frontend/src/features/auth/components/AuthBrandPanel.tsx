@@ -10,9 +10,9 @@ export function AuthBrandPanel() {
         </div>
         
         <h1 className="text-4xl lg:text-5xl font-bold text-slate-900 dark:text-slate-100 leading-[1.2] mb-6 tracking-tight">
-          将繁杂的信息<br/>
+          用自然语言<br/>
           <span className="text-blue-600 dark:text-blue-400 relative inline-block mt-2">
-            结构化沉淀
+            编排学习工作流
             <svg className="absolute w-full h-2 -bottom-2 left-0 text-blue-200 dark:text-blue-900/50 -z-10" viewBox="0 0 100 10" preserveAspectRatio="none">
               <path d="M0 5 Q 50 10 100 5" stroke="currentColor" strokeWidth="8" fill="transparent" />
             </svg>
@@ -20,8 +20,8 @@ export function AuthBrandPanel() {
         </h1>
         
         <p className="font-serif text-slate-600 dark:text-slate-400 text-lg leading-relaxed max-w-[320px]">
-          一款为终身学习者打造的研究引擎。<br/>
-          通过清晰的工作流，化繁为简穿透信息噪音。
+          面向学习场景的智能体可视化编排平台。<br/>
+          描述目标，AI 自动生成多步骤工作流。
         </p>
       </div>
     </div>

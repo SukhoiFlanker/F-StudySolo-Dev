@@ -80,13 +80,13 @@ export function LoginForm() {
 
   return (
     <AuthShell
-      title="登录账号"
-      description="欢迎使用 StudySolo，继续构建你的知识网络"
+      title="登录"
+      description="欢迎回到 StudySolo 智能体编排平台"
       footer={
         <>
-          还没有专属空间？{' '}
+          还没有账号？{' '}
           <Link href="/register" className="text-blue-600 dark:text-blue-400 hover:text-blue-700 font-medium hover:underline underline-offset-4 transition-all">
-            开始你的学习笔记
+            注册新账号
           </Link>
         </>
       }
@@ -185,7 +185,7 @@ export function LoginForm() {
           disabled={loading}
           className="group relative mt-2 h-11 w-full bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-70 disabled:cursor-not-allowed transition-all shadow-sm flex items-center justify-center gap-2"
         >
-          {loading ? '正在验证身份...' : '登录'}
+          {loading ? '登录中...' : '登录'}
           {!loading && <LogIn className="w-4 h-4 group-hover:translate-x-1 transition-transform" />}
         </button>
       </form>
