@@ -33,11 +33,11 @@ export function ExecutionTraceList({ session, nodeNameMap, embedded = false }: E
   return (
     <div className={embedded ? 'space-y-4' : 'space-y-4 p-4'}>
       {hasMultipleChains ? (
-        <div className="flex gap-2 overflow-x-auto pb-1">
+        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
           <button
             type="button"
             onClick={() => setActiveChainId(null)}
-            className={`rounded-full border px-3 py-1 text-xs transition-colors ${
+            className={`shrink-0 whitespace-nowrap rounded-full border px-3 py-1 text-xs transition-colors ${
               activeChainId === null
                 ? 'border-primary bg-primary/10 text-primary'
                 : 'border-border text-muted-foreground hover:text-foreground'
@@ -50,7 +50,7 @@ export function ExecutionTraceList({ session, nodeNameMap, embedded = false }: E
               key={chain.chainId}
               type="button"
               onClick={() => setActiveChainId(chain.chainId)}
-              className={`rounded-full border px-3 py-1 text-xs transition-colors ${
+              className={`shrink-0 whitespace-nowrap rounded-full border px-3 py-1 text-xs transition-colors ${
                 activeChainId === chain.chainId
                   ? 'border-primary bg-primary/10 text-primary'
                   : 'border-border text-muted-foreground hover:text-foreground'

@@ -72,6 +72,22 @@ export default function Navbar() {
           }}>
             StudySolo
           </span>
+          <span style={{
+            fontSize: '10px',
+            fontWeight: 800,
+            padding: '2px 6px',
+            borderRadius: '6px',
+            background: 'rgba(59, 130, 246, 0.1) /* blue-500/10 */',
+            color: 'var(--accent-blue)',
+            border: '1px solid rgba(59, 130, 246, 0.2)',
+            marginLeft: '4px',
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em',
+            alignSelf: 'center',
+            marginTop: '2px'
+          }}>
+            Beta
+          </span>
         </div>
 
         {/* Nav Links */}

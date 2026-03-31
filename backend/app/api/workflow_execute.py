@@ -2,6 +2,7 @@
 
 import asyncio
 import logging
+import time
 import uuid
 from datetime import datetime, timezone
 from typing import Any
@@ -92,6 +93,11 @@ async def _execute_workflow_sse_impl(
             workflow_run_ref: str | None = None
             did_emit_workflow_done = False
             total_tokens = 0
+
+            # ── Trace accumulation for Workflow Memory ──
+            node_traces: dict[str, dict] = {}
+            trace_order = 0
+            node_timers: dict[str, float] = {}  # node_id → monotonic start
 
             try:
                 await emit_workflow_status("connected", "已建立工作流流式连接")
@@ -191,6 +197,15 @@ async def _execute_workflow_sse_impl(
                         if not event_type or payload is None:
                             continue
                         await queue.put(event_message(event_type, payload))
+
+                        # ── Accumulate trace data per node ──
+                        _accumulate_trace(
+                            event_type, payload,
+                            node_traces, node_timers, trace_order,
+                        )
+                        if event_type == "node_input":
+                            trace_order += 1
+
                         if event_type == "workflow_done":
                             did_emit_workflow_done = True
                             final_output = payload
@@ -226,6 +241,9 @@ async def _execute_workflow_sse_impl(
                     total_tokens = await _load_request_total_tokens(service_db, usage_request.request_id)
                 if workflow_run_ref:
                     await _finalize_run(service_db, run_id, run_status, total_tokens, final_output)
+                # ── Persist node-level traces for Memory system ──
+                if workflow_run_ref and node_traces:
+                    await _save_traces(service_db, run_id, current_user["id"], nodes, node_traces)
                 if total_tokens > 0:
                     await _update_usage_daily(service_db, current_user["id"], total_tokens)
                 stop_heartbeats.set()
@@ -280,6 +298,104 @@ async def execute_workflow_sse_post(
         db=db,
         service_db=service_db,
     )
+
+
+# ── Node category mapping (must match frontend workflow-meta.ts) ───────────
+
+_NODE_CATEGORY_MAP: dict[str, str] = {
+    "trigger_input": "input",
+    "knowledge_base": "input",
+    "web_search": "input",
+    "ai_analyzer": "analysis",
+    "ai_planner": "analysis",
+    "logic_switch": "analysis",
+    "loop_map": "analysis",
+    "outline_gen": "generation",
+    "content_extract": "generation",
+    "summary": "generation",
+    "flashcard": "generation",
+    "compare": "generation",
+    "mind_map": "generation",
+    "quiz_gen": "generation",
+    "merge_polish": "generation",
+    "chat_response": "interaction",
+    "export_file": "output",
+    "write_db": "output",
+    "loop_group": "structure",
+}
+
+
+def _accumulate_trace(
+    event_type: str,
+    payload: dict,
+    node_traces: dict[str, dict],
+    node_timers: dict[str, float],
+    current_order: int,
+) -> None:
+    """Intercept parsed SSE events and accumulate per-node trace data."""
+    nid = payload.get("node_id")
+    if not nid:
+        return
+
+    if event_type == "node_input":
+        node_timers[nid] = time.monotonic()
+        node_traces[nid] = {
+            "node_id": nid,
+            "execution_order": current_order + 1,
+            "input_snapshot": payload.get("input_snapshot"),
+            "status": "running",
+            "is_parallel": bool(payload.get("parallel_group_id")),
+            "parallel_group_id": payload.get("parallel_group_id"),
+        }
+    elif event_type == "node_status" and nid in node_traces:
+        node_traces[nid]["status"] = payload.get("status", "unknown")
+        if payload.get("error"):
+            node_traces[nid]["error_message"] = payload["error"]
+    elif event_type == "node_done" and nid in node_traces:
+        node_traces[nid]["final_output"] = payload.get("full_output")
+        node_traces[nid]["status"] = "done"
+        start = node_timers.get(nid)
+        if start is not None:
+            node_traces[nid]["duration_ms"] = int((time.monotonic() - start) * 1000)
+
+
+async def _save_traces(
+    db: AsyncClient,
+    run_id: str,
+    user_id: str,
+    nodes: list[dict],
+    node_traces: dict[str, dict],
+) -> None:
+    """Batch-write node-level execution traces to ss_workflow_run_traces."""
+    node_map = {n["id"]: n for n in nodes}
+    rows = []
+    for nid, trace in node_traces.items():
+        node_def = node_map.get(nid, {})
+        node_data = node_def.get("data", {})
+        node_type = node_def.get("type", "unknown")
+        rows.append({
+            "run_id": run_id,
+            "user_id": user_id,
+            "node_id": nid,
+            "node_type": node_type,
+            "node_name": node_data.get("label", nid),
+            "category": _NODE_CATEGORY_MAP.get(node_type),
+            "execution_order": trace.get("execution_order", 0),
+            "status": trace.get("status", "unknown"),
+            "input_snapshot": trace.get("input_snapshot"),
+            "final_output": trace.get("final_output"),
+            "output_format": node_data.get("output_format"),
+            "duration_ms": trace.get("duration_ms"),
+            "model_route": node_data.get("model_route"),
+            "is_parallel": trace.get("is_parallel", False),
+            "parallel_group_id": trace.get("parallel_group_id"),
+            "error_message": trace.get("error_message"),
+        })
+    if rows:
+        try:
+            await db.from_("ss_workflow_run_traces").insert(rows).execute()
+        except Exception as e:  # noqa: BLE001
+            logger.error("Failed to save run traces for %s: %s", run_id, e)
 
 
 async def _finalize_run(

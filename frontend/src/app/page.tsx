@@ -94,6 +94,9 @@ export default function LandingPage() {
             <span className="text-lg font-bold tracking-tight text-slate-900 font-serif">
               StudySolo
             </span>
+            <span className="ml-1.5 px-1.5 py-0.5 text-[10px] font-bold tracking-wider uppercase bg-blue-50 text-blue-600 rounded-md border border-blue-200 shadow-sm flex items-center h-fit mt-1">
+              Beta
+            </span>
           </div>
 
           <div className="flex items-center h-full gap-3 md:gap-6">

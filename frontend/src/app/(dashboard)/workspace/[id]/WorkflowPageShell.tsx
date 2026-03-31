@@ -5,6 +5,7 @@ import Link from 'next/link';
 import RightPanel from '@/components/layout/RightPanel';
 import CollaborationPopover from '@/components/workflow/CollaborationPopover';
 import CollaboratorAvatars from '@/components/workflow/CollaboratorAvatars';
+import RunHistoryPopover from '@/components/workflow/RunHistoryPopover';
 import { useWorkflowStore } from '@/stores/use-workflow-store';
 import { useSettingsStore } from '@/stores/use-settings-store';
 
@@ -63,6 +64,11 @@ export default function WorkflowPageShell({
             <div className="relative">
               <CollaborationPopover workflowId={workflowId} isPublic={isPublic} />
             </div>
+          )}
+
+          {/* Run history — owner only */}
+          {isOwner && workflowId && (
+            <RunHistoryPopover workflowId={workflowId} />
           )}
 
           {/* Collaborator avatars — Figma-style stack */}

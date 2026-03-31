@@ -91,6 +91,31 @@ export default function Hero({ onStart, onGuide }: HeroProps) {
       <div style={{ position: 'relative', zIndex: 10, padding: '0 24px', maxWidth: 800 }}>
 
         {/* Main Title - Replicating Image 1 */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          marginBottom: 16,
+          opacity: titleVisible ? 1 : 0,
+          transform: titleVisible ? 'translateY(0)' : 'translateY(24px)',
+          transition: 'all 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.05s',
+        }}>
+          <span className="label" style={{ 
+            fontWeight: 600, 
+            padding: '4px 12px', 
+            fontSize: 13, 
+            display: 'inline-flex', 
+            alignItems: 'center', 
+            gap: 6,
+            background: 'rgba(59, 130, 246, 0.08)',
+            color: 'var(--accent-blue)',
+            border: '1px solid rgba(59, 130, 246, 0.2)',
+            borderRadius: '999px'
+          }}>
+            <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent-blue)', boxShadow: '0 0 0 2px rgba(59,130,246,0.2)' }} />
+            Beta 内测阶段
+          </span>
+        </div>
         <h1 style={{
           fontFamily: 'var(--font-display)',
           fontWeight: 900,

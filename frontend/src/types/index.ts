@@ -6,6 +6,7 @@ export * from './admin';
 export * from './async';
 export * from './auth';
 export * from './community-nodes';
+export * from './memory';
 export * from './settings';
 export * from './workflow';
 export * from './workflow-events';

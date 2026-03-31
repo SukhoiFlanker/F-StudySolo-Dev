@@ -47,6 +47,9 @@ export default function Navbar({ onNewWorkflow, creating = false }: NavbarProps)
         >
           StudySolo
         </span>
+        <span className="ml-1 px-1.5 py-0.5 text-[10px] font-bold tracking-wider uppercase bg-primary/10 text-primary rounded-md border border-primary/20">
+          Beta
+        </span>
       </div>
 
       <div className="hidden sm:flex flex-1 max-w-md mx-4">
