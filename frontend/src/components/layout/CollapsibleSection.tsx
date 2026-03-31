@@ -35,11 +35,13 @@ export function CollapsibleSection({ id, title, badge, children }: CollapsibleSe
       </button>
 
       <div
-        className={`overflow-hidden transition-all duration-200 ${
-          isCollapsed ? 'max-h-0 opacity-0' : 'max-h-[2000px] opacity-100'
+        className={`grid transition-[grid-template-rows,opacity] duration-200 ${
+          isCollapsed ? 'grid-rows-[0fr] opacity-0' : 'grid-rows-[1fr] opacity-100'
         }`}
       >
-        <div className="px-4 pb-4">{children}</div>
+        <div className="overflow-hidden">
+          <div className="px-4 pb-4">{children}</div>
+        </div>
       </div>
     </section>
   );
