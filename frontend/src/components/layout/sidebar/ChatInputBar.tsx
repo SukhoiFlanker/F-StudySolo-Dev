@@ -146,7 +146,7 @@ export function ChatInputBar({
 
             {supportsThinking && (
               <>
-                <div className="h-3 w-px bg-border/30 mx-1" />
+                <div className="h-3 w-px bg-border/30" />
                 <button type="button" onClick={cycleDepth}
                   className={`flex items-center gap-1 rounded-md px-1.5 py-1 text-[10px] font-medium transition-all hover:bg-slate-100 dark:hover:bg-slate-800 ${DEPTH_CONFIG[thinkingDepth].color}`}
                   title={`思考深度: ${DEPTH_CONFIG[thinkingDepth].label}`}>

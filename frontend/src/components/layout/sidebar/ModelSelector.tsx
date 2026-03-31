@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { ChevronDown, Crown, Loader2, Zap } from 'lucide-react';
+import { ChevronDown, Crown, Loader2, Star, Zap } from 'lucide-react';
 import { canAccessModel, type AIModelOption } from '@/features/workflow/constants/ai-models';
 import { type ChatModelOption } from '@/services/ai-catalog.service';
 import type { TierType } from '@/services/auth.service';
@@ -109,7 +109,7 @@ function ChatModelSelectorUI({
             模型
           </div>
 
-          <div className="max-h-[280px] overflow-y-auto scrollbar-hide">
+          <div className="max-h-[320px] overflow-y-auto scrollbar-hide">
             {isLoading ? (
               Array.from({ length: 3 }).map((_, i) => (
                 <div key={i} className="flex items-center gap-2 rounded-lg px-2.5 py-2">
@@ -129,18 +129,33 @@ function ChatModelSelectorUI({
                     onClick={() => handleSelect(model)}
                     disabled={isLocked}
                     className={`group flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left transition-all ${
-                      isLocked ? 'cursor-not-allowed opacity-40' : 'hover:bg-accent'
-                    } ${isSelected ? 'bg-accent' : ''}`}
+                      isLocked ? 'cursor-not-allowed opacity-40' : 'hover:bg-muted/60'
+                    } ${isSelected ? 'bg-muted' : ''}`}
                   >
-                    <span className={`text-[12px] truncate flex-1 ${isSelected ? 'text-foreground font-medium' : 'text-foreground/80'}`}>
-                      {model.displayName}
-                    </span>
-                    {model.isPremium && (
-                      <span className="flex items-center gap-0.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-1 py-0.5 text-[8px] font-semibold text-amber-500 shrink-0">
-                        <Crown className="h-2 w-2" />
-                        PRO
-                      </span>
-                    )}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className={`text-[12px] truncate ${isSelected ? 'text-foreground font-medium' : 'text-foreground/80'}`}>
+                          {model.displayName}
+                        </span>
+                        {model.isRecommended && (
+                          <span className="flex items-center gap-0.5 rounded-full border border-emerald-600/40 dark:border-emerald-400/40 bg-emerald-500/15 px-1 py-0.5 text-[8px] font-semibold text-emerald-700 dark:text-emerald-400 shrink-0">
+                            <Star className="h-2 w-2" />
+                            推荐
+                          </span>
+                        )}
+                        {model.isPremium && (
+                          <span className="flex items-center gap-0.5 rounded-full border border-amber-600/40 dark:border-amber-400/40 bg-amber-500/15 px-1 py-0.5 text-[8px] font-semibold text-amber-700 dark:text-amber-400 shrink-0">
+                            <Crown className="h-2 w-2" />
+                            PRO
+                          </span>
+                        )}
+                      </div>
+                      {model.description && (
+                        <span className="text-[10px] text-muted-foreground/70 truncate block mt-0.5">
+                          {model.description}
+                        </span>
+                      )}
+                    </div>
                     {isSelected && <Zap className="h-3 w-3 text-primary shrink-0" />}
                   </button>
                 );

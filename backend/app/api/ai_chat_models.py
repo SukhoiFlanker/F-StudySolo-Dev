@@ -29,14 +29,14 @@ _VENDOR_BRAND_COLORS: dict[str, str] = {
 
 # Short descriptions per chat model key
 _MODEL_DESCRIPTIONS: dict[str, str] = {
-    "deepseek_r1": "强悍推理，思维链透明可见",
-    "qwen35_flash": "极速响应，日常对话首选",
-    "qwen3_max": "通义千问旗舰，智能体编程专项",
-    "glm45": "GLM 轻量快速，免费畅用",
-    "glm47": "智谱旗舰，Agentic Engineering 推荐",
-    "doubao_seed": "豆包 Seed 旗舰，Seeds of Insight",
-    "kimi_k2": "月之暗面推理模型，深度思考模式",
-    "gpt_oss_120b": "GPT 开源量化旗舰，120B 参数",
+    "deepseek_r1": "强化学习驱动的推理模型，思维链透明可见",
+    "qwen35_flash": "MoE 极速响应，多模态理解，日常对话首选",
+    "qwen3_max": "通义千问万亿参数旗舰，编程与复杂推理顶尖",
+    "glm45": "MoE 高效架构，32B 激活参数，免费畅用",
+    "glm47": "Agentic Coding 标杆，200K 上下文，工具协同领先",
+    "doubao_seed": "字节旗舰，多模态理解与长链路推理成本最优",
+    "kimi_k2": "万亿参数 MoE，128K 上下文，Agent 深度推理",
+    "gpt_oss_120b": "GPT 开源量化旗舰，120B 参数通用能力",
 }
 
 
