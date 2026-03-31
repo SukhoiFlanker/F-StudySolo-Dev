@@ -108,7 +108,7 @@ export function AdminNoticesPageView() {
         action={
           <button
             onClick={() => router.push('/admin-analysis/notices/create')}
-            className="flex items-center gap-2 rounded-md bg-[#3ecf8e] px-4 py-2 text-[13px] font-medium text-[#171717] transition-all hover:bg-[#2db87a] disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#3ecf8e]"
+            className="flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-[13px] font-medium text-primary-foreground transition-all hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           >
             <span className="material-symbols-outlined text-[18px]">add</span>
             新建公告
@@ -131,14 +131,14 @@ export function AdminNoticesPageView() {
       </div>
 
       {error ? (
-        <div className="flex items-center justify-between rounded-md border border-red-800/40 bg-red-950/30 p-4 text-[13px] text-red-400">
+        <div className="flex items-center justify-between rounded-md border border-destructive/30 bg-destructive/10 p-4 text-[13px] text-destructive">
           <div className="flex items-center gap-3">
-            <span className="material-symbols-outlined text-[20px] text-red-400">error</span>
+            <span className="material-symbols-outlined text-[20px] text-destructive">error</span>
             <span>{error}</span>
           </div>
           <button 
             onClick={() => void fetchNotices()} 
-            className="flex items-center gap-1 text-[12px] font-medium text-red-400 hover:text-red-300 transition-colors"
+            className="flex items-center gap-1 text-[12px] font-medium text-destructive hover:text-destructive transition-colors"
           >
             <span className="material-symbols-outlined text-[16px]">refresh</span>
             重试

@@ -35,26 +35,26 @@ export function AdminBillingPageView() {
         {DEFERRED_ITEMS.map((item) => (
           <section
             key={item.label}
-            className="rounded-md border border-[#2e2e2e] bg-[#171717] p-6 transition-all"
+            className="rounded-md border border-border bg-card p-6 transition-all"
           >
-            <div className="flex items-center gap-2 text-[#666] mb-3">
+            <div className="flex items-center gap-2 text-muted-foreground/60 mb-3">
               <span className="material-symbols-outlined text-[20px]">{item.icon}</span>
               <p className="text-[11px] font-medium tracking-wider uppercase">
                 {item.label}
               </p>
             </div>
             
-            <h2 className="text-xl font-semibold text-[#ededed]">
+            <h2 className="text-xl font-semibold text-foreground">
               {item.value}
             </h2>
-            <p className="mt-3 text-[13px] leading-6 text-[#8f8f8f]">
+            <p className="mt-3 text-[13px] leading-6 text-muted-foreground">
               {item.description}
             </p>
           </section>
         ))}
       </div>
 
-      <section className="rounded-md border border-[#2e2e2e] bg-[#171717] p-8">
+      <section className="rounded-md border border-border bg-card p-8">
         <EmptyState
           title="计费页暂不开放"
           description="如需进入下一阶段，应先明确 Supabase 账单相关表结构、收入口径、导出需求与权限边界。"

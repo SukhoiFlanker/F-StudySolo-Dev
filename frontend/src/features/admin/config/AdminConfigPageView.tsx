@@ -88,14 +88,14 @@ export function AdminConfigPageView() {
       <PageHeader title="系统配置" description={configCountText} />
 
       {error ? (
-        <div className="flex items-center justify-between rounded-md border border-red-800/40 bg-red-950/30 p-4 text-[13px] text-red-400">
+        <div className="flex items-center justify-between rounded-md border border-destructive/30 bg-destructive/10 p-4 text-[13px] text-destructive">
           <div className="flex items-center gap-3">
-            <span className="material-symbols-outlined text-[20px] text-red-400">error</span>
+            <span className="material-symbols-outlined text-[20px] text-destructive">error</span>
             <span>{error}</span>
           </div>
           <button 
             onClick={() => void fetchConfigs()} 
-            className="flex items-center gap-1 text-[12px] font-medium text-red-400 hover:text-red-300 transition-colors"
+            className="flex items-center gap-1 text-[12px] font-medium text-destructive hover:text-destructive transition-colors"
           >
             <span className="material-symbols-outlined text-[16px]">refresh</span>
             重试
@@ -114,25 +114,25 @@ export function AdminConfigPageView() {
         }}
       />
 
-      <section className="rounded-md border border-[#2e2e2e] bg-[#171717] p-6">
+      <section className="rounded-md border border-border bg-card p-6">
         <div className="flex items-center gap-2 mb-2">
-          <span className="material-symbols-outlined text-[20px] text-[#666]">add_box</span>
-          <h2 className="text-[14px] font-semibold text-[#ededed]">新建配置</h2>
+          <span className="material-symbols-outlined text-[20px] text-muted-foreground/60">add_box</span>
+          <h2 className="text-[14px] font-semibold text-foreground">新建配置</h2>
         </div>
-        <p className="text-[13px] text-[#8f8f8f] mb-6">配置值需填写为合法 JSON，可直接写对象、数组、布尔值或字符串。</p>
+        <p className="text-[13px] text-muted-foreground mb-6">配置值需填写为合法 JSON，可直接写对象、数组、布尔值或字符串。</p>
 
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <input
             value={newKey}
             onChange={(event) => setNewKey(event.target.value)}
             placeholder="配置键，例如 feature.admin.notice"
-            className="w-full rounded-md border border-[#2e2e2e] bg-[#171717] px-4 py-2.5 text-[13px] text-[#ededed] transition-all placeholder:text-[#666] focus:border-[#3ecf8e] focus:outline-none focus:ring-1 focus:ring-[#3ecf8e]/30"
+            className="w-full rounded-md border border-border bg-card px-4 py-2.5 text-[13px] text-foreground transition-all placeholder:text-muted-foreground/60 focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring"
           />
           <input
             value={newDescription}
             onChange={(event) => setNewDescription(event.target.value)}
             placeholder="配置说明"
-            className="w-full rounded-md border border-[#2e2e2e] bg-[#171717] px-4 py-2.5 text-[13px] text-[#ededed] transition-all placeholder:text-[#666] focus:border-[#3ecf8e] focus:outline-none focus:ring-1 focus:ring-[#3ecf8e]/30"
+            className="w-full rounded-md border border-border bg-card px-4 py-2.5 text-[13px] text-foreground transition-all placeholder:text-muted-foreground/60 focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring"
           />
         </div>
         
@@ -140,7 +140,7 @@ export function AdminConfigPageView() {
           value={newValue}
           onChange={(event) => setNewValue(event.target.value)}
           rows={6}
-          className="mt-4 w-full rounded-md border border-[#2e2e2e] bg-[#232323] px-4 py-3 font-mono text-[13px] text-[#8f8f8f] transition-all focus:border-[#3ecf8e] focus:bg-[#171717] focus:outline-none focus:ring-1 focus:ring-[#3ecf8e]/30"
+          className="mt-4 w-full rounded-md border border-border bg-secondary px-4 py-3 font-mono text-[13px] text-muted-foreground transition-all focus:border-primary focus:bg-card focus:outline-none focus:ring-1 focus:ring-ring"
         />
 
         <div className="mt-6 flex flex-col items-start justify-between gap-6 md:flex-row md:items-center">
@@ -152,7 +152,7 @@ export function AdminConfigPageView() {
           <button
             onClick={() => void handleCreate()}
             disabled={savingKey === newKey.trim()}
-            className="flex shrink-0 items-center gap-2 rounded-md bg-[#3ecf8e] px-6 py-2.5 text-[13px] font-medium text-[#171717] transition-all hover:bg-[#2db87a] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#3ecf8e]"
+            className="flex shrink-0 items-center gap-2 rounded-md bg-primary px-6 py-2.5 text-[13px] font-medium text-primary-foreground transition-all hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           >
             {savingKey === newKey.trim() ? (
               <>

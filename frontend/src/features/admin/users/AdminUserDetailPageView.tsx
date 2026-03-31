@@ -95,19 +95,19 @@ export function AdminUserDetailPageView() {
       <div className="space-y-5">
         <button
           onClick={() => router.push('/admin-analysis/users')}
-          className="flex items-center gap-1.5 text-[13px] font-medium text-[#8f8f8f] transition-colors hover:text-[#ededed]"
+          className="flex items-center gap-1.5 text-[13px] font-medium text-muted-foreground transition-colors hover:text-foreground"
         >
           <span className="material-symbols-outlined text-[18px]">arrow_back</span>
           返回用户列表
         </button>
-        <div className="flex items-center justify-between rounded-md border border-red-800/40 bg-red-950/30 p-4 text-[13px] text-red-400">
+        <div className="flex items-center justify-between rounded-md border border-destructive/30 bg-destructive/10 p-4 text-[13px] text-destructive">
           <div className="flex items-center gap-3">
-            <span className="material-symbols-outlined text-[20px] text-red-400">error</span>
+            <span className="material-symbols-outlined text-[20px] text-destructive">error</span>
             <span>{error}</span>
           </div>
           <button 
             onClick={() => void fetchUser()} 
-            className="flex items-center gap-1 text-[12px] font-medium text-red-400 hover:text-red-300 transition-colors"
+            className="flex items-center gap-1 text-[12px] font-medium text-destructive hover:text-destructive transition-colors"
           >
             <span className="material-symbols-outlined text-[16px]">refresh</span>
             重试
@@ -128,16 +128,16 @@ export function AdminUserDetailPageView() {
       <div className="flex items-center gap-6">
         <button
           onClick={() => router.push('/admin-analysis/users')}
-          className="group flex h-10 w-10 items-center justify-center rounded-md border border-[#2e2e2e] bg-[#171717] text-[#8f8f8f] transition-all hover:border-[#3e3e3e] hover:bg-[#1f1f1f] hover:text-[#ededed]"
+          className="group flex h-10 w-10 items-center justify-center rounded-md border border-border bg-card text-muted-foreground transition-all hover:border-muted-foreground/30 hover:bg-muted hover:text-foreground"
           aria-label="返回用户列表"
         >
           <span className="material-symbols-outlined text-[20px] transition-transform group-hover:-translate-x-0.5">arrow_back</span>
         </button>
         
         <div>
-          <h1 className="text-xl font-semibold text-[#ededed]">{data.user.email}</h1>
-          <p className="mt-1 flex items-center gap-2 text-[13px] text-[#8f8f8f]">
-            <span className="font-mono text-[12px] font-medium text-[#666]">ID: {data.user.id}</span>
+          <h1 className="text-xl font-semibold text-foreground">{data.user.email}</h1>
+          <p className="mt-1 flex items-center gap-2 text-[13px] text-muted-foreground">
+            <span className="font-mono text-[12px] font-medium text-muted-foreground/60">ID: {data.user.id}</span>
           </p>
         </div>
       </div>

@@ -52,12 +52,12 @@ export function AdminRatingsPageView() {
       />
 
       {error && (
-        <div className="flex items-center justify-between rounded-md border border-red-800/40 bg-red-950/30 p-4 text-[13px] text-red-400">
+        <div className="flex items-center justify-between rounded-md border border-destructive/30 bg-destructive/10 p-4 text-[13px] text-destructive">
           <div className="flex items-center gap-3">
-            <span className="material-symbols-outlined text-[20px] text-red-400">error</span>
+            <span className="material-symbols-outlined text-[20px] text-destructive">error</span>
             <span>{error}</span>
           </div>
-          <button onClick={() => void fetchAll()} className="flex items-center gap-1 text-[12px] font-medium text-red-400 hover:text-red-300 transition-colors">
+          <button onClick={() => void fetchAll()} className="flex items-center gap-1 text-[12px] font-medium text-destructive hover:text-destructive transition-colors">
             <span className="material-symbols-outlined text-[16px]">refresh</span>
             重试
           </button>

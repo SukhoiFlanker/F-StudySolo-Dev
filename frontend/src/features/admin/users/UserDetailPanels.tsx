@@ -32,10 +32,10 @@ export function UserDetailPanels({
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <div className="rounded-md border border-[#2e2e2e] bg-[#171717] p-6">
-          <div className="flex items-center gap-2 mb-6 border-b border-[#2e2e2e] pb-4">
-            <span className="material-symbols-outlined text-[20px] text-[#666]">person</span>
-            <h2 className="text-[14px] font-semibold text-[#ededed]">用户信息</h2>
+        <div className="rounded-md border border-border bg-card p-6">
+          <div className="flex items-center gap-2 mb-6 border-b border-border pb-4">
+            <span className="material-symbols-outlined text-[20px] text-muted-foreground/60">person</span>
+            <h2 className="text-[14px] font-semibold text-foreground">用户信息</h2>
           </div>
           <InfoRow label="邮箱">{user.email}</InfoRow>
           <InfoRow label="会员等级">
@@ -48,10 +48,10 @@ export function UserDetailPanels({
           <InfoRow label="最后登录">{formatDateTime(user.last_login)}</InfoRow>
         </div>
 
-        <div className="rounded-md border border-[#2e2e2e] bg-[#171717] p-6">
-          <div className="flex items-center gap-2 mb-6 border-b border-[#2e2e2e] pb-4">
-            <span className="material-symbols-outlined text-[20px] text-[#666]">card_membership</span>
-            <h2 className="text-[14px] font-semibold text-[#ededed]">订阅信息</h2>
+        <div className="rounded-md border border-border bg-card p-6">
+          <div className="flex items-center gap-2 mb-6 border-b border-border pb-4">
+            <span className="material-symbols-outlined text-[20px] text-muted-foreground/60">card_membership</span>
+            <h2 className="text-[14px] font-semibold text-foreground">订阅信息</h2>
           </div>
           {subscription ? (
             <>
@@ -63,8 +63,8 @@ export function UserDetailPanels({
               <InfoRow label="到期时间">{formatDateTime(subscription.expires_at)}</InfoRow>
             </>
           ) : (
-            <div className="flex flex-col items-center justify-center py-8 text-[#8f8f8f]">
-              <span className="material-symbols-outlined text-4xl mb-2 text-[#555]">credit_card_off</span>
+            <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+              <span className="material-symbols-outlined text-4xl mb-2 text-muted-foreground/60">credit_card_off</span>
               <p className="text-[13px]">暂无订阅记录</p>
             </div>
           )}
@@ -72,12 +72,12 @@ export function UserDetailPanels({
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <div className="rounded-md border border-[#2e2e2e] bg-[#171717] p-6">
-          <div className="flex items-center gap-2 mb-6 border-b border-[#2e2e2e] pb-4">
-            <span className="material-symbols-outlined text-[20px] text-[#666]">gpp_good</span>
-            <h2 className="text-[14px] font-semibold text-[#ededed]">账号状态</h2>
+        <div className="rounded-md border border-border bg-card p-6">
+          <div className="flex items-center gap-2 mb-6 border-b border-border pb-4">
+            <span className="material-symbols-outlined text-[20px] text-muted-foreground/60">gpp_good</span>
+            <h2 className="text-[14px] font-semibold text-foreground">账号状态</h2>
           </div>
-          <p className="flex items-center gap-2 text-[13px] text-[#8f8f8f] mb-6">
+          <p className="flex items-center gap-2 text-[13px] text-muted-foreground mb-6">
             当前状态：<StatusBadgeWithDot isActive={user.is_active} />
           </p>
           <button
@@ -85,8 +85,8 @@ export function UserDetailPanels({
             disabled={statusLoading}
             className={`w-full py-2.5 rounded-md text-[13px] font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
               user.is_active
-                ? 'bg-red-950/30 text-red-400 border border-red-800/40 hover:bg-red-950/50'
-                : 'bg-emerald-950/30 text-emerald-400 border border-emerald-800/40 hover:bg-emerald-950/50'
+                ? 'bg-destructive/10 text-destructive border border-destructive/30 hover:bg-destructive/20'
+                : 'bg-accent/10 text-accent border border-accent/30 hover:bg-accent/20'
             }`}
           >
             {statusLoading ? (
@@ -108,12 +108,12 @@ export function UserDetailPanels({
           </button>
         </div>
 
-        <div className="rounded-md border border-[#2e2e2e] bg-[#171717] p-6">
-          <div className="flex items-center gap-2 mb-6 border-b border-[#2e2e2e] pb-4">
-            <span className="material-symbols-outlined text-[20px] text-[#666]">admin_panel_settings</span>
-            <h2 className="text-[14px] font-semibold text-[#ededed]">调整会员等级</h2>
+        <div className="rounded-md border border-border bg-card p-6">
+          <div className="flex items-center gap-2 mb-6 border-b border-border pb-4">
+            <span className="material-symbols-outlined text-[20px] text-muted-foreground/60">admin_panel_settings</span>
+            <h2 className="text-[14px] font-semibold text-foreground">调整会员等级</h2>
           </div>
-          <p className="flex items-center gap-2 text-[13px] text-[#8f8f8f] mb-6">
+          <p className="flex items-center gap-2 text-[13px] text-muted-foreground mb-6">
             当前等级：<TierBadge tier={user.tier} />
           </p>
           <div className="flex gap-3">
@@ -126,7 +126,7 @@ export function UserDetailPanels({
             <button
               onClick={onApplyTier}
               disabled={roleLoading || selectedTier === user.tier}
-              className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-md bg-[#3ecf8e] text-[#171717] hover:bg-[#2db87a] text-[13px] font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#3ecf8e] min-w-[120px]"
+              className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 text-[13px] font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary min-w-[120px]"
             >
               {roleLoading ? (
                 <>

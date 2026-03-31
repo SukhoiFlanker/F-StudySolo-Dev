@@ -160,7 +160,7 @@ export function AdminDashboardPageView() {
                 setLoading(false);
               });
             }}
-            className="flex items-center gap-2 rounded-lg bg-[#3ecf8e] px-5 py-2.5 text-[13px] font-medium text-[#171717] transition-all hover:bg-[#2db87a] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#3ecf8e]"
+            className="flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-[13px] font-medium text-primary-foreground transition-all hover:bg-primary/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           >
             <span className="material-symbols-outlined text-[18px]">refresh</span>
             刷新数据
@@ -176,8 +176,8 @@ export function AdminDashboardPageView() {
       >
         <div className="space-y-5">
           {error ? (
-            <div className="rounded-md border border-red-800/40 bg-red-950/30 p-4 text-[13px] text-red-400 flex items-start gap-3">
-              <span className="material-symbols-outlined text-[20px] text-red-400">error</span>
+            <div className="rounded-md border border-destructive/30 bg-destructive/10 p-4 text-[13px] text-destructive flex items-start gap-3">
+              <span className="material-symbols-outlined text-[20px] text-destructive">error</span>
               <span className="mt-0.5">{error}</span>
             </div>
           ) : null}
@@ -199,66 +199,66 @@ export function AdminDashboardPageView() {
           ) : null}
         </div>
 
-        <aside className="overflow-hidden rounded-md border border-[#2e2e2e] bg-[#171717] h-fit">
-          <div className="border-b border-[#2e2e2e] bg-[#171717] px-6 py-5">
-            <h3 className="text-lg font-medium text-[#ededed]">实时观察面板</h3>
-            <p className="mt-1 text-[12px] text-[#8f8f8f]">LIVE USAGE STREAM</p>
+        <aside className="overflow-hidden rounded-md border border-border bg-card h-fit">
+          <div className="border-b border-border bg-card px-6 py-5">
+            <h3 className="text-lg font-medium text-foreground">实时观察面板</h3>
+            <p className="mt-1 text-[12px] text-muted-foreground">LIVE USAGE STREAM</p>
           </div>
           
           <div className="p-6 space-y-5">
-            <section className="rounded-md border border-[#2e2e2e] bg-[#232323] p-5">
-              <p className="text-[12px] font-medium uppercase tracking-widest text-[#666]">当前时间范围</p>
-              <p className="mt-2 text-2xl font-semibold tracking-tight text-[#ededed]">{timeRange}</p>
-              <p className="mt-3 text-[13px] leading-relaxed text-[#8f8f8f]">
+            <section className="rounded-md border border-border bg-secondary p-5">
+              <p className="text-[12px] font-medium uppercase tracking-widest text-muted-foreground/60">当前时间范围</p>
+              <p className="mt-2 text-2xl font-semibold tracking-tight text-foreground">{timeRange}</p>
+              <p className="mt-3 text-[13px] leading-relaxed text-muted-foreground">
                 概览与最近调用每 15 秒刷新；时序图与模型排行每 60 秒刷新。
               </p>
             </section>
 
-            <section className="rounded-md border border-[#2e2e2e] bg-[#232323] p-5">
-              <p className="text-[12px] font-medium uppercase tracking-widest text-[#666]">近 5 分钟热力数据</p>
-              <div className="mt-4 space-y-3 text-[13px] text-[#8f8f8f]">
-                <div className="flex items-center justify-between border-b border-[#2e2e2e] pb-2">
+            <section className="rounded-md border border-border bg-secondary p-5">
+              <p className="text-[12px] font-medium uppercase tracking-widest text-muted-foreground/60">近 5 分钟热力数据</p>
+              <div className="mt-4 space-y-3 text-[13px] text-muted-foreground">
+                <div className="flex items-center justify-between border-b border-border pb-2">
                   <span>逻辑请求</span>
-                  <span className="font-medium text-[#ededed]">{live?.summary.logical_request_count?.toLocaleString('zh-CN') ?? '0'}</span>
+                  <span className="font-medium text-foreground">{live?.summary.logical_request_count?.toLocaleString('zh-CN') ?? '0'}</span>
                 </div>
-                <div className="flex items-center justify-between border-b border-[#2e2e2e] pb-2">
+                <div className="flex items-center justify-between border-b border-border pb-2">
                   <span>真实 API 调用</span>
-                  <span className="font-medium text-[#ededed]">{live?.summary.provider_call_count?.toLocaleString('zh-CN') ?? '0'}</span>
+                  <span className="font-medium text-foreground">{live?.summary.provider_call_count?.toLocaleString('zh-CN') ?? '0'}</span>
                 </div>
-                <div className="flex items-center justify-between border-b border-[#2e2e2e] pb-2">
+                <div className="flex items-center justify-between border-b border-border pb-2">
                   <span>流通 Tokens</span>
-                  <span className="font-medium text-[#ededed]">{live?.summary.total_tokens?.toLocaleString('zh-CN') ?? '0'}</span>
+                  <span className="font-medium text-foreground">{live?.summary.total_tokens?.toLocaleString('zh-CN') ?? '0'}</span>
                 </div>
                 <div className="flex items-center justify-between pt-1">
                   <span>实时消耗费用</span>
-                  <span className="font-medium text-[#3ecf8e]">{formatCny(live?.summary.total_cost_cny ?? 0)}</span>
+                  <span className="font-medium text-primary">{formatCny(live?.summary.total_cost_cny ?? 0)}</span>
                 </div>
               </div>
             </section>
 
-            <section className="rounded-md border border-[#2e2e2e] bg-[#232323] p-5">
-              <p className="text-[12px] font-medium uppercase tracking-widest text-[#666]">两账本实时总计</p>
-              <div className="mt-4 space-y-4 text-[13px] text-[#8f8f8f]">
-                <div className="rounded-lg bg-[#171717] p-3 border border-[#2e2e2e]">
-                  <p className="text-[10px] font-medium tracking-wider text-[#666] uppercase mb-2">ASSISTANT</p>
+            <section className="rounded-md border border-border bg-secondary p-5">
+              <p className="text-[12px] font-medium uppercase tracking-widest text-muted-foreground/60">两账本实时总计</p>
+              <div className="mt-4 space-y-4 text-[13px] text-muted-foreground">
+                <div className="rounded-lg bg-card p-3 border border-border">
+                  <p className="text-[10px] font-medium tracking-wider text-muted-foreground/60 uppercase mb-2">ASSISTANT</p>
                   <div className="flex items-center justify-between">
                     <span>总计调用</span>
-                    <span className="font-medium text-[#ededed]">{overview?.assistant.provider_call_count?.toLocaleString('zh-CN') ?? '0'} 次</span>
+                    <span className="font-medium text-foreground">{overview?.assistant.provider_call_count?.toLocaleString('zh-CN') ?? '0'} 次</span>
                   </div>
                   <div className="flex items-center justify-between mt-1">
                     <span>总计费用</span>
-                    <span className="font-medium text-[#ededed]">{formatCny(overview?.assistant.total_cost_cny ?? 0)}</span>
+                    <span className="font-medium text-foreground">{formatCny(overview?.assistant.total_cost_cny ?? 0)}</span>
                   </div>
                 </div>
-                <div className="rounded-lg bg-[#171717] p-3 border border-[#2e2e2e]">
-                  <p className="text-[10px] font-medium tracking-wider text-[#666] uppercase mb-2">WORKFLOW</p>
+                <div className="rounded-lg bg-card p-3 border border-border">
+                  <p className="text-[10px] font-medium tracking-wider text-muted-foreground/60 uppercase mb-2">WORKFLOW</p>
                   <div className="flex items-center justify-between">
                     <span>总计调用</span>
-                    <span className="font-medium text-[#ededed]">{overview?.workflow.provider_call_count?.toLocaleString('zh-CN') ?? '0'} 次</span>
+                    <span className="font-medium text-foreground">{overview?.workflow.provider_call_count?.toLocaleString('zh-CN') ?? '0'} 次</span>
                   </div>
                   <div className="flex items-center justify-between mt-1">
                     <span>总计费用</span>
-                    <span className="font-medium text-[#ededed]">{formatCny(overview?.workflow.total_cost_cny ?? 0)}</span>
+                    <span className="font-medium text-foreground">{formatCny(overview?.workflow.total_cost_cny ?? 0)}</span>
                   </div>
                 </div>
               </div>

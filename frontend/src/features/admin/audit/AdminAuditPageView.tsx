@@ -55,7 +55,7 @@ export function AdminAuditPageView() {
         description={data ? `共 ${data.total.toLocaleString('zh-CN')} 条管理员审计记录` : '支持分页浏览与按操作类型筛选'}
       />
 
-      <section className="rounded-md border border-[#2e2e2e] bg-[#171717] p-6 transition-all">
+      <section className="rounded-md border border-border bg-card p-6 transition-all">
         <form
           className="flex flex-col gap-4 md:flex-row md:items-center"
           onSubmit={(event) => {
@@ -64,12 +64,12 @@ export function AdminAuditPageView() {
           }}
         >
           <div className="relative flex-1">
-            <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[20px] text-[#666]">search</span>
+            <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[20px] text-muted-foreground/60">search</span>
             <input
               value={draftActionFilter}
               onChange={(event) => setDraftActionFilter(event.target.value)}
               placeholder="按操作类型筛选，例如 config_update"
-              className="w-full rounded-md border border-[#2e2e2e] py-2.5 pl-11 pr-4 text-[13px] text-[#ededed] bg-[#171717] placeholder:text-[#666] focus:border-[#3ecf8e] focus:outline-none focus:ring-1 focus:ring-[#3ecf8e]/30 transition-all"
+              className="w-full rounded-md border border-border py-2.5 pl-11 pr-4 text-[13px] text-foreground bg-card placeholder:text-muted-foreground/60 focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring transition-all"
             />
           </div>
           <button
@@ -83,14 +83,14 @@ export function AdminAuditPageView() {
       </section>
 
       {error ? (
-        <div className="flex items-center justify-between rounded-md border border-red-800/40 bg-red-950/30 p-4 text-[13px] text-red-400">
+        <div className="flex items-center justify-between rounded-md border border-destructive/30 bg-destructive/10 p-4 text-[13px] text-destructive">
           <div className="flex items-center gap-3">
-            <span className="material-symbols-outlined text-[20px] text-red-400">error</span>
+            <span className="material-symbols-outlined text-[20px] text-destructive">error</span>
             <span>{error}</span>
           </div>
           <button 
             onClick={() => void fetchLogs()} 
-            className="flex items-center gap-1 text-[12px] font-medium text-red-400 hover:text-red-300 transition-colors"
+            className="flex items-center gap-1 text-[12px] font-medium text-destructive hover:text-destructive transition-colors"
           >
             <span className="material-symbols-outlined text-[16px]">refresh</span>
             重试
@@ -102,19 +102,19 @@ export function AdminAuditPageView() {
         <EmptyState title="暂无审计数据" description="当前无法获取审计日志，请稍后重试。" />
       ) : (
         <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,2fr),420px]">
-          <div className="overflow-hidden rounded-md border border-[#2e2e2e] bg-[#171717]">
+          <div className="overflow-hidden rounded-md border border-border bg-card">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="border-b border-[#2e2e2e] bg-[#171717]">
+                  <tr className="border-b border-border bg-card">
                     {['操作类型', '操作人', '目标资源', '发生时间'].map((header) => (
-                      <th key={header} className="px-6 py-4 text-[11px] font-medium tracking-wider text-[#666] uppercase whitespace-nowrap">
+                      <th key={header} className="px-6 py-4 text-[11px] font-medium tracking-wider text-muted-foreground/60 uppercase whitespace-nowrap">
                         {header}
                       </th>
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#2e2e2e]">
+                <tbody className="divide-y divide-border">
                   {loading ? (
                     <TableSkeletonRows rows={8} cols={4} />
                   ) : data && data.logs.length > 0 ? (
@@ -123,28 +123,28 @@ export function AdminAuditPageView() {
                         key={log.id}
                         onClick={() => setSelectedLog(log)}
                         className={`cursor-pointer align-top transition-colors ${
-                          selectedLog?.id === log.id ? 'bg-[#232323]' : 'hover:bg-[#1f1f1f]'
+                          selectedLog?.id === log.id ? 'bg-secondary' : 'hover:bg-muted'
                         }`}
                       >
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2">
-                            <span className="material-symbols-outlined text-[16px] text-[#666]">commit</span>
-                            <span className="font-mono text-[13px] font-medium text-[#ededed]">{log.action}</span>
+                            <span className="material-symbols-outlined text-[16px] text-muted-foreground/60">commit</span>
+                            <span className="font-mono text-[13px] font-medium text-foreground">{log.action}</span>
                           </div>
                         </td>
                         <td className="px-6 py-4">
-                          <div className="flex items-center gap-2 text-[13px] text-[#8f8f8f]">
-                            <span className="material-symbols-outlined text-[16px] text-[#666]">person</span>
+                          <div className="flex items-center gap-2 text-[13px] text-muted-foreground">
+                            <span className="material-symbols-outlined text-[16px] text-muted-foreground/60">person</span>
                             {log.admin_username ?? log.admin_id ?? '系统'}
                           </div>
                         </td>
                         <td className="px-6 py-4">
-                          <code className="rounded bg-[#232323] px-2 py-0.5 font-mono text-[12px] text-[#8f8f8f]">
+                          <code className="rounded bg-secondary px-2 py-0.5 font-mono text-[12px] text-muted-foreground">
                             {[log.target_type, log.target_id].filter(Boolean).join(' / ') || '—'}
                           </code>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center gap-1.5 text-[12px] text-[#8f8f8f]">
+                          <div className="flex items-center gap-1.5 text-[12px] text-muted-foreground">
                             <span className="material-symbols-outlined text-[14px]">calendar_today</span>
                             {formatDateTime(log.created_at)}
                           </div>

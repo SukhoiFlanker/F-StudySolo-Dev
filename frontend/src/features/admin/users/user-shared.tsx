@@ -22,8 +22,8 @@ export function StatusBadgeWithDot({ isActive }: { isActive: boolean }) {
     <span
       className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium tracking-wide border ${
         isActive
-          ? 'bg-emerald-950/30 text-emerald-400 border-emerald-800/40'
-          : 'bg-red-950/30 text-red-400 border-red-800/40'
+          ? 'bg-accent/10 text-accent border-accent/30'
+          : 'bg-destructive/10 text-destructive border-destructive/30'
       }`}
     >
       <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-emerald-500' : 'bg-red-500'}`} />
@@ -34,9 +34,9 @@ export function StatusBadgeWithDot({ isActive }: { isActive: boolean }) {
 
 export function InfoRow({ label, children, border = true }: { label: string; children: ReactNode; border?: boolean }) {
   return (
-    <div className={`flex items-start justify-between py-3.5 ${border ? 'border-b border-[#2e2e2e] last:border-0' : ''}`}>
-      <span className="text-[13px] font-medium text-[#8f8f8f]">{label}</span>
-      <span className="text-[13px] font-medium text-[#ededed] text-right">{children}</span>
+    <div className={`flex items-start justify-between py-3.5 ${border ? 'border-b border-border last:border-0' : ''}`}>
+      <span className="text-[13px] font-medium text-muted-foreground">{label}</span>
+      <span className="text-[13px] font-medium text-foreground text-right">{children}</span>
     </div>
   );
 }

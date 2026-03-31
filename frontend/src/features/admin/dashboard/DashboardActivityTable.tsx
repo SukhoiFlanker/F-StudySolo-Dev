@@ -33,16 +33,16 @@ export function DashboardActivityTable({ recentCalls, loading }: DashboardActivi
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.15 }}
       transition={{ duration: 0.35, ease: 'easeOut' }}
-      className="overflow-hidden rounded-md border border-[#2e2e2e] bg-[#171717]"
+      className="overflow-hidden rounded-md border border-border bg-card"
     >
-      <div className="border-b border-[#2e2e2e] bg-[#171717] px-6 py-5">
+      <div className="border-b border-border bg-card px-6 py-5">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#232323]">
-            <span className="material-symbols-outlined text-[#3ecf8e]">history</span>
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary">
+            <span className="material-symbols-outlined text-primary">history</span>
           </div>
           <div>
-            <h2 className="text-lg font-medium text-[#ededed]">最近真实调用</h2>
-            <p className="text-[13px] text-[#8f8f8f]">追踪失败、Fallback 与平台级真实成本</p>
+            <h2 className="text-lg font-medium text-foreground">最近真实调用</h2>
+            <p className="text-[13px] text-muted-foreground">追踪失败、Fallback 与平台级真实成本</p>
           </div>
         </div>
       </div>
@@ -50,15 +50,15 @@ export function DashboardActivityTable({ recentCalls, loading }: DashboardActivi
       <div className="overflow-x-auto">
         <table className="w-full text-left whitespace-nowrap text-[13px]">
           <thead>
-            <tr className="border-b border-[#2e2e2e] bg-[#171717]">
+            <tr className="border-b border-border bg-card">
               {HEADERS.map((header) => (
-                <th key={header} className="px-6 py-3 font-medium text-[#ededed]">
+                <th key={header} className="px-6 py-3 font-medium text-foreground">
                   {header}
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#2e2e2e]">
+          <tbody className="divide-y divide-border">
             {loading ? (
               <TableSkeletonRows rows={8} cols={7} />
             ) : !recentCalls || recentCalls.calls.length === 0 ? (
@@ -69,13 +69,13 @@ export function DashboardActivityTable({ recentCalls, loading }: DashboardActivi
               </tr>
             ) : (
               recentCalls.calls.map((call) => (
-                <tr key={call.id} className="transition-colors hover:bg-[#1f1f1f]">
-                  <td className="px-6 py-4 font-mono text-[12px] text-[#8f8f8f]">{truncateId(call.id)}</td>
+                <tr key={call.id} className="transition-colors hover:bg-muted">
+                  <td className="px-6 py-4 font-mono text-[12px] text-muted-foreground">{truncateId(call.id)}</td>
                   <td className="px-6 py-4">
-                    <div className="font-medium text-[#ededed]">
+                    <div className="font-medium text-foreground">
                       {call.source_type}
-                      <span className="mx-1 text-[#555]">/</span>
-                      <span className="text-[#8f8f8f] font-normal">{call.source_subtype}</span>
+                      <span className="mx-1 text-muted-foreground/60">/</span>
+                      <span className="text-muted-foreground font-normal">{call.source_subtype}</span>
                     </div>
                     {call.is_fallback ? (
                       <span className="mt-1 inline-block rounded border border-amber-800/40 bg-amber-950/30 px-1.5 py-0.5 text-[10px] font-medium text-amber-400">
@@ -84,30 +84,30 @@ export function DashboardActivityTable({ recentCalls, loading }: DashboardActivi
                     ) : null}
                   </td>
                   <td className="px-6 py-4">
-                    <div className="font-medium text-[#ededed]">
+                    <div className="font-medium text-foreground">
                       {call.provider}
-                      <span className="mx-1 text-[#555]">/</span>
+                      <span className="mx-1 text-muted-foreground/60">/</span>
                       {call.model}
                     </div>
-                    <div className="mt-0.5 text-[12px] text-[#8f8f8f]">{call.vendor} · {call.billing_channel}</div>
+                    <div className="mt-0.5 text-[12px] text-muted-foreground">{call.vendor} · {call.billing_channel}</div>
                   </td>
                   <td className="px-6 py-4">
                     <StatusBadge
                       label={call.status}
                       className={
                         call.status === 'success'
-                          ? 'border-emerald-800/40 bg-emerald-950/30 text-emerald-400'
+                          ? 'border-accent/30 bg-accent/10 text-accent'
                           : 'border-rose-800/40 bg-rose-950/30 text-rose-400'
                       }
                     />
                   </td>
-                  <td className="px-6 py-4 font-mono text-[12px] text-[#8f8f8f]">
+                  <td className="px-6 py-4 font-mono text-[12px] text-muted-foreground">
                     {call.total_tokens.toLocaleString('zh-CN')}
                   </td>
-                  <td className="px-6 py-4 font-medium text-[#ededed]">
+                  <td className="px-6 py-4 font-medium text-foreground">
                     {formatCny(call.cost_amount_cny)}
                   </td>
-                  <td className="px-6 py-4 text-[12px] text-[#8f8f8f]">
+                  <td className="px-6 py-4 text-[12px] text-muted-foreground">
                     {formatDateTime(call.started_at)}
                   </td>
                 </tr>

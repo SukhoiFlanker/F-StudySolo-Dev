@@ -49,10 +49,10 @@ const TIME_RANGE_OPTIONS: { value: AdminUsageRange; label: string }[] = [
 ];
 
 const tooltipStyle = {
-  backgroundColor: '#232323',
-  border: '1px solid #2e2e2e',
+  backgroundColor: 'var(--secondary)',
+  border: '1px solid var(--border)',
   borderRadius: '0.375rem',
-  color: '#ededed',
+  color: 'var(--foreground)',
   boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.3)',
 };
 
@@ -82,13 +82,13 @@ function ChartShell({
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.2 }}
       transition={{ duration: 0.35, ease: 'easeOut' }}
-      className="relative overflow-hidden rounded-md border border-[#2e2e2e] bg-[#171717] p-6"
+      className="relative overflow-hidden rounded-md border border-border bg-card p-6"
     >
       <div className="relative z-10 flex flex-col h-full">
         <div className="mb-6 flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-lg font-medium text-[#ededed]">{title}</h2>
-            <p className="mt-1 text-[13px] text-[#8f8f8f]">{description}</p>
+            <h2 className="text-lg font-medium text-foreground">{title}</h2>
+            <p className="mt-1 text-[13px] text-muted-foreground">{description}</p>
           </div>
           {action}
         </div>
@@ -105,15 +105,15 @@ function TimeRangeToggle({
   onTimeRangeChange,
 }: { timeRange: AdminUsageRange; onTimeRangeChange: (value: AdminUsageRange) => void }) {
   return (
-    <div className="flex gap-1 rounded-lg bg-[#232323] p-1">
+    <div className="flex gap-1 rounded-lg bg-secondary p-1">
       {TIME_RANGE_OPTIONS.map((option) => (
         <button
           key={option.value}
           onClick={() => onTimeRangeChange(option.value)}
           className={`rounded-md px-3 py-1.5 text-[12px] font-medium transition-colors ${
             option.value === timeRange
-              ? 'bg-[#171717] text-[#ededed]'
-              : 'text-[#8f8f8f] hover:text-[#ededed]'
+              ? 'bg-card text-foreground'
+              : 'text-muted-foreground hover:text-foreground'
           }`}
         >
           {option.label}
@@ -152,9 +152,9 @@ export function DashboardChartsSection({
       >
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={chartData}>
-            <CartesianGrid stroke="#2e2e2e" strokeDasharray="3 3" vertical={false} />
-            <XAxis dataKey="ts" stroke="#666" fontSize={12} tickLine={false} axisLine={false} dy={8} />
-            <YAxis stroke="#666" fontSize={12} tickLine={false} axisLine={false} />
+            <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false} />
+            <XAxis dataKey="ts" stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} dy={8} />
+            <YAxis stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
             <Tooltip contentStyle={tooltipStyle} />
             <Legend wrapperStyle={{ paddingTop: '20px' }} iconType="circle" />
             <Bar dataKey="assistant_calls" fill={colorAssistant} name="Assistant" radius={[4, 4, 0, 0]} />
@@ -166,9 +166,9 @@ export function DashboardChartsSection({
       <ChartShell title="Token 趋势" description="成功调用的 Token 消耗分布">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={chartData}>
-            <CartesianGrid stroke="#2e2e2e" strokeDasharray="3 3" vertical={false} />
-            <XAxis dataKey="ts" stroke="#666" fontSize={12} tickLine={false} axisLine={false} dy={8} />
-            <YAxis stroke="#666" fontSize={12} tickLine={false} axisLine={false} />
+            <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false} />
+            <XAxis dataKey="ts" stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} dy={8} />
+            <YAxis stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
             <Tooltip contentStyle={tooltipStyle} />
             <Legend wrapperStyle={{ paddingTop: '20px' }} iconType="circle" />
             <Line type="monotone" dataKey="assistant_tokens" stroke={colorAssistant} strokeWidth={3} dot={false} name="Assistant Tokens" activeDot={{ r: 6 }} />
@@ -207,9 +207,9 @@ export function CostTrendChart({
       {hasData ? (
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={chartData}>
-            <CartesianGrid stroke="#2e2e2e" strokeDasharray="3 3" vertical={false} />
-            <XAxis dataKey="ts" stroke="#666" fontSize={12} tickLine={false} axisLine={false} dy={8} />
-            <YAxis stroke="#666" fontSize={12} tickLine={false} axisLine={false} />
+            <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false} />
+            <XAxis dataKey="ts" stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} dy={8} />
+            <YAxis stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
             <Tooltip
               contentStyle={tooltipStyle}
               formatter={(value: number) => [formatCny(value), 'Cost']}
@@ -221,7 +221,7 @@ export function CostTrendChart({
         </ResponsiveContainer>
       ) : (
         <div className="flex h-full items-center justify-center">
-          <div className="flex flex-col items-center gap-3 text-[#666]">
+          <div className="flex flex-col items-center gap-3 text-muted-foreground/60">
             <span className="material-symbols-outlined text-4xl">trending_up</span>
             <p className="text-[13px]">该时段内暂无费用记录</p>
           </div>
@@ -269,38 +269,38 @@ export function CostBreakdownCard({
           <div className="space-y-2.5 w-full px-2">
             {pieData.map((entry, index) => (
               <div key={entry.name} className="flex items-center justify-between gap-2">
-                <span className="flex items-center gap-2 text-[13px] text-[#8f8f8f]">
+                <span className="flex items-center gap-2 text-[13px] text-muted-foreground">
                   <span
                     className="inline-block h-2.5 w-2.5 shrink-0 rounded-full"
                     style={{ background: index === 0 ? colorAssistant : colorWorkflow }}
                   />
                   {entry.name}
                 </span>
-                <span className="font-mono text-[12px] font-medium text-[#ededed]">{formatCny(entry.value)}</span>
+                <span className="font-mono text-[12px] font-medium text-foreground">{formatCny(entry.value)}</span>
               </div>
             ))}
           </div>
         </div>
 
         {/* Divider */}
-        <div className="w-px shrink-0 self-stretch bg-[#2e2e2e]" />
+        <div className="w-px shrink-0 self-stretch bg-border" />
 
         {/* Right: model ranking table fills remaining space */}
-        <div className="min-w-0 flex-1 overflow-hidden rounded-md border border-[#2e2e2e] bg-[#171717]">
+        <div className="min-w-0 flex-1 overflow-hidden rounded-md border border-border bg-card">
           <div className="overflow-auto h-full">
             <table className="w-full text-left text-[13px]">
               <thead className="sticky top-0 z-10">
-                <tr className="border-b border-[#2e2e2e] bg-[#171717]">
-                  <th className="px-5 py-3.5 font-medium text-[#ededed]">SKU / Model</th>
-                  <th className="px-5 py-3.5 font-medium text-[#ededed] tabular-nums">Calls</th>
-                  <th className="px-5 py-3.5 font-medium text-[#ededed] tabular-nums">Tokens</th>
-                  <th className="px-5 py-3.5 font-medium text-[#ededed] tabular-nums">Cost (CNY)</th>
+                <tr className="border-b border-border bg-card">
+                  <th className="px-5 py-3.5 font-medium text-foreground">SKU / Model</th>
+                  <th className="px-5 py-3.5 font-medium text-foreground tabular-nums">Calls</th>
+                  <th className="px-5 py-3.5 font-medium text-foreground tabular-nums">Tokens</th>
+                  <th className="px-5 py-3.5 font-medium text-foreground tabular-nums">Cost (CNY)</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#2e2e2e]">
+              <tbody className="divide-y divide-border">
                 {topModels.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="px-5 py-12 text-center text-[13px] text-[#8f8f8f]">
+                    <td colSpan={4} className="px-5 py-12 text-center text-[13px] text-muted-foreground">
                       暂无模型账本数据
                     </td>
                   </tr>
@@ -308,19 +308,19 @@ export function CostBreakdownCard({
                   topModels.map((item) => (
                     <tr
                       key={item.sku_id ?? `${item.provider}-${item.model}`}
-                      className="transition-colors hover:bg-[#1f1f1f]"
+                      className="transition-colors hover:bg-muted"
                     >
                       <td className="px-5 py-3.5">
-                        <div className="font-medium text-[#ededed]">{item.provider}/{item.model}</div>
-                        <div className="mt-0.5 text-[12px] text-[#666]">{item.vendor} · {item.billing_channel}</div>
+                        <div className="font-medium text-foreground">{item.provider}/{item.model}</div>
+                        <div className="mt-0.5 text-[12px] text-muted-foreground/60">{item.vendor} · {item.billing_channel}</div>
                       </td>
-                      <td className="px-5 py-3.5 font-mono text-[13px] text-[#8f8f8f]">
+                      <td className="px-5 py-3.5 font-mono text-[13px] text-muted-foreground">
                         {item.provider_call_count.toLocaleString('zh-CN')}
                       </td>
-                      <td className="px-5 py-3.5 font-mono text-[13px] text-[#8f8f8f]">
+                      <td className="px-5 py-3.5 font-mono text-[13px] text-muted-foreground">
                         {item.total_tokens.toLocaleString('zh-CN')}
                       </td>
-                      <td className="px-5 py-3.5 font-mono text-[13px] font-medium text-[#ededed]">
+                      <td className="px-5 py-3.5 font-mono text-[13px] font-medium text-foreground">
                         {formatCny(item.total_cost_cny)}
                       </td>
                     </tr>

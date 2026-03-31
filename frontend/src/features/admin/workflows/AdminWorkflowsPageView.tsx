@@ -50,31 +50,31 @@ function WorkflowTableSection({
   icon,
 }: WorkflowTableSectionProps) {
   return (
-    <section className="overflow-hidden rounded-md border border-[#2e2e2e] bg-[#171717]">
-      <div className={`flex items-center justify-between border-b border-[#2e2e2e] px-6 py-4 bg-[#171717] ${accentClassName}`}>
+    <section className="overflow-hidden rounded-md border border-border bg-card">
+      <div className={`flex items-center justify-between border-b border-border px-6 py-4 bg-card ${accentClassName}`}>
         <div className="flex items-center gap-2">
           <span className="material-symbols-outlined text-[18px] opacity-70">{icon}</span>
           <h2 className="text-[13px] font-medium tracking-wide">{title}</h2>
         </div>
-        <span className="rounded-full bg-[#232323] px-2.5 py-0.5 text-[12px] font-medium text-[#8f8f8f]">
+        <span className="rounded-full bg-secondary px-2.5 py-0.5 text-[12px] font-medium text-muted-foreground">
           共 {total} 条
         </span>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full border-collapse text-left">
           <thead>
-            <tr className="border-b border-[#2e2e2e] bg-[#171717]">
+            <tr className="border-b border-border bg-card">
               {headers.map((header) => (
                 <th
                   key={header}
-                  className="px-6 py-3.5 text-[12px] font-medium tracking-wider text-[#666] uppercase"
+                  className="px-6 py-3.5 text-[12px] font-medium tracking-wider text-muted-foreground/60 uppercase"
                 >
                   {header}
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#2e2e2e]">
+          <tbody className="divide-y divide-border">
             {loading ? (
               <TableSkeletonRows rows={3} cols={emptyColSpan} />
             ) : (
@@ -82,7 +82,7 @@ function WorkflowTableSection({
                 <tr>
                   <td
                     colSpan={emptyColSpan}
-                    className="bg-[#171717] px-6 py-12 text-center text-[13px] font-medium tracking-wide text-[#8f8f8f]"
+                    className="bg-card px-6 py-12 text-center text-[13px] font-medium tracking-wide text-muted-foreground"
                   >
                     {emptyText}
                   </td>
@@ -140,15 +140,15 @@ export function AdminWorkflowsPageView() {
             : '查看工作流运行状态、失败记录与时间范围统计。'
         }
         action={
-          <div className="flex items-center gap-1 overflow-hidden rounded-md border border-[#2e2e2e] bg-[#171717] p-1">
+          <div className="flex items-center gap-1 overflow-hidden rounded-md border border-border bg-card p-1">
             {TIME_RANGE_OPTIONS.map(([value, label]) => (
               <button
                 key={value}
                 onClick={() => setTimeRange(value)}
                 className={`rounded-md px-4 py-1.5 text-[12px] font-medium tracking-wide transition-all ${
                   timeRange === value
-                    ? 'bg-[#232323] text-[#3ecf8e]'
-                    : 'text-[#8f8f8f] hover:text-[#ededed]'
+                    ? 'bg-secondary text-primary'
+                    : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
                 {label}
@@ -159,14 +159,14 @@ export function AdminWorkflowsPageView() {
       />
 
       {error ? (
-        <div className="flex items-center justify-between rounded-md border border-red-800/40 bg-red-950/30 p-4">
+        <div className="flex items-center justify-between rounded-md border border-destructive/30 bg-destructive/10 p-4">
           <div className="flex items-center gap-3">
-            <span className="material-symbols-outlined text-red-400">error</span>
-            <span className="text-[13px] font-medium tracking-wide text-red-400">系统错误：{error}</span>
+            <span className="material-symbols-outlined text-destructive">error</span>
+            <span className="text-[13px] font-medium tracking-wide text-destructive">系统错误：{error}</span>
           </div>
           <button
             onClick={() => void fetchAll()}
-            className="rounded-lg px-3 py-1.5 text-[12px] font-medium text-red-400 transition-colors hover:bg-red-950/50"
+            className="rounded-lg px-3 py-1.5 text-[12px] font-medium text-destructive transition-colors hover:bg-destructive/20"
           >
             重新加载
           </button>
@@ -176,7 +176,7 @@ export function AdminWorkflowsPageView() {
       <div className="grid grid-cols-2 gap-5 lg:grid-cols-4">
         {loading ? (
           Array.from({ length: 4 }).map((_, index) => (
-            <div key={index} className="h-32 rounded-md border border-[#2e2e2e] bg-[#171717] p-6" />
+            <div key={index} className="h-32 rounded-md border border-border bg-card p-6" />
           ))
         ) : stats ? (
           <>
@@ -191,9 +191,9 @@ export function AdminWorkflowsPageView() {
       {stats ? (
         <div className="grid gap-5 md:grid-cols-3">
           {[
-            ['已完成执行', stats.completed, 'border-emerald-800/40 bg-emerald-950/30 text-emerald-400', 'check_circle'],
-            ['运行中任务', stats.running, 'border-[#3ecf8e]/30 bg-[#3ecf8e]/10 text-[#3ecf8e]', 'cycle'],
-            ['失败任务', stats.failed, 'border-red-800/40 bg-red-950/30 text-red-400', 'cancel'],
+            ['已完成执行', stats.completed, 'border-accent/30 bg-accent/10 text-accent', 'check_circle'],
+            ['运行中任务', stats.running, 'border-primary/30 bg-primary/10 text-primary', 'cycle'],
+            ['失败任务', stats.failed, 'border-destructive/30 bg-destructive/10 text-destructive', 'cancel'],
           ].map(([label, value, accentClassName, icon]) => (
             <section
               key={label as string}
@@ -219,45 +219,45 @@ export function AdminWorkflowsPageView() {
         emptyText="暂无运行中任务"
         emptyColSpan={6}
         icon="cycle"
-        accentClassName="text-[#3ecf8e]"
+        accentClassName="text-primary"
       >
         {runningData?.running.length
           ? runningData.running.map((workflow) => (
               <tr
                 key={workflow.id}
-                className="group transition-colors hover:bg-[#1f1f1f]"
+                className="group transition-colors hover:bg-muted"
               >
-                <td className="px-6 py-4 text-[12px] font-medium uppercase tracking-wider text-[#ededed]">
+                <td className="px-6 py-4 text-[12px] font-medium uppercase tracking-wider text-foreground">
                   #{truncateId(workflow.id)}
                 </td>
-                <td className="px-6 py-4 text-[12px] font-medium uppercase tracking-wider text-[#8f8f8f]">
+                <td className="px-6 py-4 text-[12px] font-medium uppercase tracking-wider text-muted-foreground">
                   {truncateId(workflow.workflow_id)}
                 </td>
-                <td className="px-6 py-4 text-[12px] font-medium uppercase tracking-wider text-[#8f8f8f]">
+                <td className="px-6 py-4 text-[12px] font-medium uppercase tracking-wider text-muted-foreground">
                   {truncateId(workflow.user_id)}
                 </td>
-                <td className="px-6 py-4 text-[13px] text-[#8f8f8f]">
+                <td className="px-6 py-4 text-[13px] text-muted-foreground">
                   {formatDateTime(workflow.started_at)}
                 </td>
-                <td className="px-6 py-4 text-[12px] font-medium text-[#8f8f8f]">
+                <td className="px-6 py-4 text-[12px] font-medium text-muted-foreground">
                   {workflow.total_steps ? (
                     <div className="flex items-center gap-2">
-                      <div className="h-1.5 w-16 overflow-hidden rounded-full bg-[#232323]">
+                      <div className="h-1.5 w-16 overflow-hidden rounded-full bg-secondary">
                         <div
-                          className="h-full rounded-full bg-[#3ecf8e] transition-all"
+                          className="h-full rounded-full bg-primary transition-all"
                           style={{ width: `${((workflow.current_step ?? 0) / workflow.total_steps) * 100}%` }}
                         />
                       </div>
                       <span>{`${workflow.current_step ?? 0}/${workflow.total_steps}`}</span>
                     </div>
                   ) : (
-                    <span className="flex items-center gap-1.5 text-[#3ecf8e]">
-                      <span className="h-1.5 w-1.5 rounded-full animate-pulse bg-[#3ecf8e]" />
+                    <span className="flex items-center gap-1.5 text-primary">
+                      <span className="h-1.5 w-1.5 rounded-full animate-pulse bg-primary" />
                       {workflow.current_node ?? '等待中'}
                     </span>
                   )}
                 </td>
-                <td className="px-6 py-4 text-[13px] font-medium text-[#8f8f8f]">
+                <td className="px-6 py-4 text-[13px] font-medium text-muted-foreground">
                   {formatDuration(workflow.elapsed_seconds)}
                 </td>
               </tr>
@@ -273,32 +273,32 @@ export function AdminWorkflowsPageView() {
         emptyText="暂无异常任务"
         emptyColSpan={6}
         icon="warning"
-        accentClassName="text-red-400"
+        accentClassName="text-destructive"
       >
         {errorsData?.errors.length
           ? errorsData.errors.map((workflow) => (
               <tr
                 key={workflow.id}
-                className="group transition-colors hover:bg-[#1f1f1f]"
+                className="group transition-colors hover:bg-muted"
               >
-                <td className="px-6 py-4 text-[12px] font-medium uppercase tracking-wider text-[#ededed]">
+                <td className="px-6 py-4 text-[12px] font-medium uppercase tracking-wider text-foreground">
                   #{truncateId(workflow.id)}
                 </td>
-                <td className="px-6 py-4 text-[12px] font-medium uppercase tracking-wider text-[#8f8f8f]">
+                <td className="px-6 py-4 text-[12px] font-medium uppercase tracking-wider text-muted-foreground">
                   {truncateId(workflow.workflow_id)}
                 </td>
-                <td className="px-6 py-4 text-[12px] font-medium uppercase tracking-wider text-[#8f8f8f]">
+                <td className="px-6 py-4 text-[12px] font-medium uppercase tracking-wider text-muted-foreground">
                   {truncateId(workflow.user_id)}
                 </td>
                 <td className="px-6 py-4">
-                  <span className="inline-flex items-center rounded-md border border-red-800/40 bg-red-950/30 px-2 py-1 text-[11px] font-medium tracking-wide text-red-400">
+                  <span className="inline-flex items-center rounded-md border border-destructive/30 bg-destructive/10 px-2 py-1 text-[11px] font-medium tracking-wide text-destructive">
                     {workflow.status}
                   </span>
                 </td>
-                <td className="px-6 py-4 text-[13px] text-[#8f8f8f]">
+                <td className="px-6 py-4 text-[13px] text-muted-foreground">
                   {formatDateTime(workflow.started_at)}
                 </td>
-                <td className="px-6 py-4 text-[13px] font-medium text-[#8f8f8f]">
+                <td className="px-6 py-4 text-[13px] font-medium text-muted-foreground">
                   {formatDuration(workflow.elapsed_seconds)}
                 </td>
               </tr>

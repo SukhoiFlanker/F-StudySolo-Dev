@@ -37,7 +37,7 @@ export function AdminSidebar() {
       )}
       <button
         onClick={toggleSidebar}
-        className="fixed left-3 top-3 z-50 flex h-8 w-8 items-center justify-center rounded bg-[#232323] text-[#8f8f8f] md:hidden"
+        className="fixed left-3 top-3 z-50 flex h-8 w-8 items-center justify-center rounded-md bg-secondary text-muted-foreground md:hidden"
         aria-label="Toggle nav"
       >
         <span className="material-symbols-outlined text-[18px]">{sidebarOpen ? 'close' : 'menu'}</span>
@@ -48,19 +48,19 @@ export function AdminSidebar() {
         onMouseLeave={() => setExpanded(false)}
         animate={{ width: expanded ? 220 : 48 }}
         transition={{ duration: 0.15, ease: [0.25, 0.1, 0.25, 1] }}
-        className={`fixed inset-y-0 left-0 z-40 flex flex-col overflow-hidden border-r border-[#2e2e2e] bg-[#171717] transition-transform md:static md:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-40 flex flex-col overflow-hidden border-r border-border bg-card transition-transform md:static md:translate-x-0 ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         {/* Logo */}
-        <div className="flex h-11 shrink-0 items-center gap-2.5 overflow-hidden border-b border-[#2e2e2e] px-3">
-          <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-[#3ecf8e] text-[9px] font-black text-[#171717]">
+        <div className="flex h-11 shrink-0 items-center gap-2.5 overflow-hidden border-b border-border px-3">
+          <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-primary text-[9px] font-black text-primary-foreground">
             SS
           </div>
           <motion.span
             animate={{ opacity: expanded ? 1 : 0 }}
             transition={{ duration: 0.1, delay: expanded ? 0.05 : 0 }}
-            className="whitespace-nowrap text-[13px] font-semibold text-[#ededed] tracking-tight"
+            className="whitespace-nowrap text-[13px] font-semibold text-foreground tracking-tight"
           >
             StudySolo
           </motion.span>
@@ -72,13 +72,13 @@ export function AdminSidebar() {
             const items = ADMIN_NAV_ITEMS.filter((i) => i.group === groupKey);
             return (
               <div key={groupKey}>
-                {gi > 0 && <div className="mx-2 my-2 h-px bg-[#2e2e2e]" />}
+                {gi > 0 && <div className="mx-2 my-2 h-px bg-border" />}
                 <motion.div
                   animate={{ opacity: expanded ? 1 : 0, height: expanded ? 22 : 0 }}
                   transition={{ duration: 0.1 }}
                   className="overflow-hidden px-2.5"
                 >
-                  <span className="text-[10px] font-medium uppercase tracking-widest text-[#555]">
+                  <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground/60">
                     {GROUP_LABELS[groupKey]}
                   </span>
                 </motion.div>
@@ -90,16 +90,16 @@ export function AdminSidebar() {
                         key={item.href}
                         href={item.href}
                         onClick={closeSidebarOnMobileNavigate}
-                        className={`group relative flex h-8 items-center gap-2.5 overflow-hidden rounded px-2.5 transition-colors duration-75 ${
+                        className={`group relative flex h-8 items-center gap-2.5 overflow-hidden rounded-md px-2.5 transition-colors duration-75 ${
                           active
-                            ? 'bg-[#232323] text-[#ededed]'
-                            : 'text-[#8f8f8f] hover:bg-[#1f1f1f] hover:text-[#ededed]'
+                            ? 'bg-secondary text-foreground'
+                            : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                         }`}
                       >
                         {active && (
-                          <div className="absolute left-0 top-1/2 h-4 w-[2px] -translate-y-1/2 rounded-r-full bg-[#3ecf8e]" />
+                          <div className="absolute left-0 top-1/2 h-4 w-[2px] -translate-y-1/2 rounded-r-full bg-primary" />
                         )}
-                        <span className={`material-symbols-outlined shrink-0 text-[18px] ${active ? 'text-[#3ecf8e]' : ''}`}>
+                        <span className={`material-symbols-outlined shrink-0 text-[18px] ${active ? 'text-primary' : ''}`}>
                           {item.icon}
                         </span>
                         <motion.span
@@ -119,15 +119,15 @@ export function AdminSidebar() {
         </nav>
 
         {/* Bottom */}
-        <div className="shrink-0 border-t border-[#2e2e2e] px-1.5 py-2 space-y-px">
-          <div className="flex h-8 items-center gap-2.5 overflow-hidden rounded px-2.5">
-            <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-[#2e2e2e] text-[9px] font-bold text-[#8f8f8f]">
+        <div className="shrink-0 border-t border-border px-1.5 py-2 space-y-px">
+          <div className="flex h-8 items-center gap-2.5 overflow-hidden rounded-md px-2.5">
+            <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-secondary text-[9px] font-bold text-muted-foreground">
               {adminLabel.slice(0, 2).toUpperCase()}
             </div>
             <motion.span
               animate={{ opacity: expanded ? 1 : 0 }}
               transition={{ duration: 0.08, delay: expanded ? 0.04 : 0 }}
-              className="whitespace-nowrap text-[12px] font-medium text-[#666]"
+              className="whitespace-nowrap text-[12px] font-medium text-muted-foreground"
             >
               {adminLabel}
             </motion.span>
@@ -135,7 +135,7 @@ export function AdminSidebar() {
           <button
             onClick={() => void logout()}
             disabled={loggingOut}
-            className="flex h-8 w-full items-center gap-2.5 overflow-hidden rounded px-2.5 text-[#555] transition-colors hover:bg-[#1f1f1f] hover:text-red-400 disabled:opacity-50"
+            className="flex h-8 w-full items-center gap-2.5 overflow-hidden rounded-md px-2.5 text-muted-foreground/60 transition-colors hover:bg-muted hover:text-destructive disabled:opacity-50"
           >
             <span className="material-symbols-outlined shrink-0 text-[18px]">logout</span>
             <motion.span
