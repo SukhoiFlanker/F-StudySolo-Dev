@@ -80,121 +80,65 @@ export default function NoticeEditor({
   };
 
   const inputClass =
-    'w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 text-sm placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all shadow-sm';
-  const errorClass = 'mt-1.5 flex items-center gap-1 text-xs text-red-600 font-medium';
+    'w-full bg-card border border-border rounded-md px-4 py-2.5 text-foreground text-[13px] placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary focus:ring-1 focus:ring-ring transition-all';
+  const errorClass = 'mt-1.5 flex items-center gap-1 text-[12px] text-destructive font-medium';
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div>
-        <label className="mb-2 flex items-center gap-1 text-sm font-semibold text-slate-900">
-          标题 <span className="text-red-500">*</span>
+        <label className="mb-2 flex items-center gap-1 text-[13px] font-medium text-foreground">
+          标题 <span className="text-destructive">*</span>
         </label>
-        <input
-          type="text"
-          value={title}
-          onChange={(event) => setTitle(event.target.value)}
-          placeholder="请输入公告标题"
-          maxLength={200}
-          className={inputClass}
-        />
-        {errors.title ? (
-          <p className={errorClass}>
-            <span className="material-symbols-outlined text-[14px]">error</span>
-            {errors.title}
-          </p>
-        ) : null}
-        <p className="mt-1.5 text-right text-[11px] text-slate-400 font-medium">{title.length}/200</p>
+        <input type="text" value={title} onChange={(event) => setTitle(event.target.value)} placeholder="请输入公告标题" maxLength={200} className={inputClass} />
+        {errors.title ? <p className={errorClass}><span className="material-symbols-outlined text-[14px]">error</span>{errors.title}</p> : null}
+        <p className="mt-1.5 text-right text-[11px] text-muted-foreground/60 font-medium">{title.length}/200</p>
       </div>
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <div>
-          <label className="mb-2 flex items-center gap-1 text-sm font-semibold text-slate-900">公告类型</label>
-          <AdminSelect
-            value={type}
-            options={TYPE_OPTIONS}
-            onChange={(event) => setType(event.target.value as NoticeType)}
-          />
+          <label className="mb-2 flex items-center gap-1 text-[13px] font-medium text-foreground">公告类型</label>
+          <AdminSelect value={type} options={TYPE_OPTIONS} onChange={(event) => setType(event.target.value as NoticeType)} />
         </div>
-
         <div>
-          <label className="mb-2 flex items-center gap-1 text-sm font-semibold text-slate-900">状态</label>
-          <AdminSelect
-            value={status}
-            options={STATUS_OPTIONS}
-            onChange={(event) => setStatus(event.target.value as NoticeStatus)}
-          />
+          <label className="mb-2 flex items-center gap-1 text-[13px] font-medium text-foreground">状态</label>
+          <AdminSelect value={status} options={STATUS_OPTIONS} onChange={(event) => setStatus(event.target.value as NoticeStatus)} />
         </div>
       </div>
 
       <div>
-        <label className="mb-2 flex items-center gap-1 text-sm font-semibold text-slate-900">失效时间</label>
-        <input
-          type="datetime-local"
-          value={expiresAt}
-          onChange={(event) => setExpiresAt(event.target.value)}
-          className={inputClass}
-        />
-        {errors.expires_at ? (
-          <p className={errorClass}>
-            <span className="material-symbols-outlined text-[14px]">error</span>
-            {errors.expires_at}
-          </p>
-        ) : null}
+        <label className="mb-2 flex items-center gap-1 text-[13px] font-medium text-foreground">失效时间</label>
+        <input type="datetime-local" value={expiresAt} onChange={(event) => setExpiresAt(event.target.value)} className={inputClass} />
+        {errors.expires_at ? <p className={errorClass}><span className="material-symbols-outlined text-[14px]">error</span>{errors.expires_at}</p> : null}
       </div>
 
       <div>
         <div className="mb-2 flex items-center justify-between">
-          <label className="flex items-center gap-1 text-sm font-semibold text-slate-900">
-            公告正文 <span className="text-red-500">*</span>
+          <label className="flex items-center gap-1 text-[13px] font-medium text-foreground">
+            公告正文 <span className="text-destructive">*</span>
           </label>
-          <button
-            type="button"
-            onClick={() => setPreview((value) => !value)}
-            className="flex items-center gap-1 text-xs font-semibold text-indigo-600 transition-colors hover:text-indigo-700"
-          >
+          <button type="button" onClick={() => setPreview((value) => !value)} className="flex items-center gap-1 text-[12px] font-medium text-primary transition-colors hover:text-primary/80">
             <span className="material-symbols-outlined text-[16px]">{preview ? 'edit' : 'visibility'}</span>
             {preview ? '返回编辑' : '预览内容'}
           </button>
         </div>
 
         {preview ? (
-          <div className="prose min-h-[300px] max-w-none rounded-xl border border-slate-200 bg-slate-50 p-6 text-sm text-slate-800 shadow-inner">
-            {content ? <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown> : <p className="text-slate-500 italic">暂无预览内容。</p>}
+          <div className="prose min-h-[300px] max-w-none rounded-md border border-border bg-secondary p-6 text-[13px] text-foreground">
+            {content ? <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown> : <p className="text-muted-foreground italic">暂无预览内容。</p>}
           </div>
         ) : (
-          <textarea
-            value={content}
-            onChange={(event) => setContent(event.target.value)}
-            placeholder="请使用 Markdown 编写公告内容"
-            rows={14}
-            className={`${inputClass} min-h-[300px] resize-y py-3 font-mono`}
-          />
+          <textarea value={content} onChange={(event) => setContent(event.target.value)} placeholder="请使用 Markdown 编写公告内容" rows={14} className={`${inputClass} min-h-[300px] resize-y py-3 font-mono`} />
         )}
-        {errors.content ? (
-          <p className={errorClass}>
-            <span className="material-symbols-outlined text-[14px]">error</span>
-            {errors.content}
-          </p>
-        ) : null}
-        <p className="mt-1.5 text-right text-[11px] text-slate-400 font-medium">{content.length}/10000</p>
+        {errors.content ? <p className={errorClass}><span className="material-symbols-outlined text-[14px]">error</span>{errors.content}</p> : null}
+        <p className="mt-1.5 text-right text-[11px] text-muted-foreground/60 font-medium">{content.length}/10000</p>
       </div>
 
-      <div className="flex justify-end gap-3 pt-6 border-t border-slate-100">
-        <button
-          type="submit"
-          disabled={isLoading}
-          className="flex items-center gap-2 rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-indigo-500 hover:shadow disabled:cursor-not-allowed disabled:opacity-50"
-        >
+      <div className="flex justify-end gap-3 pt-6 border-t border-border">
+        <button type="submit" disabled={isLoading} className="flex items-center gap-2 rounded-md bg-primary px-6 py-2.5 text-[13px] font-medium text-primary-foreground transition-all hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50">
           {isLoading ? (
-            <>
-              <span className="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>
-              保存中...
-            </>
+            <><span className="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>保存中...</>
           ) : (
-            <>
-              <span className="material-symbols-outlined text-[18px]">save</span>
-              {submitLabel}
-            </>
+            <><span className="material-symbols-outlined text-[18px]">save</span>{submitLabel}</>
           )}
         </button>
       </div>
