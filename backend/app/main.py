@@ -24,11 +24,38 @@ async def lifespan(application: FastAPI):
             logger.warning("[startup] %d missing SKU(s) — model catalog may be incomplete", len(missing))
     except Exception as exc:
         logger.error("[startup] SKU validation failed: %s", exc)
+
+    async def _periodic_cleanup():
+        from app.api.exports import EXPORT_DIR
+        from app.services.cleanup_service import purge_old_exports
+        while True:
+            try:
+                purge_old_exports(EXPORT_DIR, max_age_seconds=3600)
+            except Exception as e:
+                logger.error("[cleanup] Export purge failed: %s", e)
+            await asyncio.sleep(3600)  # Run every hour
+
+    import asyncio
+    cleanup_task = asyncio.create_task(_periodic_cleanup())
+    
     yield
     # ── Shutdown ──
+    cleanup_task.cancel()
 
 
-app = FastAPI(title="StudySolo API", redirect_slashes=False, lifespan=lifespan)
+from app.core.config import get_settings
+
+_settings = get_settings()
+_is_dev = _settings.environment != "production"
+
+app = FastAPI(
+    title="StudySolo API",
+    redirect_slashes=False,
+    lifespan=lifespan,
+    docs_url="/docs" if _is_dev else None,
+    redoc_url="/redoc" if _is_dev else None,
+    openapi_url="/openapi.json" if _is_dev else None,
+)
 
 # CORS — restricted to CORS_ORIGIN env variable
 add_cors_middleware(app)

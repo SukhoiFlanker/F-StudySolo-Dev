@@ -72,7 +72,7 @@ async def upload_document(
         }).execute()
     except Exception as e:
         logger.error("Failed to create document record: %s", e)
-        raise HTTPException(status_code=500, detail=f"创建文档记录失败: {e}")
+        raise HTTPException(status_code=500, detail="创建文档记录失败，请稍后重试")
 
     # Schedule background processing — returns immediately
     background_tasks.add_task(

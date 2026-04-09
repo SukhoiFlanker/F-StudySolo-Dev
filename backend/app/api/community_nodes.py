@@ -40,9 +40,10 @@ router = APIRouter()
 
 MAX_KNOWLEDGE_FILE_SIZE = 10 * 1024 * 1024
 ALLOWED_KNOWLEDGE_EXTENSIONS = {"pdf", "docx", "md", "txt"}
+# Using DB-backed rate limit via auth_rate_limit_events table
+# Rate limits for AI-powered schema generation
 SCHEMA_GEN_RATE_LIMIT = 20
 SCHEMA_GEN_WINDOW_SECONDS = 3600
-_schema_gen_hits: dict[str, list[float]] = defaultdict(list)
 
 SCHEMA_GEN_SYSTEM_PROMPT = """你是一个 JSON Schema 生成专家。
 
@@ -83,16 +84,19 @@ def _parse_json_text(value: str | None, *, field_name: str) -> dict | None:
     return parsed
 
 
-def _enforce_schema_rate_limit(user_id: str) -> None:
-    now = time.time()
-    recent = [ts for ts in _schema_gen_hits[user_id] if now - ts < SCHEMA_GEN_WINDOW_SECONDS]
-    if len(recent) >= SCHEMA_GEN_RATE_LIMIT:
+async def _enforce_schema_rate_limit(db: AsyncClient, user_id: str) -> None:
+    from app.api.auth._helpers import is_rate_limited, record_rate_limit_failure
+
+    bucket = f"schema_gen:{user_id}"
+    event_type = "ai_generation"
+
+    if await is_rate_limited(db, bucket, event_type, SCHEMA_GEN_RATE_LIMIT, SCHEMA_GEN_WINDOW_SECONDS):
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail="Schema 生成请求过于频繁，请稍后再试",
+            detail="Schema 生成请求过于频繁，请一小时后再试",
         )
-    recent.append(now)
-    _schema_gen_hits[user_id] = recent
+
+    await record_rate_limit_failure(db, bucket, event_type, SCHEMA_GEN_WINDOW_SECONDS)
 
 
 async def _maybe_store_knowledge_file(
@@ -296,8 +300,9 @@ async def remove_like(
 async def generate_schema(
     body: SchemaGenRequest,
     current_user: dict = Depends(get_current_user),
+    db: AsyncClient = Depends(get_supabase_client),
 ) -> SchemaGenResponse:
-    _enforce_schema_rate_limit(current_user["id"])
+    await _enforce_schema_rate_limit(db, current_user["id"])
     user_message = (
         f"节点名称：{body.name}\n"
         f"节点描述：{body.description}\n"

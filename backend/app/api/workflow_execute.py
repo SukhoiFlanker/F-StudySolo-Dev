@@ -23,6 +23,8 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 HEARTBEAT_INTERVAL_SECONDS = 5
+WF_EXEC_RATE_LIMIT = 20
+WF_EXEC_WINDOW_SECONDS = 60
 
 
 def _resolve_requested_graph(
@@ -55,6 +57,18 @@ async def _execute_workflow_sse_impl(
     service_db: AsyncClient,
 ):
     """SSE endpoint: execute a workflow and stream node events."""
+    from app.api.auth._helpers import is_rate_limited, record_rate_limit_failure
+
+    user_id = current_user["id"]
+    bucket = f"wf_exec:{user_id}"
+    event_type = "workflow_execute"
+
+    if await is_rate_limited(service_db, bucket, event_type, WF_EXEC_RATE_LIMIT, WF_EXEC_WINDOW_SECONDS):
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="工作流触发过于频繁，请稍后再试",
+        )
+    await record_rate_limit_failure(service_db, bucket, event_type, WF_EXEC_WINDOW_SECONDS)
 
     async def event_generator():
         queue: asyncio.Queue[dict[str, str] | None] = asyncio.Queue()
@@ -232,7 +246,7 @@ async def _execute_workflow_sse_impl(
                 await emit("workflow_done", {
                     "workflow_id": workflow_id,
                     "status": "error",
-                    "error": str(exc),
+                    "error": "工作流执行失败，请稍后重试",
                 })
             finally:
                 await emit_workflow_status("finalizing", "正在收尾执行状态")

@@ -247,9 +247,10 @@ async def _chat_stream_generator(
             yield {"data": "[DONE]"}
         except AIRouterError as exc:
             request_status = "failed"
+            logger.warning("AI router error: %s", exc)
             yield {
                 "data": json.dumps(
-                    {"error": str(exc), "done": True},
+                    {"error": "AI 模型调用失败，请稍后重试", "done": True},
                     ensure_ascii=False,
                 )
             }
@@ -258,7 +259,7 @@ async def _chat_stream_generator(
             logger.exception("AI chat stream failed: %s", exc)
             yield {
                 "data": json.dumps(
-                    {"error": str(exc), "done": True},
+                    {"error": "服务内部错误，请稍后重试", "done": True},
                     ensure_ascii=False,
                 )
             }
