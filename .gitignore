@@ -92,6 +92,7 @@ htmlcov/
 lint_output.txt
 ts_out.txt
 *.log
+tmp/
 
 # Trae IDE (case-insensitive fix)
 .trae/
