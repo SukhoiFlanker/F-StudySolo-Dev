@@ -114,16 +114,24 @@ Step 7  实现完成后执行验收检查
 
 ## ✅ 必须包含的交付物（每次新增节点必须有这些）
 
+> [!IMPORTANT]
+> **阶段说明（2026-04）**
+> 
+> 当前处于 **Phase 4A 实施前** 阶段。节点注册仍需手动完成以下前端步骤。
+> Phase 4A（节点 manifest-first 架构）完成后，前端步骤 2、3 将被自动化消除，届时本 SOP 会同步更新。
+> 
+> **当前状态：手动注册（5+ 处）→ Phase 4A 后：自动注册（2 处）**
+
 ### 后端交付物
-- [ ] `backend/app/nodes/{type_name}/__init__.py` — 自动注册
-- [ ] `backend/app/nodes/{type_name}/node.py` — 继承 `BaseNode`
-- [ ] `backend/app/nodes/{type_name}/prompts.py`（A型）或 `services/` 封装（B型）
+- [ ] `backend/app/nodes/{category}/{type_name}/__init__.py` — 自动注册（`__init_subclass__` 机制）
+- [ ] `backend/app/nodes/{category}/{type_name}/node.py` — 继承 `BaseNode`，需声明 `node_type`、`category`
+- [ ] `backend/app/nodes/{category}/{type_name}/prompts.py`（A型）或 `services/` 封装（B型）
 - [ ] `backend/tests/nodes/test_{type_name}.py` — 单元测试
 
-### 前端交付物
-- [ ] `frontend/src/features/workflow/components/nodes/renderers/{TypeName}Renderer.tsx`
-- [ ] `frontend/src/features/workflow/nodes/workflow-meta.ts` — 注册 `NodeType` union + meta
-- [ ] `frontend/src/features/workflow/components/nodes/index.ts` — 注册渲染器映射
+### 前端交付物（当前阶段需要全部手动完成）
+- [ ] `frontend/src/features/workflow/components/nodes/renderers/{TypeName}Renderer.tsx` — 渲染器组件
+- [ ] `frontend/src/features/workflow/nodes/workflow-meta.ts` — 注册 `NodeType` union + meta（⚠️ Phase 4A 后废弃）
+- [ ] `frontend/src/features/workflow/components/nodes/index.ts` — 注册 RENDERER_REGISTRY 映射（⚠️ Phase 4A 后废弃）
 - [ ] Renderer 实现 `compact?: boolean` prop（推理链面板适配）
 
 ### 文档交付物
