@@ -29,6 +29,7 @@ def track_usage(
     *,
     workflow_id_param: str | None = None,
     subtype_resolver: Callable[..., str] | None = None,
+    status_resolver: Callable[[Any], str | None] | None = None,
 ):
     """Decorator that wraps an endpoint with usage lifecycle management.
 
@@ -45,6 +46,8 @@ def track_usage(
         source_subtype: Static subtype. If None, ``subtype_resolver`` is used.
         workflow_id_param: Dot-path to extract workflow_id from the request body.
         subtype_resolver: ``(body) -> str`` callback for dynamic subtype.
+        status_resolver: ``(result) -> status`` callback for business-level
+            failures that return a normal response instead of raising.
 
     Notes:
         - Must be placed AFTER ``@router.post()`` (closer to the function).
@@ -109,7 +112,15 @@ def track_usage(
 
             with bind_usage_request(usage_request):
                 try:
-                    return await fn(*args, **kwargs)
+                    result = await fn(*args, **kwargs)
+                    if status_resolver is not None:
+                        try:
+                            resolved_status = status_resolver(result)
+                        except Exception:  # noqa: BLE001
+                            resolved_status = None
+                        if resolved_status in {"completed", "failed"}:
+                            request_status = resolved_status
+                    return result
                 except Exception:
                     request_status = "failed"
                     raise

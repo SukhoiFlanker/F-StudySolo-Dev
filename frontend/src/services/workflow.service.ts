@@ -1,4 +1,9 @@
-import { buildApiUrl, buildAuthHeaders, parseApiError } from '@/services/api-client';
+import {
+  buildApiUrl,
+  buildAuthHeaders,
+  credentialsFetch,
+  parseApiError,
+} from '@/services/api-client';
 import type {
   InteractionToggleResponse,
   WorkflowContent,
@@ -18,24 +23,6 @@ export class ApiError extends Error {
   ) {
     super(message);
     this.name = 'ApiError';
-  }
-}
-
-/**
- * Return the current Supabase access token (handles auto-refresh).
- * Returns undefined on the server side or if the user is not signed in.
- */
-async function getAccessToken(): Promise<string | undefined> {
-  if (typeof window === 'undefined') return undefined;
-  try {
-    const { createClient } = await import('@/utils/supabase/client');
-    const supabase = createClient();
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    return session?.access_token ?? undefined;
-  } catch {
-    return undefined;
   }
 }
 
@@ -106,9 +93,8 @@ export async function updateWorkflow(
   workflowId: string,
   payload: Partial<Pick<WorkflowMeta, 'name' | 'description' | 'tags' | 'is_public'>>
 ): Promise<WorkflowMeta> {
-  const response = await fetch(`/api/workflow/${workflowId}`, {
+  const response = await credentialsFetch(`/api/workflow/${workflowId}`, {
     method: 'PUT',
-    credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
@@ -126,9 +112,8 @@ export const renameWorkflow = (id: string, name: string) =>
 /* ── Delete ─────────────────────────────────────────────────── */
 
 export async function deleteWorkflow(workflowId: string): Promise<void> {
-  const response = await fetch(`/api/workflow/${workflowId}`, {
+  const response = await credentialsFetch(`/api/workflow/${workflowId}`, {
     method: 'DELETE',
-    credentials: 'include',
   });
 
   if (!response.ok) {
@@ -141,11 +126,8 @@ export async function deleteWorkflow(workflowId: string): Promise<void> {
 export async function toggleLike(
   workflowId: string
 ): Promise<InteractionToggleResponse> {
-  const token = await getAccessToken();
-  const response = await fetch(`/api/workflow/${workflowId}/like`, {
+  const response = await credentialsFetch(`/api/workflow/${workflowId}/like`, {
     method: 'POST',
-    credentials: 'include',
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
 
   if (!response.ok) {
@@ -157,11 +139,8 @@ export async function toggleLike(
 export async function toggleFavorite(
   workflowId: string
 ): Promise<InteractionToggleResponse> {
-  const token = await getAccessToken();
-  const response = await fetch(`/api/workflow/${workflowId}/favorite`, {
+  const response = await credentialsFetch(`/api/workflow/${workflowId}/favorite`, {
     method: 'POST',
-    credentials: 'include',
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
 
   if (!response.ok) {
@@ -239,11 +218,8 @@ export async function fetchMarketplace(
 export async function forkWorkflow(
   workflowId: string
 ): Promise<WorkflowMeta> {
-  const token = await getAccessToken();
-  const response = await fetch(`/api/workflow/${workflowId}/fork`, {
+  const response = await credentialsFetch(`/api/workflow/${workflowId}/fork`, {
     method: 'POST',
-    credentials: 'include',
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
 
   if (!response.ok) {

@@ -15,7 +15,6 @@
 
 import { create } from 'zustand';
 import type { ChatEntry } from '@/stores/use-conversation-store';
-import { useConversationStore } from '@/stores/use-conversation-store';
 import type { AIMode, ThinkingDepth } from '@/components/layout/sidebar/SidebarAIPanel';
 import type { AIModelOption } from '@/features/workflow/constants/ai-models';
 import { DEFAULT_MODEL } from '@/features/workflow/constants/ai-models';
@@ -53,7 +52,7 @@ export interface AIChatState {
 
 // ── Store ────────────────────────────────────────────────────────────
 
-export const useAIChatStore = create<AIChatState>((set, get) => ({
+export const useAIChatStore = create<AIChatState>((set) => ({
   input: '',
   loading: false,
   streaming: false,
@@ -87,12 +86,6 @@ export const useAIChatStore = create<AIChatState>((set, get) => ({
       timestamp: Date.now(),
     };
     set((state) => ({ history: [...state.history, entry] }));
-
-    // Persist to conversation store
-    const convStore = useConversationStore.getState();
-    if (!convStore.activeId) convStore.createConversation();
-    convStore.appendMessage(entry);
-
     return entry.id;
   },
 

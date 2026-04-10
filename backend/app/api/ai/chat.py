@@ -1,4 +1,4 @@
-"""AI Chat routes — unified endpoint (Task 2.1 merge result).
+"""AI Chat routes - unified endpoint (Task 2.1 merge result).
 
 Replaces the former ``api/ai_chat.py`` and ``api/ai_chat_stream.py``.
 Both ``/chat`` (non-streaming) and ``/chat-stream`` (SSE) live here.
@@ -29,12 +29,11 @@ from app.services.ai_chat.model_caller import call_with_model
 from app.services.ai_chat.validators import resolve_assistant_subtype, resolve_source_subtype
 from app.services.ai_router import AIRouterError, call_llm, call_llm_direct
 from app.services.quota_service import check_daily_chat_quota
+from app.services.usage_tracker import track_usage
 from app.services.usage_ledger import bind_usage_request, create_usage_request, finalize_usage_request
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
-
-# ── Constants ────────────────────────────────────────────────────────────────
 
 _DEPTH_INSTRUCTIONS: dict[str, str] = {
     "fast": "Please answer briefly and directly.",
@@ -43,12 +42,11 @@ _DEPTH_INSTRUCTIONS: dict[str, str] = {
 }
 _MODIFY_FORMAT_RETRIES = 2
 _MODIFY_FORMAT_ERROR = (
-    "上一条输出不是合法 JSON。现在只允许返回一个裸 JSON 对象，"
-    "首字符必须是 {，不得包含 Markdown 代码块、解释文字或额外前后缀。"
+    "涓婁竴鏉¤緭鍑轰笉鏄悎娉?JSON銆傜幇鍦ㄥ彧鍏佽杩斿洖涓€涓８ JSON 瀵硅薄锛?"
+    "棣栧瓧绗﹀繀椤绘槸 {锛屼笉寰楀寘鍚?Markdown 浠ｇ爜鍧椼€佽В閲婃枃瀛楁垨棰濆鍓嶅悗缂€銆?"
 )
+_MODEL_TIER_FORBIDDEN_RESPONSE = "This model requires a paid tier."
 
-
-# ── Shared helpers (stream-specific) ─────────────────────────────────────────
 
 def _normalize_modify_actions(parsed: dict[str, Any]) -> list[dict[str, Any]]:
     """Normalize action format from LLM output for canvas operations."""
@@ -100,153 +98,151 @@ async def _call_modify_with_retry(
     return None, last_raw, last_model_used, "unknown modify parsing error"
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# NON-STREAMING ENDPOINT
-# ═══════════════════════════════════════════════════════════════════════════════
+def _resolve_non_stream_chat_status(result: Any) -> str | None:
+    if (
+        isinstance(result, AIChatResponse)
+        and result.response == _MODEL_TIER_FORBIDDEN_RESPONSE
+    ):
+        return "failed"
+    return "completed"
+
+
+async def _ai_chat_impl(
+    body: AIChatRequest,
+    current_user: dict,
+) -> AIChatResponse:
+    selected_sku = await resolve_selected_sku(
+        selected_model_key=body.selected_model_key,
+        selected_platform=body.selected_platform,
+        selected_model=body.selected_model,
+    )
+    user_tier = current_user.get("tier", "free")
+    if selected_sku and not is_tier_allowed(user_tier, selected_sku.required_tier):
+        return AIChatResponse(
+            intent="CHAT",
+            response=_MODEL_TIER_FORBIDDEN_RESPONSE,
+            model_used=selected_sku.model_id,
+            platform_used=selected_sku.provider,
+        )
+
+    canvas_summary = build_canvas_summary(body.canvas_context)
+    has_canvas = bool(body.canvas_context and body.canvas_context.nodes)
+    model_identity = selected_sku.display_name if selected_sku else "StudySolo 榛樿妯″瀷"
+
+    if body.intent_hint == "ACTION":
+        return AIChatResponse(
+            intent="ACTION",
+            response="Executing action...",
+            model_used="none",
+            platform_used="none",
+        )
+
+    history_msgs = [
+        {"role": message.role, "content": message.content}
+        for message in (body.conversation_history or [])[-10:]
+    ]
+
+    if body.intent_hint and body.intent_hint in ("BUILD", "MODIFY", "CHAT"):
+        intent = body.intent_hint
+    else:
+        classify_msgs = [
+            {"role": "system", "content": get_intent_system_prompt(canvas_summary)},
+            *history_msgs,
+            {"role": "user", "content": body.user_input},
+        ]
+        try:
+            raw, _, _ = await call_with_model(
+                body.selected_model_key,
+                body.selected_platform,
+                body.selected_model,
+                classify_msgs,
+            )
+            parsed = extract_json_obj(raw)
+            intent = parsed.get("intent", "CHAT")
+            if intent not in ("BUILD", "MODIFY", "CHAT", "ACTION"):
+                intent = "CHAT"
+        except Exception:
+            intent = "BUILD" if not has_canvas else "CHAT"
+
+    if intent == "BUILD":
+        return AIChatResponse(
+            intent="BUILD",
+            response="Preparing workflow generation...",
+            model_used=selected_sku.model_id if selected_sku else (body.selected_model or "default"),
+            platform_used=selected_sku.provider if selected_sku else (body.selected_platform or "default"),
+        )
+
+    if intent == "MODIFY":
+        modify_msgs = [
+            {"role": "system", "content": get_modify_system_prompt(canvas_summary)},
+            *history_msgs,
+            {"role": "user", "content": body.user_input},
+        ]
+        raw, platform_used, model_used = await call_with_model(
+            body.selected_model_key,
+            body.selected_platform,
+            body.selected_model,
+            modify_msgs,
+        )
+        try:
+            parsed = extract_json_obj(raw)
+            actions_data = parsed.get("tool_calls") or parsed.get("actions", [])
+            actions = [
+                CanvasAction(
+                    operation=action.get("tool", action.get("operation", "")).upper(),
+                    target_node_id=(
+                        action.get("params", action.get("payload", {})).get("target_node_id")
+                        or action.get("target_node_id")
+                    ),
+                    payload=action.get("params", action.get("payload", {})),
+                )
+                for action in actions_data
+            ]
+            response_text = parsed.get("response", "Canvas updated.")
+        except (json.JSONDecodeError, KeyError):
+            actions = None
+            response_text = raw
+
+        return AIChatResponse(
+            intent="MODIFY",
+            response=response_text,
+            actions=actions,
+            model_used=model_used,
+            platform_used=platform_used,
+        )
+
+    chat_msgs = [
+        {"role": "system", "content": get_chat_system_prompt(canvas_summary, model_identity=model_identity)},
+        *history_msgs,
+        {"role": "user", "content": body.user_input},
+    ]
+    raw, platform_used, model_used = await call_with_model(
+        body.selected_model_key,
+        body.selected_platform,
+        body.selected_model,
+        chat_msgs,
+    )
+    return AIChatResponse(
+        intent="CHAT",
+        response=raw,
+        model_used=model_used,
+        platform_used=platform_used,
+    )
+
 
 @router.post("/chat", response_model=AIChatResponse)
+@track_usage(
+    source_type="assistant",
+    subtype_resolver=resolve_assistant_subtype,
+    workflow_id_param="canvas_context.workflow_id",
+    status_resolver=_resolve_non_stream_chat_status,
+)
 async def ai_chat(
     body: AIChatRequest,
     current_user: dict = Depends(get_current_user),
 ):
-    usage_request = await create_usage_request(
-        user_id=current_user["id"],
-        source_type="assistant",
-        source_subtype=resolve_assistant_subtype(body),
-        workflow_id=body.canvas_context.workflow_id if body.canvas_context else None,
-    )
-    request_status = "completed"
+    return await _ai_chat_impl(body, current_user)
 
-    with bind_usage_request(usage_request):
-        try:
-            selected_sku = await resolve_selected_sku(
-                selected_model_key=body.selected_model_key,
-                selected_platform=body.selected_platform,
-                selected_model=body.selected_model,
-            )
-            user_tier = current_user.get("tier", "free")
-            if selected_sku and not is_tier_allowed(user_tier, selected_sku.required_tier):
-                request_status = "failed"
-                return AIChatResponse(
-                    intent="CHAT",
-                    response="This model requires a paid tier.",
-                    model_used=selected_sku.model_id,
-                    platform_used=selected_sku.provider,
-                )
-
-            canvas_summary = build_canvas_summary(body.canvas_context)
-            has_canvas = bool(body.canvas_context and body.canvas_context.nodes)
-            model_identity = selected_sku.display_name if selected_sku else "StudySolo 默认模型"
-
-            if body.intent_hint == "ACTION":
-                return AIChatResponse(
-                    intent="ACTION",
-                    response="Executing action...",
-                    model_used="none",
-                    platform_used="none",
-                )
-
-            history_msgs = [
-                {"role": message.role, "content": message.content}
-                for message in (body.conversation_history or [])[-10:]
-            ]
-
-            if body.intent_hint and body.intent_hint in ("BUILD", "MODIFY", "CHAT"):
-                intent = body.intent_hint
-            else:
-                classify_msgs = [
-                    {"role": "system", "content": get_intent_system_prompt(canvas_summary)},
-                    *history_msgs,
-                    {"role": "user", "content": body.user_input},
-                ]
-                try:
-                    raw, _, _ = await call_with_model(
-                        body.selected_model_key,
-                        body.selected_platform,
-                        body.selected_model,
-                        classify_msgs,
-                    )
-                    parsed = extract_json_obj(raw)
-                    intent = parsed.get("intent", "CHAT")
-                    if intent not in ("BUILD", "MODIFY", "CHAT", "ACTION"):
-                        intent = "CHAT"
-                except Exception:
-                    intent = "BUILD" if not has_canvas else "CHAT"
-
-            if intent == "BUILD":
-                return AIChatResponse(
-                    intent="BUILD",
-                    response="Preparing workflow generation...",
-                    model_used=selected_sku.model_id if selected_sku else (body.selected_model or "default"),
-                    platform_used=selected_sku.provider if selected_sku else (body.selected_platform or "default"),
-                )
-
-            if intent == "MODIFY":
-                modify_msgs = [
-                    {"role": "system", "content": get_modify_system_prompt(canvas_summary)},
-                    *history_msgs,
-                    {"role": "user", "content": body.user_input},
-                ]
-                raw, platform_used, model_used = await call_with_model(
-                    body.selected_model_key,
-                    body.selected_platform,
-                    body.selected_model,
-                    modify_msgs,
-                )
-                try:
-                    parsed = extract_json_obj(raw)
-                    actions_data = parsed.get("tool_calls") or parsed.get("actions", [])
-                    actions = [
-                        CanvasAction(
-                            operation=action.get("tool", action.get("operation", "")).upper(),
-                            target_node_id=(
-                                action.get("params", action.get("payload", {})).get("target_node_id")
-                                or action.get("target_node_id")
-                            ),
-                            payload=action.get("params", action.get("payload", {})),
-                        )
-                        for action in actions_data
-                    ]
-                    response_text = parsed.get("response", "Canvas updated.")
-                except (json.JSONDecodeError, KeyError):
-                    actions = None
-                    response_text = raw
-
-                return AIChatResponse(
-                    intent="MODIFY",
-                    response=response_text,
-                    actions=actions,
-                    model_used=model_used,
-                    platform_used=platform_used,
-                )
-
-            chat_msgs = [
-                {"role": "system", "content": get_chat_system_prompt(canvas_summary, model_identity=model_identity)},
-                *history_msgs,
-                {"role": "user", "content": body.user_input},
-            ]
-            raw, platform_used, model_used = await call_with_model(
-                body.selected_model_key,
-                body.selected_platform,
-                body.selected_model,
-                chat_msgs,
-            )
-            return AIChatResponse(
-                intent="CHAT",
-                response=raw,
-                model_used=model_used,
-                platform_used=platform_used,
-            )
-        except Exception:
-            request_status = "failed"
-            raise
-        finally:
-            await finalize_usage_request(usage_request.request_id, request_status)
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# STREAMING ENDPOINT (SSE)
-# ═══════════════════════════════════════════════════════════════════════════════
 
 async def _chat_stream_generator(
     body: AIChatRequest,
@@ -270,7 +266,6 @@ async def _chat_stream_generator(
             )
             user_tier = current_user.get("tier", "free")
 
-            # ── Daily chat quota check (soft block → degrade to fallback model) ──
             quota_degraded = False
             if service_db is not None:
                 chat_quota = await check_daily_chat_quota(
@@ -300,7 +295,7 @@ async def _chat_stream_generator(
                 request_status = "failed"
                 yield {
                     "data": json.dumps(
-                        {"error": "This model requires a paid tier.", "done": True},
+                        {"error": _MODEL_TIER_FORBIDDEN_RESPONSE, "done": True},
                         ensure_ascii=False,
                     )
                 }
@@ -308,7 +303,7 @@ async def _chat_stream_generator(
 
             canvas_summary = build_canvas_summary(body.canvas_context)
             has_canvas = bool(body.canvas_context and body.canvas_context.nodes)
-            model_identity = selected_sku.display_name if selected_sku else "StudySolo 默认模型"
+            model_identity = selected_sku.display_name if selected_sku else "StudySolo 榛樿妯″瀷"
             history_msgs = [
                 {"role": message.role, "content": message.content}
                 for message in (body.conversation_history or [])[-10:]
@@ -362,7 +357,7 @@ async def _chat_stream_generator(
                                 {
                                     "intent": "MODIFY",
                                     "done": True,
-                                    "response": "未能生成可执行的画布操作。请重试，或改用手动编辑节点。",
+                                    "response": "鏈兘鐢熸垚鍙墽琛岀殑鐢诲竷鎿嶄綔銆傝閲嶈瘯锛屾垨鏀圭敤鎵嬪姩缂栬緫鑺傜偣銆?",
                                     "error": "INVALID_CREATE_JSON",
                                     "error_detail": parse_error,
                                 },
@@ -384,7 +379,7 @@ async def _chat_stream_generator(
                             ensure_ascii=False,
                         )
                     }
-                except Exception as exc:
+                except Exception as exc:  # noqa: BLE001
                     request_status = "failed"
                     yield {
                         "data": json.dumps(
@@ -441,16 +436,16 @@ async def _chat_stream_generator(
             logger.warning("AI router error: %s", exc)
             yield {
                 "data": json.dumps(
-                    {"error": "AI 模型调用失败，请稍后重试", "done": True},
+                    {"error": "AI 妯″瀷璋冪敤澶辫触锛岃绋嶅悗閲嶈瘯", "done": True},
                     ensure_ascii=False,
                 )
             }
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             request_status = "failed"
             logger.exception("AI chat stream failed: %s", exc)
             yield {
                 "data": json.dumps(
-                    {"error": "服务内部错误，请稍后重试", "done": True},
+                    {"error": "鏈嶅姟鍐呴儴閿欒锛岃绋嶅悗閲嶈瘯", "done": True},
                     ensure_ascii=False,
                 )
             }

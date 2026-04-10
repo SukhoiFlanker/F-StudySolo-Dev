@@ -4,9 +4,8 @@ import sys
 from types import ModuleType, SimpleNamespace
 from unittest.mock import MagicMock
 
-import jwt
 from fastapi.testclient import TestClient
-from tests._helpers import TEST_JWT_SECRET
+from tests._helpers import TEST_JWT_SECRET, make_bearer_headers
 
 
 def _install_supabase_stub():
@@ -29,21 +28,10 @@ os.environ.setdefault("SUPABASE_SERVICE_ROLE_KEY", "test-service-role-key")
 os.environ.setdefault("SUPABASE_ANON_KEY", "test-anon-key")
 
 from app.main import app  # noqa: E402
+from app.api.auth import _helpers as auth_helpers_module  # noqa: E402
 from app.core import deps  # noqa: E402
 from app.api.workflow import execute as workflow_execute_module  # noqa: E402
 from app.middleware import auth as auth_middleware  # noqa: E402
-
-
-def _event_types(response_text: str) -> list[str]:
-    return [
-        line[7:]
-        for line in response_text.splitlines()
-        if line.startswith("event: ")
-    ]
-
-
-def _read_stream_text(response) -> str:
-    return "\n".join(response.iter_lines()) + "\n"
 
 
 class _DbMock:
@@ -111,18 +99,25 @@ def _install_execution_stubs(monkeypatch, captured: dict):
     async def fake_noop(*_args, **_kwargs):
         return None
 
+    async def fake_is_rate_limited(*_args, **_kwargs):
+        return False
+
+    async def fake_record_rate_limit_failure(*_args, **_kwargs):
+        return 0
+
+    async def fake_execution_quota(*_args, **_kwargs):
+        return {"allowed": True, "used": 0, "limit": 20}
+
     monkeypatch.setattr(workflow_execute_module, "execute_workflow", fake_execute_workflow)
     monkeypatch.setattr(workflow_execute_module, "create_usage_request", fake_create_usage_request)
     monkeypatch.setattr(workflow_execute_module, "finalize_usage_request", fake_finalize_usage_request)
     monkeypatch.setattr(workflow_execute_module, "bind_usage_request", lambda _req: contextlib.nullcontext())
+    monkeypatch.setattr(workflow_execute_module, "check_daily_execution_quota", fake_execution_quota)
     monkeypatch.setattr(workflow_execute_module, "_load_request_total_tokens", fake_load_total_tokens)
     monkeypatch.setattr(workflow_execute_module, "_finalize_run", fake_noop)
     monkeypatch.setattr(workflow_execute_module, "_update_usage_daily", fake_noop)
-
-
-def _make_auth_headers() -> dict[str, str]:
-    token = jwt.encode({"sub": "user-1", "email": "user-1@example.com"}, TEST_JWT_SECRET, algorithm="HS256")
-    return {"Authorization": f"Bearer {token}"}
+    monkeypatch.setattr(auth_helpers_module, "is_rate_limited", fake_is_rate_limited)
+    monkeypatch.setattr(auth_helpers_module, "record_rate_limit_failure", fake_record_rate_limit_failure)
 
 
 def _install_auth_stub(monkeypatch) -> dict[str, str]:
@@ -134,7 +129,7 @@ def _install_auth_stub(monkeypatch) -> dict[str, str]:
         return SimpleNamespace(auth=auth)
 
     monkeypatch.setattr(auth_middleware, "get_db", fake_get_db)
-    return _make_auth_headers()
+    return make_bearer_headers("user-1", email="user-1@example.com", secret=TEST_JWT_SECRET)
 
 
 def test_post_execute_prefers_request_body(monkeypatch):
@@ -188,6 +183,7 @@ def test_post_execute_without_body_falls_back_to_db(monkeypatch):
         client = TestClient(app, raise_server_exceptions=False)
         with client.stream("POST", "/api/workflow/wf-1/execute", headers=headers) as response:
             assert response.status_code == 200
+            assert response.headers["content-type"].startswith("text/event-stream")
         assert captured["nodes"][0]["id"] == "db-node"
         assert captured["edges"][0]["id"] == "e-db"
     finally:
@@ -201,6 +197,7 @@ def test_post_execute_rejects_half_graph(monkeypatch):
         "edges_json": [],
     }
 
+    _install_execution_stubs(monkeypatch, {})
     headers = _install_auth_stub(monkeypatch)
     app.dependency_overrides[deps.get_current_user] = lambda: {"id": "user-1", "tier": "free"}
     app.dependency_overrides[deps.get_supabase_client] = lambda: _DbMock(workflow)
@@ -215,6 +212,7 @@ def test_post_execute_rejects_half_graph(monkeypatch):
             json={"nodes_json": [{"id": "body-node", "type": "summary", "data": {"label": "body"}}]},
         ) as response:
             assert response.status_code == 200
+            assert response.headers["content-type"].startswith("text/event-stream")
     finally:
         app.dependency_overrides.clear()
 

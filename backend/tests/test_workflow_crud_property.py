@@ -6,7 +6,7 @@ Validates: Requirements 3.1, 3.2, 11.3
 """
 
 import sys
-from types import ModuleType
+from types import ModuleType, SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 
 # ---------------------------------------------------------------------------
@@ -32,12 +32,11 @@ import os
 import uuid
 from datetime import datetime, timezone
 
-import jwt
 import pytest
 from hypothesis import given, settings as hyp_settings
 from hypothesis import strategies as st
 from fastapi.testclient import TestClient
-from tests._helpers import TEST_JWT_SECRET
+from tests._helpers import TEST_JWT_SECRET, make_bearer_headers
 
 os.environ.setdefault("JWT_SECRET", TEST_JWT_SECRET)
 os.environ.setdefault("SUPABASE_URL", "https://example.supabase.co")
@@ -46,24 +45,70 @@ os.environ.setdefault("SUPABASE_ANON_KEY", "test-anon-key")
 
 from app.main import app  # noqa: E402
 from app.core import deps  # noqa: E402
+from app.api.workflow import crud as workflow_crud_module  # noqa: E402
+from app.middleware import auth as auth_middleware  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
-_JWT_SECRET = TEST_JWT_SECRET
 _FAKE_USER = {"id": "user-test-001", "email": "test@example.com"}
 _NOW = datetime.now(timezone.utc).isoformat()
 
 
-def _make_auth_headers() -> dict:
-    """Generate a valid JWT Bearer token for the fake test user."""
-    token = jwt.encode(
-        {"sub": _FAKE_USER["id"], "email": _FAKE_USER["email"]},
-        _JWT_SECRET,
-        algorithm="HS256",
-    )
-    return {"Authorization": f"Bearer {token}"}
+class _ServiceDbMock:
+    def __init__(self, *, nickname: str = "Test User"):
+        self.nickname = nickname
+        self.table = ""
+
+    def from_(self, table: str):
+        self.table = table
+        return self
+
+    def select(self, _cols: str):
+        return self
+
+    def eq(self, _key: str, _value):
+        return self
+
+    def in_(self, _key: str, _value):
+        return self
+
+    def single(self):
+        return self
+
+    def maybe_single(self):
+        return self
+
+    async def execute(self):
+        result = MagicMock()
+        if self.table == "user_profiles":
+            result.data = {"nickname": self.nickname}
+        else:
+            result.data = []
+        return result
+
+
+@pytest.fixture(autouse=True)
+def _stub_workflow_crud_dependencies(monkeypatch):
+    async def fake_assert_workflow_quota(*_args, **_kwargs):
+        return None
+
+    async def fake_check_workflow_access(workflow_id: str, user_id: str, required_role: str, _db):
+        return {
+            "workflow": {"id": workflow_id, "user_id": user_id, "name": "stub", "is_public": False},
+            "access_role": "owner",
+        }
+
+    async def fake_get_user(_token: str):
+        return SimpleNamespace(user=SimpleNamespace(id=_FAKE_USER["id"], email=_FAKE_USER["email"]))
+
+    async def fake_auth_db():
+        return SimpleNamespace(auth=SimpleNamespace(get_user=fake_get_user))
+
+    monkeypatch.setattr(workflow_crud_module, "assert_workflow_quota", fake_assert_workflow_quota)
+    monkeypatch.setattr(workflow_crud_module, "check_workflow_access", fake_check_workflow_access)
+    monkeypatch.setattr(auth_middleware, "get_db", fake_auth_db)
 
 
 def _make_workflow_record(workflow_id: str, name: str, description: str | None) -> dict:
@@ -173,8 +218,9 @@ def test_workflow_crud_roundtrip(name: str, description: str | None):
     # Override FastAPI dependencies for this test
     app.dependency_overrides[deps.get_current_user] = lambda: _FAKE_USER
     app.dependency_overrides[deps.get_supabase_client] = lambda: db_mock
+    app.dependency_overrides[deps.get_db] = lambda: _ServiceDbMock()
 
-    headers = _make_auth_headers()
+    headers = make_bearer_headers(_FAKE_USER["id"], email=_FAKE_USER["email"])
 
     try:
         client = TestClient(app, raise_server_exceptions=False)
@@ -228,10 +274,11 @@ def test_workflow_roundtrip_simple():
     name = "学习 React Hooks"
     description = "系统学习 React Hooks 的知识体系"
     db_mock = _make_supabase_mock(workflow_id, name, description)
-    headers = _make_auth_headers()
+    headers = make_bearer_headers(_FAKE_USER["id"], email=_FAKE_USER["email"])
 
     app.dependency_overrides[deps.get_current_user] = lambda: _FAKE_USER
     app.dependency_overrides[deps.get_supabase_client] = lambda: db_mock
+    app.dependency_overrides[deps.get_db] = lambda: _ServiceDbMock()
 
     try:
         client = TestClient(app, raise_server_exceptions=False)
@@ -256,10 +303,11 @@ def test_workflow_roundtrip_no_description():
     workflow_id = str(uuid.uuid4())
     name = "无描述工作流"
     db_mock = _make_supabase_mock(workflow_id, name, None)
-    headers = _make_auth_headers()
+    headers = make_bearer_headers(_FAKE_USER["id"], email=_FAKE_USER["email"])
 
     app.dependency_overrides[deps.get_current_user] = lambda: _FAKE_USER
     app.dependency_overrides[deps.get_supabase_client] = lambda: db_mock
+    app.dependency_overrides[deps.get_db] = lambda: _ServiceDbMock()
 
     try:
         client = TestClient(app, raise_server_exceptions=False)

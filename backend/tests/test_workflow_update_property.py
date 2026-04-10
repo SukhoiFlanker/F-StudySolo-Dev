@@ -4,8 +4,10 @@ Regression test: workflow update should not chain select() after update().
 
 import os
 import sys
-from types import ModuleType
+from types import ModuleType, SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
+
+import pytest
 
 
 def _install_supabase_stub():
@@ -23,10 +25,9 @@ def _install_supabase_stub():
 
 _install_supabase_stub()
 
-import jwt
 from fastapi.testclient import TestClient
 
-from tests._helpers import TEST_JWT_SECRET
+from tests._helpers import TEST_JWT_SECRET, make_bearer_headers
 
 os.environ.setdefault("JWT_SECRET", TEST_JWT_SECRET)
 os.environ.setdefault("SUPABASE_URL", "https://example.supabase.co")
@@ -35,18 +36,59 @@ os.environ.setdefault("SUPABASE_ANON_KEY", "test-anon-key")
 
 from app.main import app  # noqa: E402
 from app.core import deps  # noqa: E402
+from app.api.workflow import crud as workflow_crud_module  # noqa: E402
+from app.middleware import auth as auth_middleware  # noqa: E402
 
 
 _FAKE_USER = {"id": "user-test-001", "email": "test@example.com"}
 
 
-def _make_auth_headers() -> dict:
-    token = jwt.encode(
-        {"sub": _FAKE_USER["id"], "email": _FAKE_USER["email"]},
-        TEST_JWT_SECRET,
-        algorithm="HS256",
-    )
-    return {"Authorization": f"Bearer {token}"}
+class _ServiceDbMock:
+    def __init__(self, *, nickname: str = "Test User", actions: list[str] | None = None):
+        self.nickname = nickname
+        self.actions = actions or []
+        self.table = ""
+
+    def from_(self, table: str):
+        self.table = table
+        return self
+
+    def select(self, _cols: str):
+        return self
+
+    def eq(self, _key: str, _value):
+        return self
+
+    def single(self):
+        return self
+
+    async def execute(self):
+        result = MagicMock()
+        if self.table == "user_profiles":
+            result.data = {"nickname": self.nickname}
+        elif self.table == "ss_workflow_interactions":
+            result.data = [{"action": action} for action in self.actions]
+        else:
+            result.data = []
+        return result
+
+
+@pytest.fixture(autouse=True)
+def _stub_workflow_update_dependencies(monkeypatch):
+    async def fake_check_workflow_access(workflow_id: str, user_id: str, required_role: str, _db):
+        return {
+            "workflow": {"id": workflow_id, "user_id": user_id, "name": "stub", "is_public": False},
+            "access_role": "owner",
+        }
+
+    async def fake_get_user(_token: str):
+        return SimpleNamespace(user=SimpleNamespace(id=_FAKE_USER["id"], email=_FAKE_USER["email"]))
+
+    async def fake_auth_db():
+        return SimpleNamespace(auth=SimpleNamespace(get_user=fake_get_user))
+
+    monkeypatch.setattr(workflow_crud_module, "check_workflow_access", fake_check_workflow_access)
+    monkeypatch.setattr(auth_middleware, "get_db", fake_auth_db)
 
 
 def _make_update_db_mock(workflow_id: str) -> MagicMock:
@@ -100,13 +142,14 @@ def test_update_workflow_returns_updated_meta_without_update_select_chain():
 
     app.dependency_overrides[deps.get_current_user] = lambda: _FAKE_USER
     app.dependency_overrides[deps.get_supabase_client] = lambda: db_mock
+    app.dependency_overrides[deps.get_db] = lambda: _ServiceDbMock()
 
     try:
         client = TestClient(app, raise_server_exceptions=False)
         response = client.put(
             f"/api/workflow/{workflow_id}",
             json={"name": "Updated workflow", "description": "Updated description"},
-            headers=_make_auth_headers(),
+            headers=make_bearer_headers(_FAKE_USER["id"], email=_FAKE_USER["email"]),
         )
 
         assert response.status_code == 200, response.text

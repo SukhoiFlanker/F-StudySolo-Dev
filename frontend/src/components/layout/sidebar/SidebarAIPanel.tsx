@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ChevronDown, History, MoreHorizontal, Plus, Trash2, X } from 'lucide-react';
 import { ChatMessages } from './ChatMessages';
 import { ChatInputBar } from './ChatInputBar';
+import { persistConversationMessage } from '@/features/workflow/hooks/chat-conversation-sync';
 import { useCanvasContext } from '@/features/workflow/hooks/use-canvas-context';
 import { useConversationStore } from '@/stores/use-conversation-store';
 import { useStreamChat } from '@/features/workflow/hooks/use-stream-chat';
@@ -33,8 +34,6 @@ export function SidebarAIPanel() {
     setMode,
     thinkingDepth,
     setThinkingDepth,
-    selectedModel,
-    setSelectedModel,
   } = useAIChatStore();
 
   const { send: sendStream, abort: abortStream } = useStreamChat();
@@ -106,7 +105,10 @@ export function SidebarAIPanel() {
   }, []);
 
   useEffect(() => {
-    fetchChatModels();
+    const timerId = window.setTimeout(() => {
+      void fetchChatModels();
+    }, 0);
+    return () => window.clearTimeout(timerId);
   }, [fetchChatModels]);
 
   useEffect(() => {
@@ -119,19 +121,30 @@ export function SidebarAIPanel() {
     }
   }, [history.length, activeConversation, syncHistory]);
 
+  const appendChatMessage = useCallback((role: 'user' | 'assistant', content: string) => {
+    const id = pushMessage(role, content);
+    persistConversationMessage({
+      id,
+      role,
+      content,
+      timestamp: Date.now(),
+    });
+    return id;
+  }, [pushMessage]);
+
   const handleQuickAction = useCallback((text: string): boolean => {
     if (/^(运行|执行|开始跑一个)/.test(text)) {
       startExecution();
-      pushMessage('assistant', '已开始运行工作流。');
+      appendChatMessage('assistant', '已开始运行工作流。');
       return true;
     }
     if (/^(撤销|undo)/.test(text)) {
       undo();
-      pushMessage('assistant', '已撤销。');
+      appendChatMessage('assistant', '已撤销。');
       return true;
     }
     return false;
-  }, [pushMessage, startExecution, undo]);
+  }, [appendChatMessage, startExecution, undo]);
 
   const handleSend = async () => {
     if ((!input.trim() && !streaming) || loading) {
@@ -147,7 +160,7 @@ export function SidebarAIPanel() {
       return;
     }
 
-    pushMessage('user', userInput);
+    appendChatMessage('user', userInput);
     setInput('');
     setError(null);
 

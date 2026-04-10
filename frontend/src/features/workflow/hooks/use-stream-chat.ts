@@ -19,7 +19,7 @@ import type { ChatEntry } from '@/stores/use-conversation-store';
 import type { ThinkingDepth } from '@/components/layout/sidebar/SidebarAIPanel';
 import { useAIChatStore, abortAIChatStream } from '@/stores/use-ai-chat-store';
 import { useWorkflowStore } from '@/stores/use-workflow-store';
-import { useConversationStore } from '@/stores/use-conversation-store';
+import { persistConversationMessage } from './chat-conversation-sync';
 import { executeCanvasActions, type CanvasAction } from './use-action-executor';
 
 // ── Types ────────────────────────────────────────────────────────────
@@ -288,8 +288,7 @@ export function useStreamChat() {
 
       updateMessage(assistantMsgId, displayText);
 
-      // Persist final message to conversation store
-      useConversationStore.getState().appendMessage({
+      persistConversationMessage({
         id: assistantMsgId,
         role: 'assistant',
         content: displayText,
