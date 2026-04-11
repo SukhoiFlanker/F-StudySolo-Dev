@@ -13,6 +13,11 @@ async function getAccessTokenFromCookieStore() {
   return cookieStore.get('access_token')?.value;
 }
 
+async function withServerAccessToken<T>(runner: (token?: string) => Promise<T>): Promise<T> {
+  const token = await getAccessTokenFromCookieStore();
+  return runner(token);
+}
+
 /**
  * Attempt to refresh the access token server-side using the refresh_token cookie.
  * Returns the new access_token or undefined if refresh failed.
@@ -42,37 +47,36 @@ async function tryServerRefresh(): Promise<string | undefined> {
 }
 
 export async function fetchWorkflowListForServer(): Promise<WorkflowMeta[]> {
-  const token = await getAccessTokenFromCookieStore();
-  return fetchWorkflowList(token, 30);
+  return withServerAccessToken((token) => fetchWorkflowList(token, 30));
 }
 
 export async function fetchWorkflowContentForServer(
   workflowId: string
 ): Promise<WorkflowContent | null> {
-  const token = await getAccessTokenFromCookieStore();
-  try {
-    return await fetchWorkflowContent(workflowId, token);
-  } catch (e) {
-    if (e instanceof ApiError && e.status === 401) {
-      // Token expired — try refreshing and retry once
-      const freshToken = await tryServerRefresh();
-      if (freshToken) {
-        try {
-          return await fetchWorkflowContent(workflowId, freshToken);
-        } catch {
-          return null;
+  return withServerAccessToken(async (token) => {
+    try {
+      return await fetchWorkflowContent(workflowId, token);
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 401) {
+        // Token expired — try refreshing and retry once
+        const freshToken = await tryServerRefresh();
+        if (freshToken) {
+          try {
+            return await fetchWorkflowContent(workflowId, freshToken);
+          } catch {
+            return null;
+          }
         }
       }
+      return null;
     }
-    return null;
-  }
+  });
 }
 
 export async function fetchPublicWorkflowForServer(
   workflowId: string
 ): Promise<WorkflowPublicView | null> {
-  const token = await getAccessTokenFromCookieStore();
-  return fetchPublicWorkflow(workflowId, token);
+  return withServerAccessToken((token) => fetchPublicWorkflow(workflowId, token));
 }
 
 export interface UserWorkflowQuota {
@@ -91,17 +95,18 @@ export interface UserWorkflowQuota {
 
 
 export async function fetchUserQuotaForServer(): Promise<UserWorkflowQuota | null> {
-  const token = await getAccessTokenFromCookieStore();
-  if (!token) return null;
-  try {
-    const res = await fetch(buildApiUrl('/api/usage/quota'), {
-      headers: buildAuthHeaders(token),
-      credentials: 'include',
-      cache: 'no-store',
-    });
-    if (!res.ok) return null;
-    return res.json() as Promise<UserWorkflowQuota>;
-  } catch {
-    return null;
-  }
+  return withServerAccessToken(async (token) => {
+    if (!token) return null;
+    try {
+      const res = await fetch(buildApiUrl('/api/usage/quota'), {
+        headers: buildAuthHeaders(token),
+        credentials: 'include',
+        cache: 'no-store',
+      });
+      if (!res.ok) return null;
+      return res.json() as Promise<UserWorkflowQuota>;
+    } catch {
+      return null;
+    }
+  });
 }

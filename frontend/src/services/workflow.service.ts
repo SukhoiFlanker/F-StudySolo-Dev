@@ -34,27 +34,82 @@ export type FetchResult<T> =
   | { ok: true; data: T }
   | { ok: false; error: string; status?: number };
 
+interface WorkflowReadOptions<T> {
+  token?: string;
+  revalidate?: number;
+  cache?: RequestCache;
+  fallback: T;
+  logLabel: string;
+  logContext?: string;
+  suppressStatuses?: number[];
+  unauthorizedMessage?: string;
+}
+
+function buildWorkflowReadInit(
+  token?: string,
+  options: Pick<WorkflowReadOptions<unknown>, 'revalidate' | 'cache'> = {}
+) {
+  const init: RequestInit & { next?: { revalidate: number } } = {
+    headers: buildAuthHeaders(token),
+  };
+
+  if (typeof options.revalidate === 'number') {
+    init.next = { revalidate: options.revalidate };
+  }
+  if (options.cache) {
+    init.cache = options.cache;
+  }
+
+  return init;
+}
+
+async function fetchWorkflowRead<T>(
+  path: string,
+  options: WorkflowReadOptions<T>
+): Promise<T> {
+  try {
+    const response = await fetch(
+      buildApiUrl(path),
+      buildWorkflowReadInit(options.token, options),
+    );
+
+    if (!response.ok) {
+      if (options.unauthorizedMessage && response.status === 401) {
+        throw new ApiError(options.unauthorizedMessage, 401);
+      }
+
+      if (!options.suppressStatuses?.includes(response.status)) {
+        if (options.logContext) {
+          console.error(`[${options.logLabel}] HTTP`, response.status, 'for', options.logContext);
+        } else {
+          console.error(`[${options.logLabel}] HTTP`, response.status);
+        }
+      }
+      return options.fallback;
+    }
+
+    return (await response.json()) as T;
+  } catch (e) {
+    if (e instanceof ApiError) {
+      throw e;
+    }
+    console.error(`[${options.logLabel}] network error:`, e);
+    return options.fallback;
+  }
+}
+
 /* ── List (my workflows) ────────────────────────────────────── */
 
 export async function fetchWorkflowList(
   token?: string,
   revalidate = 30
 ): Promise<WorkflowMeta[]> {
-  try {
-    const response = await fetch(buildApiUrl('/api/workflow'), {
-      headers: buildAuthHeaders(token),
-      next: { revalidate },
-    });
-
-    if (!response.ok) {
-      console.error('[fetchWorkflowList] HTTP', response.status);
-      return [];
-    }
-    return (await response.json()) as WorkflowMeta[];
-  } catch (e) {
-    console.error('[fetchWorkflowList] network error:', e);
-    return [];
-  }
+  return fetchWorkflowRead('/api/workflow', {
+    token,
+    revalidate,
+    fallback: [],
+    logLabel: 'fetchWorkflowList',
+  });
 }
 
 /* ── Content (canvas editing) ───────────────────────────────── */
@@ -63,28 +118,14 @@ export async function fetchWorkflowContent(
   workflowId: string,
   token?: string
 ): Promise<WorkflowContent | null> {
-  try {
-    const response = await fetch(
-      buildApiUrl(`/api/workflow/${workflowId}/content`),
-      {
-        headers: buildAuthHeaders(token),
-        next: { revalidate: 0 },
-      }
-    );
-
-    if (!response.ok) {
-      if (response.status === 401) {
-        throw new ApiError('Unauthorized', 401);
-      }
-      console.error('[fetchWorkflowContent] HTTP', response.status, 'for', workflowId);
-      return null;
-    }
-    return (await response.json()) as WorkflowContent;
-  } catch (e) {
-    if (e instanceof ApiError) throw e;
-    console.error('[fetchWorkflowContent] network error:', e);
-    return null;
-  }
+  return fetchWorkflowRead(`/api/workflow/${workflowId}/content`, {
+    token,
+    revalidate: 0,
+    fallback: null,
+    logLabel: 'fetchWorkflowContent',
+    logContext: workflowId,
+    unauthorizedMessage: 'Unauthorized',
+  });
 }
 
 /* ── Update workflow (name, description, tags, is_public) ──── */
@@ -155,24 +196,14 @@ export async function fetchPublicWorkflow(
   workflowId: string,
   token?: string
 ): Promise<WorkflowPublicView | null> {
-  try {
-    // Use Authorization header (instead of manual Cookie splice) for
-    // consistency and to avoid potential Cookie header injection issues.
-    const response = await fetch(buildApiUrl(`/api/workflow/${workflowId}/public`), {
-      headers: buildAuthHeaders(token),
-      next: { revalidate: 60 },
-    });
-    if (!response.ok) {
-      if (response.status !== 404) {
-        console.error('[fetchPublicWorkflow] HTTP', response.status, 'for', workflowId);
-      }
-      return null;
-    }
-    return (await response.json()) as WorkflowPublicView;
-  } catch (e) {
-    console.error('[fetchPublicWorkflow] network error:', e);
-    return null;
-  }
+  return fetchWorkflowRead(`/api/workflow/${workflowId}/public`, {
+    token,
+    revalidate: 60,
+    fallback: null,
+    logLabel: 'fetchPublicWorkflow',
+    logContext: workflowId,
+    suppressStatuses: [404],
+  });
 }
 
 /* ── Marketplace ────────────────────────────────────────────── */

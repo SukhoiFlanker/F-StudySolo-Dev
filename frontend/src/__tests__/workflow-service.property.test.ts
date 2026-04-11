@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as fc from 'fast-check';
 
 const { credentialsFetchMock, parseApiErrorMock } = vi.hoisted(() => ({
@@ -16,6 +16,9 @@ vi.mock('@/services/api-client', () => ({
 import {
   ApiError,
   deleteWorkflow,
+  fetchPublicWorkflow,
+  fetchWorkflowContent,
+  fetchWorkflowList,
   forkWorkflow,
   toggleFavorite,
   toggleLike,
@@ -34,6 +37,10 @@ describe('workflow service mutation helpers', () => {
     credentialsFetchMock.mockReset();
     parseApiErrorMock.mockReset();
     parseApiErrorMock.mockResolvedValue('request failed');
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it('routes updateWorkflow through credentialsFetch with a JSON body', async () => {
@@ -99,5 +106,38 @@ describe('workflow service mutation helpers', () => {
       expect(parseApiErrorMock).toHaveBeenCalledTimes(1);
       expect(parseApiErrorMock).toHaveBeenCalledWith(expect.any(Response), testCase.fallback);
     }
+  });
+
+  it('routes workflow list reads through fetch with auth headers and revalidate hints', async () => {
+    const fetchMock = vi.fn(async () => jsonResponse([{ id: 'wf-1', name: '测试工作流' }]));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const workflows = await fetchWorkflowList('token-1', 15);
+
+    expect(workflows).toEqual([{ id: 'wf-1', name: '测试工作流' }]);
+    expect(fetchMock).toHaveBeenCalledWith('/api/workflow', {
+      headers: { 'Content-Type': 'application/json' },
+      next: { revalidate: 15 },
+    });
+  });
+
+  it('preserves 401 responses from fetchWorkflowContent as ApiError for server-side retry handling', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(null, { status: 401 })));
+
+    await expect(fetchWorkflowContent('wf-401', 'token-1')).rejects.toMatchObject<ApiError>({
+      name: 'ApiError',
+      message: 'Unauthorized',
+      status: 401,
+    });
+  });
+
+  it('suppresses 404 logging for public workflow fetches and returns null', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(null, { status: 404 })));
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const workflow = await fetchPublicWorkflow('wf-missing', 'token-1');
+
+    expect(workflow).toBeNull();
+    expect(errorSpy).not.toHaveBeenCalled();
   });
 });

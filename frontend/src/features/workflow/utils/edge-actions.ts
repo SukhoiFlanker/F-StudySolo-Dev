@@ -1,4 +1,4 @@
-import { useWorkflowStore } from '@/stores/use-workflow-store';
+import { useWorkflowStore } from '@/stores/workflow/use-workflow-store';
 import type { Edge } from '@xyflow/react';
 import type { WorkflowEdgeData } from '@/types';
 
