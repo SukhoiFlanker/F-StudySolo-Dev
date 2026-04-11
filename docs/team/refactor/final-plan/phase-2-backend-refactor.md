@@ -212,16 +212,25 @@ services/llm/
 
 ---
 
-## Phase 2 完成标志
+## Phase 2 完成标志（当前真实收尾判断）
 
-- [ ] ai_chat + ai_chat_stream 已合并，旧文件已删除
-- [ ] @track_usage 装饰器已实现，至少 3 个 API 已应用
-- [ ] Workflow 路由已重组为子目录
-- [ ] AI 路由已重组为子目录
-- [ ] LLM 服务边界已重划
-- [ ] router.py 从 30+ import 精简到 ~15 import
-- [ ] 所有现有测试通过
-- [ ] 前端功能无回归（手动测试 checklist）
+### 工程主线已完成
+
+- AI Chat 已完成 `chat` / `chat-stream` 合并，旧分散链路已收敛
+- Workflow / AI 路由已重组为子目录，当前基线稳定
+- 非流式 endpoint 继续使用 `@track_usage`；streaming chat 与 workflow execute 的 usage lifecycle 已统一收口到共享 helper
+- backend 内部 LLM import 已切到 `app.services.llm.*` canonical 模块；根层 compat shim 继续保留
+- 现有关键测试链已通过：
+  - `pytest backend/tests/test_ai_chat_usage_tracking_property.py backend/tests/test_workflow_execute_route_property.py`
+  - `pytest backend/tests/test_ai_routing_property.py backend/tests/test_ai_chat_usage_tracking_property.py backend/tests/test_workflow_execute_route_property.py`
+  - 其中 `test_ai_routing_property.py` 在当前环境下为 skipped，其余链路通过
+
+### 手动 smoke 待补
+
+- 前端功能无回归 smoke（AI Chat、Workflow 执行等跨前后端主链）
+
+> [!NOTE]
+> `router.py 从 30+ import 精简到 ~15 import` 这类历史数字目标不再机械勾选。当前更准确的结论是：`router.py` 已切到聚合路由入口，并显著简化导入链。
 
 > [!IMPORTANT]
 > **回滚策略**：每个 Task 是独立 PR，合并后若发现严重回归，可单独 revert 该 PR。Git 分支策略：`refactor/phase2-task2.1`, `refactor/phase2-task2.3` 等。

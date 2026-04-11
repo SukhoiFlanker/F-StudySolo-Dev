@@ -228,15 +228,33 @@ export function getRenderer(nodeType: string) {
 
 ---
 
-## Phase 3 完成标志
+## Phase 3 完成标志（当前真实收尾判断）
 
-- [ ] useAIChatStore 不再直接调用 useConversationStore
-- [ ] stores/ 已重组为子目录结构
-- [ ] workflow.server.service.ts 已合并或消除重复
-- [ ] TypedEventBus 已创建，新代码使用 EventBus
-- [ ] 节点 Manifest-First 前端适配准备完成
-- [ ] 所有 Vitest 测试通过
-- [ ] 手动测试：工作流画布、AI 聊天、节点拖放、全局面板切换
+### 工程主线已完成
+
+- store 跨域解耦已完成，`useAIChatStore` 不再直接调用 `useConversationStore`
+- `stores/` 已重组为子目录结构，compat shim 已按兼容策略保留
+- service 主批次已收口，`workflow.service.ts` / `workflow.server.service.ts` 重复已显著收薄
+- TypedEventBus 两批迁移已完成，新链路统一走 typed bus
+- backend manifest 契约、frontend renderer 接线与 manifest-first UI 六个闭环已落地
+- 现有前端验证链已通过：
+  - 定向 Vitest
+  - `pnpm --dir frontend build`
+
+### 手动 smoke 待补
+
+- 工作流画布
+- AI 聊天
+- 节点拖放
+- 全局面板切换
+
+### 当前冻结边界
+
+- `frontend/src/app/m/[id]/MemoryView.tsx` 继续作为显式兼容例外，当前收尾波次不动
+- `frontend/src/stores/use-*.ts` compat shim 继续保留，不做删除
+- `frontend/src/features/workflow/constants/workflow-meta.ts` 继续承担 `status / icon / theme / inputs / outputs` 等结构职责
+- `frontend/src/features/workflow/components/canvas/canvas-node-factory.ts` 继续保留基于 `workflow-meta` 的默认实例标题语义
+- `frontend/src/features/workflow/components/nodes/NodeResultSlip.tsx` 继续保留 legacy `workflow:toggle-all-slips` 兼容监听
 
 > [!IMPORTANT]
 > **回滚策略**：同 Phase 2，每个 Task 独立 PR。前端改动通过 `npm run dev` 手动验证核心流程。

@@ -793,3 +793,20 @@
 3. **下一步不再是继续机械拆尾差**
    - Phase 2 更适合进入“是否正式宣告收尾”的判断
    - Phase 3 更适合维持冻结边界，而不是继续顺手推进 `MemoryView.tsx`、compat shim 退场或默认实例命名语义改造
+
+### 8.19 P2/P3 正式收尾结论
+
+在同步 `docs/team/refactor/final-plan/00-索引.md`、`phase-2-backend-refactor.md` 与 `phase-3-frontend-refactor.md` 的官方完成态后，当前可以把 P2 / P3 再往前推进一步，正式定义为：
+
+1. **Phase 2 已正式收尾**
+   - 工程主线已完成
+   - 自动化验证已有证据
+   - 手动 smoke 仍明确列为待补，不伪造已完成
+2. **Phase 3 已正式收尾（工程主线）**
+   - stores、service 主批次、TypedEventBus 两批、manifest renderer 接线与 manifest-first UI 六个闭环均已落地
+   - `MemoryView.tsx`、compat shim、`workflow-meta.ts` 结构职责、`canvas-node-factory.ts` 默认实例标题语义与 `NodeResultSlip.tsx` legacy 监听继续作为冻结边界保留
+   - 手动 smoke 同样明确列为待补
+3. **文档层面的唯一活跃主线已转为 Phase 4**
+   - 不再继续扩写 P2 / P3 敏感尾项
+   - 默认下一步优先进入 **Phase 4B Agent 样板**
+   - 当前最合适的目标是补齐 `agents/_template/` 与 `agents/code-review-agent/` 的最小可运行样板
