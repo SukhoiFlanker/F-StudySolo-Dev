@@ -104,7 +104,7 @@ Week 5-6 Phase 5 集成 + Wiki + CI 治理
 | **Phase 2** | 后端：AI 服务合并 + 路由重组 | 主系统 | Phase 1 |
 | **Phase 3** | 前端：Store 解耦 + 类型系统 | 主系统 | Phase 1 |
 | **Phase 4A** | 节点：manifest-first 架构 | 主系统 | Phase 1 |
-| **Phase 4B** | 子后端 Agent 样板仓库 | 队友 B | Phase 1 |
+| **Phase 4B** | 子后端 Agent 样板仓库 | 小李 | Phase 1 |
 | **Phase 5** | Gateway + Wiki + CI 治理 | 全体 | Phase 2-4 |
 
 ---

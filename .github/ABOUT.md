@@ -50,13 +50,15 @@
 项目使用 4 类标签进行分类管理：
 
 ### 类型标签（这是什么事？）
-`bug` · `feature` · `enhancement` · `refactor` · `task` · `docs` · `test` · `discussion`
+`bug` · `feature` · `enhancement` · `refactor` · `task` · `docs` · `test` · `security` · `discussion`
+
+> ⚠️ `security` 标签不要在公开 Issue 中描述漏洞细节！请选择 Security Advisory 私密上报。
 
 ### 优先级标签（多紧急？）
 `P0-critical` · `P1-important` · `P2-normal` · `P3-low`
 
 ### 模块标签（改的是哪里？）
-`scope:frontend` · `scope:backend` · `scope:engine` · `scope:admin` · `scope:auth` · `scope:database` · `scope:infra`
+`scope:frontend` · `scope:backend` · `scope:agent` · `scope:wiki` · `scope:engine` · `scope:admin` · `scope:auth` · `scope:database` · `scope:infra`
 
 ### 状态标签（进展如何？）
 `status:todo` · `status:in-progress` · `status:blocked` · `status:needs-review` · `status:wontfix` · `status:duplicate`
@@ -73,24 +75,37 @@ powershell -ExecutionPolicy Bypass -File ".github/scripts/setup-labels.ps1"
 
 `CODEOWNERS` 文件定义了各目录的代码审查责任人。当 PR 修改了对应路径下的文件时，GitHub 会**自动邀请**责任人进行 Review。
 
-当前配置：
-- `/backend/` → @AIMFllys
-- `/frontend/` → @AIMFllys
-- `/supabase/` → @AIMFllys（数据库迁移，敏感操作）
+当前配置（小李/小陈加入后需更新）：
+- `*` 、`/backend/` 、`/frontend/` 、`/supabase/` 、`/docs/` ... → @AIMFllys（羽升）
+- `/agents/` 、`/backend/config/agents.yaml` → @AIMFllys（小李加入后添加其 GitHub 用户名）
+- `/frontend/src/app/(wiki)/` 、`/docs/wiki-content/` → @AIMFllys（小陈加入后添加）
 
-> 随着团队扩大，可以将不同模块分配给不同的成员。
+> 随着团队扩大，小李和小陈的 GitHub 用户名确认后，在对应行去掉注释并添加即可。
 
 ---
 
-## 🔒 分支保护（推荐配置）
+## 🔒 分支保护（**必须配置**）
 
-建议在仓库 **Settings → Branches** 中为 `main` 分支启用以下保护规则：
+开启团队协作前，**必须**在 GitHub 仓库 **Settings → Branches** 中为 `main` 分支启用以下保护规则：
 
-- [x] 必须通过 PR 才能合并（禁止直接 push）
-- [x] 至少 1 人 Approve
-- [x] CI 检查必须通过
-- [x] 禁止 Force Push
-- [x] 禁止删除 main 分支
+| 设置项 | 需启用 | 原因 |
+|---------|:-------:|------|
+| Require a pull request before merging | ✅ | 禁止直向 push |
+| Required approvals: 1 | ✅ | PR 必须有人 Review |
+| Require status checks to pass | ✅ | CI 检查必须通过 |
+| Do not allow bypassing the above settings | ✅ | 连管理员也不能绕过 |
+| Allow force pushes | ❌ | 禁止 Force Push |
+| Allow deletions | ❌ | 禁止删除 main 分支 |
+
+**操作路径：**
+```
+https://github.com/AIMFllys/StudySolo-Dev/settings/branches
+→ Add branch protection rule
+→ Branch name pattern: main
+→ 按上表勾选
+```
+
+> ⚠️ 此配置加入小李或小陈参与前就应完成，否则仓库没有任何安全保障。
 
 ---
 

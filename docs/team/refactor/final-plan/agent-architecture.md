@@ -2,7 +2,7 @@
 
 > 版本：v1.0 | 2026-04-10
 > 状态：待 Phase 1 冻结签字
-> 负责人：主系统负责人（协议设计） + 队友 B（实现验证）
+> 负责人：羽升（协议设计） + 小李（实现验证）
 > 依赖：[agents/README.md](../../../../agents/README.md)（开发指南）
 
 ---
@@ -364,9 +364,9 @@ Agent 日志必须输出到 stdout，JSON 格式：
 
 ```
 # .github/CODEOWNERS
-agents/                    @队友B
-agents/_template/          @主系统负责人 @队友B
-backend/config/agents.yaml @主系统负责人
+agents/                    @小李
+agents/_template/          @羽升 @小李
+backend/config/agents.yaml @羽升
 ```
 
 ---

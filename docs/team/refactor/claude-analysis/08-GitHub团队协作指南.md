@@ -307,7 +307,7 @@ git commit -m "chore: update shared submodule"
 
 ## 6. 团队成员工作流
 
-### 6.1 队友 A：Wiki 开发
+### 6.1 小陈：Wiki 开发
 
 ```bash
 # 1. 创建 Wiki 分支
@@ -326,7 +326,7 @@ git push -u origin feat/wiki-setup
 # 在 GitHub 创建 PR
 ```
 
-### 6.2 队友 B：子后端 Agent 开发
+### 6.2 小李：子后端 Agent 开发
 
 ```bash
 # 1. 创建 Agent 分支

@@ -1,6 +1,6 @@
 # StudySolo 子后端 Agent 开发指南
 
-> 状态：Phase 4B（队友 B 主导）+ Phase 5（Gateway 集成）
+> 状态：Phase 4B（小李 主导）+ Phase 5（Gateway 集成）
 > 技术栈：Python 3.11+ / FastAPI / uvicorn
 > 协议：OpenAI Chat Completions 兼容
 > 详细接口规范：[agent-architecture.md](../docs/team/refactor/final-plan/agent-architecture.md)
@@ -24,7 +24,7 @@
 | Agent | 用途 | 端口 | 负责人 | 来源 | 状态 |
 |-------|------|------|--------|------|------|
 | `_template` | 模板（复制即用） | 8000 | 主系统 | 新建 | ✅ 规划完成 |
-| `code-review-agent` | 代码审查 | 8001 | 队友 B | 新建 | 🔨 Phase 4B |
+| `code-review-agent` | 代码审查 | 8001 | 小李 | 新建 | 🔨 Phase 4B |
 | `deep-research-agent` | 深度研究 | 8002 | 主系统 | 迁移自 `ResearchAgents` | ⚠️ 待迁移 |
 | `news-agent` | 新闻抓取与分析 | 8003 | 主系统 | 迁移自 `NewsAgents` | ⚠️ 待迁移 |
 | `study-tutor-agent` | 学习专家辅导 | 8004 | 待定 | 新建 | 📋 规划中 |
@@ -129,7 +129,7 @@ StudySolo/
 │   │   ├── requirements.txt                 ← 依赖锁定
 │   │   └── README.md                        ← 模板使用说明
 │   │
-│   ├── code-review-agent/                   ← 代码审查（队友 B 新建）
+│   ├── code-review-agent/                   ← 代码审查（小李 新建）
 │   │   └── ...（同 _template 结构）
 │   │
 │   ├── deep-research-agent/                 ← 深度研究（迁移自 ResearchAgents）
@@ -228,7 +228,7 @@ my-new-agent:
 | 2038 | 主后端（FastAPI） | 已占用 |
 | 2039 | Wiki（预留，已废弃独立部署） | — |
 | 8000 | `_template`（开发测试） | 仅模板 |
-| 8001 | `code-review-agent` | 队友 B |
+| 8001 | `code-review-agent` | 小李 |
 | 8002 | `deep-research-agent` | 迁移自 ResearchAgents |
 | 8003 | `news-agent` | 迁移自 NewsAgents |
 | 8004 | `study-tutor-agent` | 规划中 |

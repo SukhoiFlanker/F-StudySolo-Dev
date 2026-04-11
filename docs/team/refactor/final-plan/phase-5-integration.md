@@ -86,7 +86,7 @@ GET  /api/agents/{name}/health       → 查询 Agent 健康状态
 
 ---
 
-## Task 5.2：Wiki 子项目初始化（队友 A）
+## Task 5.2：Wiki 子项目初始化（小陈）
 
 > 📄 **详细计划已独立**：[wiki-init-plan.md](wiki-init-plan.md)（Tasks W1-W6 完整实施方案）
 > 
@@ -135,7 +135,7 @@ frontend/src/components/wiki/
 └── WikiMDXComponents.tsx         # MDX 自定义组件
 ```
 
-### 队友 A 的 Checklist
+### 小陈 的 Checklist
 
 - [ ] 创建 `(wiki)` 路由组
 - [ ] 实现 Wiki 专属布局（与主应用不同的 sidebar）
@@ -169,21 +169,22 @@ docs/team/refactor/governance/
 
 ```
 # .github/CODEOWNERS（升级版）
-# 核心引擎 - 主系统负责人
-backend/app/engine/        @主系统负责人
-backend/app/nodes/         @主系统负责人
+# 核心引擎 - 羽升
+backend/app/engine/        @AIMFllys
+backend/app/nodes/         @AIMFllys
 
-# 子后端 Agent - 队友 B
-services/                  @队友B
+# 子后端 Agent - 小李（TODO: 添加其 GitHub 用户名）
+/agents/                   @AIMFllys
+/backend/config/agents.yaml @AIMFllys
 
-# Wiki - 队友 A  
-frontend/src/app/(wiki)/   @队友A
-docs/wiki-content/         @队友A
+# Wiki - 小陈（TODO: 添加其 GitHub 用户名）
+frontend/src/app/(wiki)/   @AIMFllys
+docs/wiki-content/         @AIMFllys
 
 # 共享层 - 需要两人 review
-shared/                    @主系统负责人 @队友B
-backend/app/api/           @主系统负责人
-frontend/src/stores/       @主系统负责人
+shared/                    @AIMFllys
+backend/app/api/           @AIMFllys
+frontend/src/stores/       @AIMFllys
 ```
 
 ### 5.3.3 ESLint 跨层 Import 规则
@@ -253,9 +254,9 @@ on:
 # .github/workflows/ci-agent.yml
 on:
   push:
-    paths: ['services/**']
+    paths: ['agents/**']
   pull_request:
-    paths: ['services/**']
+    paths: ['agents/**']
 ```
 
 ### 5.5.2 依赖方向检查（自动化）

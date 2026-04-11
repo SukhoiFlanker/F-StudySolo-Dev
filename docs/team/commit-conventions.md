@@ -16,6 +16,7 @@ main                          # 主分支，始终可部署
 ├── docs/<topic>              # 文档更新
 ├── chore/<task>              # 工具、CI、依赖等
 ├── security/<issue>          # 安全修复（优先处理）
+├── hotfix/<issue>            # 紧急线上修复（直接基于 main）
 └── experiment/<idea>         # 实验性开发（不保证合并）
 ```
 
@@ -42,8 +43,8 @@ security/rls-policy-fix
 | 成员 | 典型分支 | 工作目录 |
 |------|----------|----------|
 | 羽升 | `feat/workflow-*`, `fix/*`, `refactor/*` | 全局 |
-| 队员 A | `feat/subagent-*`, `feat/agent-gateway-*` | `services/`, `backend/app/api/agents/` |
-| 队员 B | `feat/wiki-*`, `docs/*` | `wiki/`, `docs/` |
+| 小李 | `feat/subagent-*`, `feat/agent-gateway-*` | `agents/`, `backend/config/agents.yaml` |
+| 小陈 | `feat/wiki-*`, `docs/*` | `frontend/src/app/(wiki)/`, `docs/wiki-content/`, `docs/` |
 
 ---
 
@@ -73,7 +74,9 @@ security/rls-policy-fix
 | `perf` | 性能优化 | `perf(query): 优化 N+1 查询` |
 | `test` | 测试代码 | `test(auth): 补充登录测试` |
 | `chore` | 工具/构建/依赖 | `chore(deps): 升级 FastAPI` |
+| `ci` | CI/CD 配置 | `ci: 添加 Agent 测试 workflow` |
 | `security` | 安全修复 | `security(rls): 修复权限泄露` |
+| `revert` | 回滚 | `revert: revert feat(workflow): ...` |
 
 ### 2.3 Scope 参考
 
@@ -83,12 +86,16 @@ security/rls-policy-fix
 | `ai-chat` | AI 聊天路由 |
 | `auth` | 认证、鉴权 |
 | `wiki` | Wiki 子项目 |
-| `agent` | 子后端 Agent |
+| `agent` | 子后端 Agent（`agents/` 目录） |
+| `nodes` | 工作流节点系统 |
+| `engine` | 工作流执行引擎 |
+| `admin` | 管理后台 |
 | `frontend` | 前端整体 |
 | `backend` | 后端整体 |
 | `db` | 数据库、迁移 |
 | `deps` | 依赖管理 |
 | `ci` | CI/CD 流水线 |
+| `scripts` | 开发工具脚本 |
 
 ### 2.4 Commit 示例
 

@@ -309,8 +309,8 @@ Browser ──────────►│   Frontend      │  Next.js (Verce
 | 成员 | 负责模块 |
 |------|---------|
 | 你（主开发者） | 整体架构、核心引擎、API 路由、CI/CD |
-| 队友 A | Wiki 子项目、文档、教程 |
-| 队友 B | 子后端 Agent 开发、API 集成 |
+| 小陈 | Wiki 子项目、文档、教程 |
+| 小李 | 子后端 Agent 开发、API 集成 |
 
 ### 7.2 开发流程
 
@@ -319,8 +319,8 @@ Browser ──────────►│   Frontend      │  Next.js (Verce
    git checkout -b feat/wiki-setup
 
 2. 在分配的目录内开发
-   # 队友 A: apps/frontend/wiki/
-   # 队友 B: services/code-review-agent/
+   # 小陈: apps/frontend/wiki/
+   # 小李: services/code-review-agent/
 
 3. 定期 rebase main
    git fetch origin
@@ -425,7 +425,7 @@ jobs:
 3. 编写使用文档
 
 ### Phase 4: Wiki 初始化（3-5天）
-1. 分配给队友 A
+1. 分配给小陈
 2. 搭建 Wiki 基础结构
 3. 编写初始文档
 

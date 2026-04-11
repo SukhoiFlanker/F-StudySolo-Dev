@@ -3,6 +3,11 @@
 #
 # 格式：<路径模式> <@用户名或@团队名>
 # 文档：https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+#
+# 团队角色：
+#   @AIMFllys  — 羽升（队长 / 主系统负责人）
+#   TODO: 小李加入后添加 GitHub 用户名（Agent 开发）
+#   TODO: 小陈加入后添加 GitHub 用户名（Wiki 开发）
 
 # ============================================
 # 全局兜底 — 所有文件默认由项目负责人 Review
@@ -18,11 +23,23 @@
 /backend/app/api/           @AIMFllys
 
 # ============================================
+# 子后端 Agent（小李主要工作区）
+# ============================================
+/agents/                    @AIMFllys
+/backend/config/agents.yaml @AIMFllys
+
+# ============================================
 # 前端
 # ============================================
 /frontend/                  @AIMFllys
 /frontend/src/components/   @AIMFllys
 /frontend/src/stores/       @AIMFllys
+
+# ============================================
+# Wiki（小陈主要工作区）
+# ============================================
+# /frontend/src/app/(wiki)/  @AIMFllys  # 小陈加入后取消注释并添加其 GitHub 用户名
+# /docs/wiki-content/        @AIMFllys  # 小陈加入后取消注释
 
 # ============================================
 # 数据库 Migrations — 非常敏感，需要谨慎 Review
@@ -35,10 +52,15 @@
 # ============================================
 /.github/                   @AIMFllys
 /scripts/                   @AIMFllys
-/backend/config.yaml        @AIMFllys
+
+# ============================================
+# 共享模块（跨项目事实源）
+# ============================================
+/shared/                    @AIMFllys
 
 # ============================================
 # 文档
 # ============================================
 /docs/                      @AIMFllys
 *.md                        @AIMFllys
+

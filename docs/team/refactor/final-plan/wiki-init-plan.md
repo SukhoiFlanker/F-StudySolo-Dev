@@ -1,6 +1,6 @@
 # Wiki 初始化详细计划
 
-> 属于 Phase 5 的 Task 5.2（队友 A 主导）
+> 属于 Phase 5 的 Task 5.2（小陈 主导）
 > 前置依赖：Phase 3（前端架构重构）完成
 > 预估时间：5-7 天
 > GitHub Issue：[#10](https://github.com/AIMFllys/StudySolo-Dev/issues/10)
@@ -307,7 +307,7 @@ jobs:
 > 1. **不要**安装 `contentlayer`——已停止维护
 > 2. **不要**重复安装 `react-markdown`——检查主前端 package.json 是否已有
 > 3. **不要**让 Wiki layout 继承 `(dashboard)/layout.tsx` 的 Sidebar
-> 4. `docs/wiki-content/` 内容由全体成员维护，队友 A 只负责渲染层
+> 4. `docs/wiki-content/` 内容由全体成员维护，小陈 只负责渲染层
 > 5. Wiki Auth 不需要单独实现——同一个 Next.js 进程，天然共用登录态
 > 6. 使用 `next-mdx-remote/rsc` 做 Server Component 渲染，不要用客户端 MDX
 

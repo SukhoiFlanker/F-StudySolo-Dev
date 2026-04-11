@@ -2,7 +2,7 @@
 
 > 预估时间：10 天
 > 前置依赖：Phase 1 全部冻结
-> 负责人：主系统负责人（节点）+ 队友 B（子后端样板）
+> 负责人：羽升（节点）+ 小李（子后端样板）
 > 可并行：Phase 2 + Phase 3
 
 ---
@@ -10,7 +10,7 @@
 ## 目标
 
 1. **节点系统**：消除 7 处重复定义，实现后端 manifest 作为唯一事实源
-2. **子后端样板**：让队友 B 能拿着模板独立开发 Agent
+2. **子后端样板**：让小李 能拿着模板独立开发 Agent
 
 ---
 
@@ -153,7 +153,7 @@ class QuizGenNode(BaseNode):
 
 ---
 
-## Part B：子后端 Agent 样板（队友 B）
+## Part B：子后端 Agent 样板（小李）
 
 > 📄 **详细协议规范**：[agent-architecture.md](agent-architecture.md)（四层接口协议完整 Schema）
 > 📄 **开发指南**：[agents/README.md](../../../../agents/README.md)（三步创建 + 端口分配 + FAQ）
@@ -203,7 +203,7 @@ agents/
 │   ├── requirements.txt
 │   └── README.md
 │
-└── code-review-agent/            # 第一个实际 Agent（队友 B）
+└── code-review-agent/            # 第一个实际 Agent（小李）
     └── ...（同 _template 结构）
 ```
 
@@ -309,6 +309,6 @@ def test_request_id_propagation(client): ...
 - [ ] `agent-architecture.md` 接口协议规范已冻结
 
 > [!IMPORTANT]
-> Part A 和 Part B 完全独立，可同时进行。Part B 由队友 B 负责，只需遵守 Phase 1 冻结的 Agent Gateway 契约。
+> Part A 和 Part B 完全独立，可同时进行。Part B 由小李 负责，只需遵守 Phase 1 冻结的 Agent Gateway 契约。
 > 详细四层协议定义见 [agent-architecture.md](agent-architecture.md)。
 

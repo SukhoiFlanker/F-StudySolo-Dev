@@ -16,6 +16,7 @@
 # task          | #1d76db | 开发任务
 # docs          | #0075ca | 文档相关
 # test          | #bfd4f2 | 测试相关
+# security      | #b60205 | 安全漏洞（请勿公开描述，使用 Security Advisory 私密上报）
 # discussion    | #d4c5f9 | 需要讨论
 
 # ============================================
@@ -31,6 +32,8 @@
 # ============================================
 # scope:frontend    | #7057ff | 前端相关
 # scope:backend     | #e36209 | 后端相关
+# scope:agent       | #1d76db | 子后端 Agent（agents/ 目录）
+# scope:wiki        | #0075ca | Wiki 子项目
 # scope:engine      | #0052cc | 工作流引擎
 # scope:admin       | #f9d0c4 | 管理后台
 # scope:auth        | #fef2c0 | 认证/权限

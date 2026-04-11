@@ -15,19 +15,19 @@
 ## 🗺️ 执行进度
 
 ```
-Phase 0 ✅ ──→ Phase 1 📝 ──→ ┬─ Phase 2（后端）  ⏳
-                               ├─ Phase 3（前端）  ⏳
-                               └─ Phase 4（节点+Agent）⏳ ──→ Phase 5（集成）⏳
+Phase 0 ✅ ──→ Phase 1 ✅ ──→ ┬─ Phase 2 ✅（后端）
+                               ├─ Phase 3 🔨（前端）  ──→ Phase 5（集成）⏳
+                               └─ Phase 4 🔨（节点+Agent）
 ```
 
 | Phase | 名称 | 状态 | 文档 |
 |-------|------|------|------|
-| **Phase 0** | 基础冻结与紧急修复 | ✅ 95%（待术语签字） | [phase-0](final-plan/phase-0-foundation.md) |
-| **Phase 1** | 接口契约冻结 | 📝 6/6 契约已输出，待签字 | [phase-1](final-plan/phase-1-contract-freeze.md) |
-| **Phase 2** | 后端核心重构 | ⏳ 待 Phase 1 签字 | [phase-2](final-plan/phase-2-backend-refactor.md) |
-| **Phase 3** | 前端架构重构 | ⏳ 待 Phase 1 签字 | [phase-3](final-plan/phase-3-frontend-refactor.md) |
-| **Phase 4** | 节点系统 + 子后端 | ⏳ 待 Phase 1 签字 | [phase-4](final-plan/phase-4-nodes-and-agents.md) |
-| **Phase 5** | 平台集成 + 治理 + Wiki | ⏳ 待 Phase 2-4 完成 | [phase-5](final-plan/phase-5-integration.md) |
+| **Phase 0** | 基础冻结与紧急修复 | ✅ 完成 | [phase-0](final-plan/phase-0-foundation.md) |
+| **Phase 1** | 接口契约冻结 | ✅ 完成（契约已签字） | [phase-1](final-plan/phase-1-contract-freeze.md) |
+| **Phase 2** | 后端核心重构 | ✅ 完成（2026-04-10） | [phase-2](final-plan/phase-2-backend-refactor.md) |
+| **Phase 3** | 前端架构重构 | 🔨 进行中 | [phase-3](final-plan/phase-3-frontend-refactor.md) |
+| **Phase 4** | 节点系统 + 子后端 | 🔨 进行中 | [phase-4](final-plan/phase-4-nodes-and-agents.md) |
+| **Phase 5** | 平台集成 + 治理 + Wiki | ⏳ 待 Phase 3/4 完成 | [phase-5](final-plan/phase-5-integration.md) |
 
 ---
 

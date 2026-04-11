@@ -2,7 +2,7 @@
 
 > 预估时间：5 天
 > 前置依赖：Phase 0 全部完成
-> 负责人：主系统负责人（与 B 协作设计 Gateway 契约）
+> 负责人：羽升（与 B 协作设计 Gateway 契约）
 > 阻断条件：本 Phase 未完成，禁止队友并行开发
 
 ---
@@ -104,7 +104,7 @@ class UsageTracker:
 
 ## Task 1.5：冻结 Agent Gateway 契约
 
-与队友 B 共同设计，三人签字确认。
+与小李 共同设计，三人签字确认。
 
 ### 1.5.1 子后端必须实现的接口
 
@@ -180,7 +180,7 @@ agents:
 - [x] 前端依赖方向图已输出并签字 → [`contracts/frontend-deps.md`](../contracts/frontend-deps.md)
 - [x] AI Chat 合并 API 契约文档已冻结 → [`contracts/ai-chat-contract.md`](../contracts/ai-chat-contract.md)
 - [x] Usage Tracker 装饰器契约已冻结 → [`contracts/usage-tracker-contract.md`](../contracts/usage-tracker-contract.md)
-- [x] Agent Gateway 契约已与队友 B 共同签字 → [`contracts/agent-gateway-contract.md`](../contracts/agent-gateway-contract.md)
+- [x] Agent Gateway 契约已与小李 共同签字 → [`contracts/agent-gateway-contract.md`](../contracts/agent-gateway-contract.md)
 - [x] 节点 Manifest-First 契约已冻结 → [`contracts/node-manifest-contract.md`](../contracts/node-manifest-contract.md)
 - [x] 所有契约文档存放在 `docs/team/refactor/contracts/`
 

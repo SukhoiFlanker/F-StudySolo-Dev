@@ -493,3 +493,46 @@
 - `workflow-meta.ts` 的 icon / theme / inputs / outputs / 结构性元数据职责
 - `canvas-node-factory.ts` 的实例默认标题语义
 - `NodeResultSlip.tsx` 的上游输入标签名称回退
+
+## 19. 2026-04-11 深夜补充：NodeResultSlip 上游输入标签已切到 manifest-first 名称回退
+
+在画布节点卡片描述闭环之后，这一轮继续只处理 `NodeResultSlip.tsx` 的上游输入标签，不扩到 `MemoryView.tsx`、slip 展开逻辑或节点实例默认命名语义。
+
+### 完成内容
+1. `frontend/src/features/workflow/components/nodes/NodeResultSlip.tsx`
+   - 上游输入标签已改为复用 `buildExecutionNodeNameMap(...)`
+2. 名称回退规则固定为：
+   - `node.data.label`
+   - `manifest.display_name`
+   - `workflow-meta.label`
+   - `node.id`
+3. 明确保留不变
+   - slip 展开 / 折叠逻辑不变
+   - renderer 继续走 manifest-first 选择
+   - `workflow:toggle-all-slips` 的 legacy 兼容监听继续保留，保证 `MemoryView.tsx` 不受影响
+
+### 验证
+- `pnpm --dir frontend test -- src/__tests__/execution-node-copy.property.test.ts src/__tests__/workflow-event-bus.property.test.ts src/__tests__/node-manifest.service.property.test.ts`
+- 结果：通过
+
+### 提交
+- `8689350 refactor(frontend): prefer manifest labels in node result slip`
+
+## 20. 当前最新状态（最终更新）
+
+截至这次深夜补充后，Phase 3 关于 manifest-first UI 文案的推进已经扩展为六个连续小闭环：
+
+1. 输出渲染入口已接入 manifest `renderer`
+2. 节点配置抽屉已切到 manifest-first 文案
+3. 节点商店默认视图已切到 manifest-first 文案与搜索
+4. 执行面板组已切到 manifest-first 文案与名称回退
+5. 画布节点卡片描述已切到 manifest-first
+6. `NodeResultSlip.tsx` 的上游输入标签已切到 manifest-first 名称回退
+
+当前仍明确保留、不应混做的边界包括：
+
+- `frontend/src/app/m/[id]/MemoryView.tsx`
+- compat shim
+- `workflow-meta.ts` 的 icon / theme / inputs / outputs / 结构性元数据职责
+- `canvas-node-factory.ts` 的实例默认标题语义
+- `NodeResultSlip.tsx` 对旧 `workflow:toggle-all-slips` 的兼容监听

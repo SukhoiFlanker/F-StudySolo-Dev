@@ -35,6 +35,8 @@ git checkout -b fix/38-sse-disconnect
 | `docs/` | 文档 |
 | `chore/` | 工具/构建 |
 | `hotfix/` | 紧急线上修复 |
+| `security/` | 安全修复 |
+| `experiment/` | 实验性开发 |
 
 ### 3. 编写代码
 
@@ -65,7 +67,7 @@ git checkout -b fix/38-sse-disconnect
 | `ci` | CI/CD 配置 |
 | `revert` | 回滚 |
 
-**Scope 范围（可选）：** `frontend`、`backend`、`engine`、`admin`、`auth`、`workflow`、`scripts`、`db`
+**Scope 范围（可选）：** 详见 [Scope 参考表](docs/team/commit-conventions.md#23-scope-参考)
 
 **示例：**
 ```bash
@@ -120,6 +122,7 @@ StudySolo/
 │   │   ├── nodes/            # 工作流节点（插件架构）
 │   │   ├── services/         # 业务服务层
 │   │   └── utils/            # 工具函数
+│   ├── config/               # 运行时配置（agents.yaml 等）
 │   └── tests/                # 后端测试
 ├── frontend/                 # Next.js 前端
 │   └── src/
@@ -129,6 +132,7 @@ StudySolo/
 │       ├── services/         # API 调用服务
 │       ├── stores/           # Zustand 状态管理
 │       └── types/            # TypeScript 类型定义
+├── agents/                   # 子后端 Agent 微服务（小李主要工作区）
 ├── docs/                     # 项目文档
 ├── scripts/                  # 开发工具脚本
 ├── supabase/                 # 数据库 Migrations
@@ -194,6 +198,8 @@ powershell -ExecutionPolicy Bypass -File "scripts\start-studysolo.ps1"
 ---
 
 ## Review 评论约定
+
+详细规范见 [PR 与 Code Review](docs/team/pr-workflow.md)。快速参考：
 
 | 前缀 | 含义 | 是否阻塞合并 |
 |------|------|:----------:|
