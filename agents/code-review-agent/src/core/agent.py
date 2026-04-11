@@ -1,3 +1,4 @@
+import asyncio
 import re
 from dataclasses import dataclass
 from math import ceil
@@ -29,7 +30,7 @@ class CompletionResult:
 
 Severity = Literal["high", "medium", "low"]
 InputKind = Literal["unified_diff", "code_snippet", "plain_text"]
-ReviewBackend = Literal["heuristic", "upstream_reserved"]
+ReviewBackend = Literal["heuristic", "upstream_reserved", "upstream_openai_compatible"]
 
 SEVERITY_ORDER = {"high": 0, "medium": 1, "low": 2}
 MAX_FINDINGS = 5
@@ -484,6 +485,10 @@ def collect_findings(review_input: ReviewInput) -> list[ReviewFinding]:
 
     findings.extend(collect_broad_exception_findings(review_input))
 
+    return sort_and_limit_findings(findings)
+
+
+def sort_and_limit_findings(findings: list[ReviewFinding]) -> list[ReviewFinding]:
     findings.sort(
         key=lambda finding: (
             SEVERITY_ORDER[finding.severity],
@@ -501,7 +506,12 @@ def format_file_location(file_path: str, line_number: int | None) -> str:
     return f"{file_path}:{line_number}" if line_number is not None else file_path
 
 
-def format_review(review_input: ReviewInput, findings: list[ReviewFinding]) -> str:
+def format_review(
+    review_input: ReviewInput,
+    findings: list[ReviewFinding],
+    *,
+    external_model_used: bool = False,
+) -> str:
     sections = [
         "Summary",
         f"- Input type: {review_input.kind}",
@@ -547,7 +557,11 @@ def format_review(review_input: ReviewInput, findings: list[ReviewFinding]) -> s
             "Limitations",
             "- Deterministic heuristics only; only the latest user message was analyzed.",
             "- Structured repo context input is supported, but findings are only produced from the review target.",
-            "- No cross-file control-flow analysis, full-repository reasoning, or external model reasoning is used.",
+            (
+                "- No cross-file control-flow analysis or full-repository reasoning is used; external model reasoning is limited to the review target and supplied repo context."
+                if external_model_used
+                else "- No cross-file control-flow analysis, full-repository reasoning, or external model reasoning is used."
+            ),
             "- A clean result does not prove the code is safe.",
         ]
     )
@@ -570,7 +584,7 @@ class CodeReviewAgent:
         prompt_text = "\n".join(message.get("content", "") for message in messages)
         latest_user_message = self._latest_user_message(messages)
         prepared_review = self.prepare_review_text(latest_user_message)
-        content = self._render_review(prepared_review)
+        content = await self._render_review_async(prepared_review)
         return CompletionResult(
             content=content,
             prompt_tokens=estimate_tokens(prompt_text),
@@ -591,7 +605,13 @@ class CodeReviewAgent:
 
     def review_text(self, text: str) -> str:
         prepared_review = self.prepare_review_text(text)
-        return self._render_review(prepared_review)
+        if self.review_backend == "upstream_openai_compatible":
+            return asyncio.run(self._render_review_async(prepared_review))
+        return self._render_review_sync(prepared_review)
+
+    async def review_text_async(self, text: str) -> str:
+        prepared_review = self.prepare_review_text(text)
+        return await self._render_review_async(prepared_review)
 
     def _latest_user_message(self, messages: list[dict[str, str]]) -> str:
         for message in reversed(messages):
@@ -599,9 +619,30 @@ class CodeReviewAgent:
                 return str(message.get("content", "")).strip()
         return ""
 
-    def _render_review(self, prepared_review: PreparedReview) -> str:
+    def _render_review_sync(self, prepared_review: PreparedReview) -> str:
         if self.review_backend == "upstream_reserved":
             self._build_reserved_upstream_request(prepared_review)
+        findings = collect_findings(prepared_review.review_input)
+        return format_review(prepared_review.review_input, findings)
+
+    async def _render_review_async(self, prepared_review: PreparedReview) -> str:
+        if self.review_backend == "heuristic":
+            findings = collect_findings(prepared_review.review_input)
+            return format_review(prepared_review.review_input, findings)
+
+        if self.review_backend == "upstream_reserved":
+            self._build_reserved_upstream_request(prepared_review)
+            findings = collect_findings(prepared_review.review_input)
+            return format_review(prepared_review.review_input, findings)
+
+        live_findings = await self._collect_live_upstream_findings(prepared_review)
+        if live_findings is not None:
+            return format_review(
+                prepared_review.review_input,
+                sort_and_limit_findings(live_findings),
+                external_model_used=True,
+            )
+
         findings = collect_findings(prepared_review.review_input)
         return format_review(prepared_review.review_input, findings)
 
@@ -617,3 +658,38 @@ class CodeReviewAgent:
             context_blocks=prepared_review.payload.context_blocks,
             uses_structured_input=prepared_review.payload.uses_structured_input,
         )
+
+    async def _collect_live_upstream_findings(
+        self,
+        prepared_review: PreparedReview,
+    ) -> list[ReviewFinding] | None:
+        if not upstream_review.has_live_upstream_configuration(self.upstream_settings):
+            return None
+
+        try:
+            payload = await upstream_review.call_openai_compatible_review(
+                upstream_review.build_upstream_review_request(
+                    settings=self.upstream_settings,
+                    input_kind=prepared_review.review_input.kind,
+                    review_target_text=prepared_review.review_input.raw_text,
+                    review_target_path=prepared_review.payload.review_target_path,
+                    context_blocks=prepared_review.payload.context_blocks,
+                    uses_structured_input=prepared_review.payload.uses_structured_input,
+                )
+            )
+        except Exception:
+            return None
+
+        return [
+            ReviewFinding(
+                rule_id=finding.rule_id,
+                title=finding.title,
+                severity=finding.severity,
+                evidence=shorten_evidence(finding.evidence),
+                advice=finding.fix,
+                position=index,
+                file_path=finding.file_path,
+                line_number=finding.line_number,
+            )
+            for index, finding in enumerate(payload.findings, start=1)
+        ]

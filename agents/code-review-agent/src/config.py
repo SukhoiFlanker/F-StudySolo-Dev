@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     api_key: str = "code-review-secret"
     host: str = "127.0.0.1"
     port: int = 8001
-    review_backend: Literal["heuristic", "upstream_reserved"] = "heuristic"
+    review_backend: Literal["heuristic", "upstream_reserved", "upstream_openai_compatible"] = "heuristic"
     upstream_model: str | None = None
     upstream_base_url: str | None = None
     upstream_api_key: str | None = None

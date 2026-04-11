@@ -1,8 +1,11 @@
 import asyncio
+import json
+from types import SimpleNamespace
 
 import pytest
 
 from src.core.agent import CodeReviewAgent
+import src.core.upstream_review as upstream_review_module
 from src.core.upstream_review import UpstreamReviewSettings, build_upstream_review_request
 
 
@@ -18,6 +21,37 @@ def render_review(
         upstream_settings=upstream_settings,
     )
     return agent.review_text(text)
+
+
+def install_fake_upstream(monkeypatch, *, content: str | None = None, error: Exception | None = None):
+    state = {"instances": []}
+
+    class FakeAsyncOpenAI:
+        def __init__(self, *, base_url, api_key, timeout):
+            instance = {
+                "base_url": base_url,
+                "api_key": api_key,
+                "timeout": timeout,
+                "calls": [],
+            }
+
+            async def create(**kwargs):
+                instance["calls"].append(kwargs)
+                if error is not None:
+                    raise error
+                return SimpleNamespace(
+                    choices=[
+                        SimpleNamespace(
+                            message=SimpleNamespace(content=content),
+                        )
+                    ]
+                )
+
+            self.chat = SimpleNamespace(completions=SimpleNamespace(create=create))
+            state["instances"].append(instance)
+
+    monkeypatch.setattr(upstream_review_module, "AsyncOpenAI", FakeAsyncOpenAI)
+    return state
 
 
 @pytest.mark.parametrize(
@@ -396,6 +430,157 @@ export const helper = true;
     assert reserved_review == heuristic_review
 
 
+def test_upstream_openai_compatible_backend_normalizes_live_findings(monkeypatch):
+    state = install_fake_upstream(
+        monkeypatch,
+        content=json.dumps(
+            {
+                "findings": [
+                    {
+                        "title": "Hardcoded secret",
+                        "rule_id": "hardcoded_secret",
+                        "severity": "high",
+                        "file_path": "frontend/app.tsx",
+                        "line_number": 4,
+                        "evidence": "token = 'sk-test-1234567890'",
+                        "fix": "Move the credential into environment variables.",
+                    }
+                ]
+            }
+        ),
+    )
+
+    review = render_review(
+        """<review_target path="frontend/app.tsx">
+```ts
+const total = items.length;
+return total;
+```
+</review_target>
+<repo_context path="frontend/helper.ts">
+```ts
+export const helper = true;
+```
+</repo_context>""",
+        review_backend="upstream_openai_compatible",
+        upstream_settings=UpstreamReviewSettings(
+            model="review-upstream-v1",
+            base_url="https://example.test/v1",
+            api_key="upstream-key",
+            timeout_seconds=12.5,
+        ),
+    )
+
+    assert "1. Title: Hardcoded secret" in review
+    assert "Rule ID: hardcoded_secret" in review
+    assert "File: frontend/app.tsx:4" in review
+    assert (
+        "external model reasoning is limited to the review target and supplied repo context"
+        in review
+    )
+    assert len(state["instances"]) == 1
+    assert state["instances"][0]["base_url"] == "https://example.test/v1"
+    assert state["instances"][0]["calls"][0]["model"] == "review-upstream-v1"
+
+
+def test_upstream_openai_compatible_missing_config_falls_back_without_client(monkeypatch):
+    state = install_fake_upstream(monkeypatch, content='{"findings":[]}')
+
+    review = render_review(
+        "```ts\nconsole.log('debug');\n```",
+        review_backend="upstream_openai_compatible",
+        upstream_settings=UpstreamReviewSettings(model="review-upstream-v1"),
+    )
+
+    assert "1. Title: Debug artifact" in review
+    assert len(state["instances"]) == 0
+
+
+def test_upstream_openai_compatible_invalid_json_falls_back_to_heuristic(monkeypatch):
+    install_fake_upstream(monkeypatch, content="not-json")
+
+    review = render_review(
+        "```ts\nconsole.log('debug');\n```",
+        review_backend="upstream_openai_compatible",
+        upstream_settings=UpstreamReviewSettings(
+            model="review-upstream-v1",
+            base_url="https://example.test/v1",
+            api_key="upstream-key",
+        ),
+    )
+
+    assert "1. Title: Debug artifact" in review
+    assert "Rule ID: debug_artifact" in review
+
+
+@pytest.mark.parametrize(
+    "invalid_payload",
+    [
+        {
+            "findings": [
+                {
+                    "title": "Debug artifact",
+                    "rule_id": "debug_artifact",
+                    "severity": "critical",
+                    "file_path": "frontend/app.tsx",
+                    "line_number": 1,
+                    "evidence": "console.log('debug')",
+                    "fix": "Remove it.",
+                }
+            ]
+        },
+        {
+            "findings": [
+                {
+                    "title": "Debug artifact",
+                    "rule_id": "debug_artifact",
+                    "severity": "low",
+                    "file_path": "frontend/app.tsx",
+                    "line_number": 0,
+                    "evidence": "console.log('debug')",
+                    "fix": "Remove it.",
+                }
+            ]
+        },
+    ],
+)
+def test_upstream_openai_compatible_invalid_finding_fields_fall_back_to_heuristic(
+    monkeypatch,
+    invalid_payload,
+):
+    install_fake_upstream(monkeypatch, content=json.dumps(invalid_payload))
+
+    review = render_review(
+        "```ts\nconsole.log('debug');\n```",
+        review_backend="upstream_openai_compatible",
+        upstream_settings=UpstreamReviewSettings(
+            model="review-upstream-v1",
+            base_url="https://example.test/v1",
+            api_key="upstream-key",
+        ),
+    )
+
+    assert "1. Title: Debug artifact" in review
+    assert "Severity: low" in review
+
+
+def test_upstream_openai_compatible_exception_falls_back_to_heuristic(monkeypatch):
+    install_fake_upstream(monkeypatch, error=TimeoutError("upstream timeout"))
+
+    review = render_review(
+        "```ts\nconsole.log('debug');\n```",
+        review_backend="upstream_openai_compatible",
+        upstream_settings=UpstreamReviewSettings(
+            model="review-upstream-v1",
+            base_url="https://example.test/v1",
+            api_key="upstream-key",
+        ),
+    )
+
+    assert "1. Title: Debug artifact" in review
+    assert "external model reasoning is limited" not in review
+
+
 def test_prepare_review_text_legacy_message_uses_entire_text_as_target():
     agent = CodeReviewAgent(agent_name="code-review")
     prepared = agent.prepare_review_text("Please review:\n```ts\nconsole.log('debug');\n```")
@@ -457,6 +642,7 @@ export function debugLog(message: string) {
     assert request.timeout_seconds == 18.0
     assert request.messages[0]["role"] == "system"
     assert request.messages[1]["role"] == "user"
+    assert "Return JSON only" in request.messages[0]["content"]
     assert "Review target path: frontend/app.tsx" in request.messages[1]["content"]
     assert "Repo context files supplied: 1" in request.messages[1]["content"]
     assert "Context file 1 path: frontend/logger.ts" in request.messages[1]["content"]

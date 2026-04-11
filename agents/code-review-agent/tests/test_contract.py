@@ -1,5 +1,9 @@
+import json
+from types import SimpleNamespace
+
 from fastapi.testclient import TestClient
 
+import src.core.upstream_review as upstream_review_module
 from src.config import get_settings
 from src.main import create_app
 
@@ -22,6 +26,52 @@ def completion_payload(settings, stream: bool = False):
         ],
         "stream": stream,
     }
+
+
+def install_fake_upstream(monkeypatch, *, content: str | None = None, error: Exception | None = None):
+    state = {"instances": []}
+
+    class FakeAsyncOpenAI:
+        def __init__(self, *, base_url, api_key, timeout):
+            instance = {
+                "base_url": base_url,
+                "api_key": api_key,
+                "timeout": timeout,
+                "calls": [],
+            }
+
+            async def create(**kwargs):
+                instance["calls"].append(kwargs)
+                if error is not None:
+                    raise error
+                return SimpleNamespace(
+                    choices=[
+                        SimpleNamespace(
+                            message=SimpleNamespace(content=content),
+                        )
+                    ]
+                )
+
+            self.chat = SimpleNamespace(completions=SimpleNamespace(create=create))
+            state["instances"].append(instance)
+
+    monkeypatch.setattr(upstream_review_module, "AsyncOpenAI", FakeAsyncOpenAI)
+    return state
+
+
+def collect_stream_content(response) -> str:
+    pieces: list[str] = []
+    for raw_line in response.text.splitlines():
+        if not raw_line.startswith("data: "):
+            continue
+        payload = raw_line[6:]
+        if payload == "[DONE]":
+            continue
+        data = json.loads(payload)
+        delta = data["choices"][0]["delta"]
+        if "content" in delta:
+            pieces.append(delta["content"])
+    return "".join(pieces)
 
 
 def test_health_endpoint(client, settings):
@@ -170,3 +220,101 @@ def test_stream_response_sse_format_with_upstream_reserved_backend(monkeypatch):
     lines = [line for line in response.text.splitlines() if line]
     assert lines[0].startswith("data: ")
     assert lines[-1] == "data: [DONE]"
+
+
+def test_non_stream_response_format_with_upstream_live_backend(monkeypatch):
+    state = install_fake_upstream(
+        monkeypatch,
+        content=json.dumps(
+            {
+                "findings": [
+                    {
+                        "title": "Hardcoded secret",
+                        "rule_id": "hardcoded_secret",
+                        "severity": "high",
+                        "file_path": "frontend/app.tsx",
+                        "line_number": 9,
+                        "evidence": "token = 'sk-test-1234567890'",
+                        "fix": "Move the credential into environment variables.",
+                    }
+                ]
+            }
+        ),
+    )
+    monkeypatch.setenv("AGENT_API_KEY", "test-agent-key")
+    monkeypatch.setenv("AGENT_REVIEW_BACKEND", "upstream_openai_compatible")
+    monkeypatch.setenv("AGENT_UPSTREAM_MODEL", "review-upstream-v1")
+    monkeypatch.setenv("AGENT_UPSTREAM_BASE_URL", "https://example.test/v1")
+    monkeypatch.setenv("AGENT_UPSTREAM_API_KEY", "upstream-key")
+    get_settings.cache_clear()
+
+    settings = get_settings()
+    with TestClient(create_app()) as client:
+        response = client.post(
+            "/v1/chat/completions",
+            json=completion_payload(settings),
+            headers=auth_headers(settings),
+        )
+
+    get_settings.cache_clear()
+
+    assert response.status_code == 200
+    data = response.json()
+    content = data["choices"][0]["message"]["content"]
+    assert data["object"] == "chat.completion"
+    assert data["model"] == settings.model_id
+    assert "1. Title: Hardcoded secret" in content
+    assert "Rule ID: hardcoded_secret" in content
+    assert "File: frontend/app.tsx:9" in content
+    assert (
+        "external model reasoning is limited to the review target and supplied repo context"
+        in content
+    )
+    assert len(state["instances"]) == 1
+    assert state["instances"][0]["calls"][0]["model"] == "review-upstream-v1"
+
+
+def test_stream_response_sse_format_with_upstream_live_backend(monkeypatch):
+    install_fake_upstream(
+        monkeypatch,
+        content=json.dumps(
+            {
+                "findings": [
+                    {
+                        "title": "Hardcoded secret",
+                        "rule_id": "hardcoded_secret",
+                        "severity": "high",
+                        "file_path": "frontend/app.tsx",
+                        "line_number": 9,
+                        "evidence": "token = 'sk-test-1234567890'",
+                        "fix": "Move the credential into environment variables.",
+                    }
+                ]
+            }
+        ),
+    )
+    monkeypatch.setenv("AGENT_API_KEY", "test-agent-key")
+    monkeypatch.setenv("AGENT_REVIEW_BACKEND", "upstream_openai_compatible")
+    monkeypatch.setenv("AGENT_UPSTREAM_MODEL", "review-upstream-v1")
+    monkeypatch.setenv("AGENT_UPSTREAM_BASE_URL", "https://example.test/v1")
+    monkeypatch.setenv("AGENT_UPSTREAM_API_KEY", "upstream-key")
+    get_settings.cache_clear()
+
+    settings = get_settings()
+    with TestClient(create_app()) as client:
+        response = client.post(
+            "/v1/chat/completions",
+            json=completion_payload(settings, stream=True),
+            headers=auth_headers(settings),
+        )
+
+    get_settings.cache_clear()
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/event-stream")
+    lines = [line for line in response.text.splitlines() if line]
+    assert lines[0].startswith("data: ")
+    assert lines[-1] == "data: [DONE]"
+    stream_content = collect_stream_content(response)
+    assert "Title: Hardcoded secret" in stream_content
+    assert "Rule ID: hardcoded_secret" in stream_content
