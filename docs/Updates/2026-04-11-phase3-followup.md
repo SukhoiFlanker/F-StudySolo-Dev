@@ -536,3 +536,94 @@
 - `workflow-meta.ts` 的 icon / theme / inputs / outputs / 结构性元数据职责
 - `canvas-node-factory.ts` 的实例默认标题语义
 - `NodeResultSlip.tsx` 对旧 `workflow:toggle-all-slips` 的兼容监听
+
+## 21. 2026-04-11 深夜补充：streaming routes 与 workflow execute 的 usage lifecycle 已共享收口
+
+在 Phase 3 主线判断趋于收尾后，这一轮回到 P2，先只补一个边界清晰的 backend 收尾闭环：把流式 chat 与 workflow execute 仍然手工维护的 usage 生命周期统一到共享 helper。
+
+### 完成内容
+1. `backend/app/services/usage_tracker.py`
+   - 新增异步 `usage_request_scope(...)`
+   - 统一封装：
+     - `create_usage_request`
+     - `bind_usage_request`
+     - `finalize_usage_request`
+   - 调用方通过可写 `status` 句柄控制最终状态
+2. `backend/app/api/ai/chat.py`
+   - `_chat_stream_generator(...)` 已切到共享 helper
+   - 非流式 `/api/ai/chat` 继续保持 `@track_usage(...)`
+3. `backend/app/api/workflow/execute.py`
+   - workflow execute SSE 链路已切到共享 helper
+4. 测试已补齐
+   - `backend/tests/test_ai_chat_usage_tracking_property.py`
+   - `backend/tests/test_workflow_execute_route_property.py`
+
+### 验证
+- `pytest backend/tests/test_ai_chat_usage_tracking_property.py backend/tests/test_workflow_execute_route_property.py`
+- 结果：`10 passed`
+
+### 提交
+- `f759740 refactor(backend): share usage lifecycle for streaming routes`
+
+## 22. 2026-04-11 深夜补充：backend 内部 LLM import 已统一到 canonical 模块
+
+在 usage lifecycle 收口之后，这一轮继续只做 backend 内部入口统一，不改 LLM 路由行为，也不删 compat shim。
+
+### 完成内容
+1. 以下 backend 运行主链 import 已切到 `app.services.llm.*`
+   - `backend/app/api/ai/chat.py`
+   - `backend/app/api/community_nodes.py`
+   - `backend/app/engine/node_runner.py`
+   - `backend/app/engine/executor.py`
+   - `backend/app/services/ai_chat/model_caller.py`
+   - `backend/app/services/workflow_generator.py`
+2. 明确保留不变
+   - `backend/app/services/ai_router.py`
+   - `backend/app/services/llm_caller.py`
+   - `backend/app/services/llm_provider.py`
+   - 上述 compat shim 继续保留，不做删除
+
+### 验证
+- 静态扫描：
+  - backend 运行主链已无 `from app.services.ai_router ...` 残留
+- `pytest backend/tests/test_ai_routing_property.py backend/tests/test_ai_chat_usage_tracking_property.py backend/tests/test_workflow_execute_route_property.py`
+- 结果：`10 passed, 1 skipped`
+  - 其中 `test_ai_routing_property.py` 在当前环境下为 skipped
+
+### 提交
+- `a938963 refactor(backend): use canonical llm modules internally`
+
+## 23. 2026-04-11 深夜补充：Phase 3 主线完成与冻结边界已补记
+
+在 backend 两个收尾闭环完成后，这一轮没有继续推进新的 frontend 敏感改造，只补状态文档结论，明确 Phase 3 当前应进入“主线完成、敏感边界冻结”的判断。
+
+### 完成内容
+1. 已补记的冻结边界包括：
+   - `frontend/src/app/m/[id]/MemoryView.tsx`
+   - compat shim
+   - `workflow-meta.ts` 的结构性元数据职责
+   - `canvas-node-factory.ts` 的默认实例标题语义
+   - `NodeResultSlip.tsx` 对旧 `workflow:toggle-all-slips` 的兼容监听
+2. 静态扫描结论已补记：
+   - 旧 store import 仅剩 `MemoryView.tsx` 与 compat test
+   - 旧 `window.dispatchEvent(new CustomEvent('workflow:toggle-all-slips', ...))` 发射端仅剩 `MemoryView.tsx`
+
+### 提交
+- `6060ee8 docs(frontend): record phase 3 closure boundaries`
+
+## 24. 当前最新状态（P2/P3 联合更新）
+
+截至当前最新本地状态，可以把这条主线整体判断为：
+
+1. **Phase 2 已完成当前最关键的收尾项**
+   - streaming / workflow execute 的 usage lifecycle 已统一收口
+   - backend 内部 LLM import 已统一到 canonical 模块
+2. **Phase 3 已完成当前规划内主线**
+   - stores
+   - service 主批次
+   - TypedEventBus 两批
+   - manifest renderer 接线
+   - 六个连续的 manifest-first UI 文案闭环
+3. **下一步不宜继续机械扩写敏感尾项**
+   - 更适合先判断 Phase 2 是否正式宣告收尾
+   - 更适合维持 Phase 3 冻结边界，而不是继续顺手推进 `MemoryView.tsx`、compat shim 退场或默认实例命名语义改造

@@ -3,8 +3,8 @@
 # StudySolo 2026-04-11 阶段总结：Phase 3 前端重构当前状态
 
 **完成日期**：2026-04-11  
-**状态**：当前本地状态已收口，前端 Phase 3 已从 stores/service 收口推进到 workflow-local EventBus 与 renderer registry 预适配  
-**覆盖范围**：Phase 2 后端重构后的稳定化、Phase 3 / D2 与 3.3~3.5 当前已落地部分、当前本地提交链、验证结果与下一步建议
+**状态**：当前本地状态已进一步收口，Phase 2 后端收尾已补齐 streaming/workflow usage lifecycle 与 canonical LLM import，Phase 3 主线已完成并进入敏感边界冻结  
+**覆盖范围**：Phase 2 后端重构后的稳定化与收尾、Phase 3 / D2 与 3.3~3.5 当前已落地部分、最近本地提交链、验证结果与下一步建议
 
 ## 1. 执行摘要
 
@@ -17,24 +17,22 @@
    - Workflow 路由基线仍保持 `107`
    - Workflow 关键测试已回绿
 
-2. **Phase 2 后续稳定化已完成核心闭环**
+2. **Phase 2 后续稳定化与收尾已补齐当前最关键闭环**
    - B1：非流式 AI Chat usage 收口已完成
-   - D1：前端 chat bridge 解耦与 workflow service 初步收口已完成
+   - streaming AI Chat / workflow execute 已共享 usage lifecycle helper
+   - backend 内部 LLM import 已统一到 `app.services.llm.*` canonical 模块
 
-3. **Phase 3 前端重构已完成 stores、service、workflow-local EventBus、renderer registry 预适配四条主线的当前阶段交付**
+3. **Phase 3 前端重构主线已完成，当前进入敏感边界冻结**
    - stores 已按域重组并保留兼容 shim
    - workflow 主域 import 已基本切完
    - workflow 相关 service 请求通道已进一步统一
-   - workflow-local TypedEventBus 已落地
-   - renderer registry 已拆成“renderer 名映射 + nodeType 回退”两层
+   - TypedEventBus 两批迁移已完成
+   - manifest renderer 接线与六个连续 UI 文案闭环已完成
 
-4. **当前本地 `main` 比 `origin/main` 超前 6 个提交**
-   - `b28812b refactor(frontend): migrate workflow component store imports`
-   - `2bcd9fd refactor(frontend): finish workflow store and service migration`
-   - `29b3954 fix(frontend): restore admin models page export`
-   - `70c6582 refactor(frontend): unify workflow-adjacent service fetchers`
-   - `4de7087 refactor(frontend): add workflow typed event bus`
-   - `2adc657 refactor(frontend): prepare workflow renderer registry`
+4. **最近新增的关键本地提交包括**
+   - `f759740 refactor(backend): share usage lifecycle for streaming routes`
+   - `a938963 refactor(backend): use canonical llm modules internally`
+   - `6060ee8 docs(frontend): record phase 3 closure boundaries`
 
 ## 2. 当前已完成改动
 
@@ -719,3 +717,79 @@
    - `workflow-meta.ts` 结构职责收缩
    - `canvas-node-factory.ts` 的默认实例命名语义
 3. 如果未来要继续处理上述任一项，必须单独成环，并把兼容策略、验收标准和回退路径单独定义清楚
+
+### 8.16 `refactor(backend): share usage lifecycle for streaming routes`
+
+在 Phase 3 主线收尾判断明确之后，P2 又继续补齐了一处真实 backend 缺口：把流式 chat 与 workflow execute 仍然手工维护的 usage 生命周期统一收口到共享 helper。
+
+#### 完成内容
+1. `backend/app/services/usage_tracker.py`
+   - 新增异步 `usage_request_scope(...)`
+   - 统一封装：
+     - `create_usage_request`
+     - `bind_usage_request`
+     - `finalize_usage_request`
+   - 调用方可通过可写 `status` 句柄控制最终完成 / 失败状态
+2. `backend/app/api/ai/chat.py`
+   - `_chat_stream_generator(...)` 已切到共享 helper
+   - 非流式 `/api/ai/chat` 继续保持 `@track_usage(...)`
+3. `backend/app/api/workflow/execute.py`
+   - workflow execute SSE 链路已切到共享 helper
+   - route 文件里不再手写完整 usage lifecycle 样板
+4. 新增 / 更新测试
+   - `backend/tests/test_ai_chat_usage_tracking_property.py`
+   - `backend/tests/test_workflow_execute_route_property.py`
+
+#### 验证
+- `pytest backend/tests/test_ai_chat_usage_tracking_property.py backend/tests/test_workflow_execute_route_property.py`
+- 结果：`10 passed`
+
+#### 提交
+- `f759740 refactor(backend): share usage lifecycle for streaming routes`
+
+### 8.17 `refactor(backend): use canonical llm modules internally`
+
+在 usage lifecycle 收口后，P2 又继续补齐了 backend LLM 边界的入口统一：真实运行代码改为直接依赖 `app.services.llm.*`，根层 shim 保留但不再作为内部主入口。
+
+#### 完成内容
+1. 以下 backend 运行主链 import 已统一切到 canonical 模块：
+   - `backend/app/api/ai/chat.py`
+   - `backend/app/api/community_nodes.py`
+   - `backend/app/engine/node_runner.py`
+   - `backend/app/engine/executor.py`
+   - `backend/app/services/ai_chat/model_caller.py`
+   - `backend/app/services/workflow_generator.py`
+2. 明确保留不变
+   - `backend/app/services/ai_router.py`
+   - `backend/app/services/llm_caller.py`
+   - `backend/app/services/llm_provider.py`
+   - 以上 compat shim 继续保留，不做删除
+
+#### 验证
+- 静态扫描：
+  - backend 运行主链已无 `from app.services.ai_router ...` 残留
+- `pytest backend/tests/test_ai_routing_property.py backend/tests/test_ai_chat_usage_tracking_property.py backend/tests/test_workflow_execute_route_property.py`
+- 结果：`10 passed, 1 skipped`
+  - 其中 `test_ai_routing_property.py` 在当前环境下为 skipped
+
+#### 提交
+- `a938963 refactor(backend): use canonical llm modules internally`
+
+### 8.18 当前状态补充判断（P2/P3 联合更新）
+
+截至当前最新本地状态，可以把 P2 / P3 一起重新判断为：
+
+1. **Phase 2 已完成当前最值得做的收尾项**
+   - 后端路由重组已稳定
+   - AI Chat 合并已稳定
+   - streaming / workflow execute 的 usage lifecycle 已共享收口
+   - backend 内部 LLM import 已切到 canonical 模块
+2. **Phase 3 已完成当前规划内主线**
+   - stores
+   - service 主批次
+   - TypedEventBus 两批
+   - manifest renderer 接线
+   - 六个连续的 manifest-first UI 文案闭环
+3. **下一步不再是继续机械拆尾差**
+   - Phase 2 更适合进入“是否正式宣告收尾”的判断
+   - Phase 3 更适合维持冻结边界，而不是继续顺手推进 `MemoryView.tsx`、compat shim 退场或默认实例命名语义改造
