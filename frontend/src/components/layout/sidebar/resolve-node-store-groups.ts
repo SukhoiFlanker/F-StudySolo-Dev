@@ -1,6 +1,9 @@
 import type { NodeManifestItem, NodeType } from '@/types';
 
 export type NodeStoreGroupId = 'trigger' | 'ai' | 'content' | 'data' | 'logic';
+export const ALL_NODE_STORE_CATEGORY_ID = 'all';
+export type NodeStoreCategoryId = NodeStoreGroupId | typeof ALL_NODE_STORE_CATEGORY_ID;
+export type NodeStoreGroupMode = 'dynamic' | 'static-fallback';
 
 export type NodeStoreGroup = {
   id: NodeStoreGroupId;
@@ -11,6 +14,10 @@ export type NodeStoreGroup = {
 export type NodeStoreManifestGrouping = {
   groups: NodeStoreGroup[];
   unmappedManifestTypes: NodeType[];
+};
+
+export type NodeStoreGroupViewResolution = NodeStoreManifestGrouping & {
+  mode: NodeStoreGroupMode;
 };
 
 type NodeStoreGroupDefinition = {
@@ -102,4 +109,36 @@ export function groupManifestForNodeStore(
     groups,
     unmappedManifestTypes: [...unmappedManifestTypes],
   };
+}
+
+export function resolveNodeStoreGroupsForView(
+  manifest: NodeManifestItem[],
+  isLoading: boolean,
+  error: string | null | undefined,
+): NodeStoreGroupViewResolution {
+  if (isLoading || error || manifest.length === 0) {
+    return {
+      mode: 'static-fallback',
+      groups: getStaticNodeStoreGroups(),
+      unmappedManifestTypes: [],
+    };
+  }
+
+  return {
+    mode: 'dynamic',
+    ...groupManifestForNodeStore(manifest),
+  };
+}
+
+export function resolveSelectedNodeStoreCategory(
+  selectedCategoryId: string,
+  groups: NodeStoreGroup[],
+): NodeStoreCategoryId {
+  if (selectedCategoryId === ALL_NODE_STORE_CATEGORY_ID) {
+    return ALL_NODE_STORE_CATEGORY_ID;
+  }
+
+  return groups.some((group) => group.id === selectedCategoryId)
+    ? (selectedCategoryId as NodeStoreGroupId)
+    : ALL_NODE_STORE_CATEGORY_ID;
 }

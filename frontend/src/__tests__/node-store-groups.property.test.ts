@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
+  ALL_NODE_STORE_CATEGORY_ID,
   getStaticNodeStoreGroups,
   groupManifestForNodeStore,
+  resolveNodeStoreGroupsForView,
+  resolveSelectedNodeStoreCategory,
 } from '@/components/layout/sidebar/resolve-node-store-groups';
 import type { NodeManifestItem, NodeType } from '@/types';
 
@@ -134,5 +137,57 @@ describe('node store groups resolver', () => {
     expect(grouping.groups).toEqual([]);
     expect(grouping.unmappedManifestTypes).toEqual([]);
     expect(getStaticNodeStoreGroups()).toHaveLength(5);
+  });
+
+  it('falls back to the static skeleton while loading, on error, or when the manifest is empty', () => {
+    const staticGroups = getStaticNodeStoreGroups();
+
+    expect(resolveNodeStoreGroupsForView([makeManifestItem('summary')], true, null)).toEqual({
+      mode: 'static-fallback',
+      groups: staticGroups,
+      unmappedManifestTypes: [],
+    });
+    expect(resolveNodeStoreGroupsForView([makeManifestItem('summary')], false, '加载失败')).toEqual({
+      mode: 'static-fallback',
+      groups: staticGroups,
+      unmappedManifestTypes: [],
+    });
+    expect(resolveNodeStoreGroupsForView([], false, null)).toEqual({
+      mode: 'static-fallback',
+      groups: staticGroups,
+      unmappedManifestTypes: [],
+    });
+  });
+
+  it('returns only non-empty groups in dynamic mode and keeps unmapped semantics intact', () => {
+    const resolution = resolveNodeStoreGroupsForView(
+      [
+        makeManifestItem('summary'),
+        makeManifestItem('write_db'),
+        makeManifestItem('community_node'),
+      ],
+      false,
+      null,
+    );
+
+    expect(resolution).toEqual({
+      mode: 'dynamic',
+      groups: [
+        { id: 'content', label: '内容生成', types: ['summary'] },
+        { id: 'data', label: '输出 & 存储', types: ['write_db'] },
+      ],
+      unmappedManifestTypes: ['community_node'],
+    });
+  });
+
+  it('falls back to all when the selected category is missing from the resolved groups', () => {
+    const groups = [
+      { id: 'content', label: '内容生成', types: ['summary'] as NodeType[] },
+      { id: 'data', label: '输出 & 存储', types: ['write_db'] as NodeType[] },
+    ];
+
+    expect(resolveSelectedNodeStoreCategory('content', groups)).toBe('content');
+    expect(resolveSelectedNodeStoreCategory('logic', groups)).toBe(ALL_NODE_STORE_CATEGORY_ID);
+    expect(resolveSelectedNodeStoreCategory(ALL_NODE_STORE_CATEGORY_ID, groups)).toBe(ALL_NODE_STORE_CATEGORY_ID);
   });
 });

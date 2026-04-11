@@ -10,22 +10,39 @@ import { useNodeManifest } from '@/features/workflow/hooks/use-node-manifest';
 import type { NodeManifestItem, NodeType } from '@/types';
 import { NodeStoreItem } from './NodeStoreItem';
 import { matchesNodeStoreQuery, resolveNodeStoreCopy } from './resolve-node-store-copy';
-
-const NODE_CATEGORIES: { id: string; label: string; icon: LucideIcon; types: NodeType[] }[] = [
-  { id: 'trigger', label: '输入源', icon: FileTerminal, types: ['trigger_input', 'knowledge_base', 'web_search'] },
-  { id: 'ai', label: 'AI 处理', icon: BrainCircuit, types: ['ai_analyzer', 'ai_planner', 'content_extract', 'merge_polish'] },
-  { id: 'content', label: '内容生成', icon: NotebookPen, types: ['outline_gen', 'summary', 'flashcard', 'quiz_gen', 'mind_map', 'chat_response'] },
-  { id: 'data', label: '输出 & 存储', icon: LibraryBig, types: ['write_db', 'export_file'] },
-  { id: 'logic', label: '逻辑控制', icon: Network, types: ['compare', 'logic_switch', 'loop_map', 'loop_group'] },
-];
-
-const ALL_TAG = 'all';
+import {
+  ALL_NODE_STORE_CATEGORY_ID,
+  resolveNodeStoreGroupsForView,
+  resolveSelectedNodeStoreCategory,
+} from './resolve-node-store-groups';
+import type { NodeStoreCategoryId, NodeStoreGroup, NodeStoreGroupId } from './resolve-node-store-groups';
 
 type NodeManifestLookup = Partial<Record<NodeType, NodeManifestItem>>;
 
-function TagFilterBar({ selectedCategoryId, onSelect }: { selectedCategoryId: string; onSelect: (id: string) => void }) {
+const NODE_STORE_GROUP_ICONS: Record<NodeStoreGroupId, LucideIcon> = {
+  trigger: FileTerminal,
+  ai: BrainCircuit,
+  content: NotebookPen,
+  data: LibraryBig,
+  logic: Network,
+};
+
+type NodeStoreTagCategory = NodeStoreGroup & { icon: LucideIcon };
+
+function TagFilterBar({
+  categories,
+  selectedCategoryId,
+  onSelect,
+}: {
+  categories: NodeStoreTagCategory[];
+  selectedCategoryId: NodeStoreCategoryId;
+  onSelect: (id: NodeStoreCategoryId) => void;
+}) {
   const [expanded, setExpanded] = useState(false);
-  const allTags = [{ id: ALL_TAG, label: '全部', icon: LayoutGrid }, ...NODE_CATEGORIES.map((c) => ({ id: c.id, label: c.label, icon: c.icon }))];
+  const allTags = [
+    { id: ALL_NODE_STORE_CATEGORY_ID, label: '全部', icon: LayoutGrid },
+    ...categories.map((c) => ({ id: c.id, label: c.label, icon: c.icon })),
+  ];
   const visibleTags = expanded ? allTags : allTags.slice(0, 3);
   return (
     <div className="shrink-0 border-b border-border px-2 py-2">
@@ -37,7 +54,7 @@ function TagFilterBar({ selectedCategoryId, onSelect }: { selectedCategoryId: st
               className={`relative inline-flex items-center gap-1.5 overflow-hidden rounded-full border px-2.5 py-1 text-[10px] font-medium transition-colors ${isActive ? 'node-paper-bg border-primary/30 text-primary shadow-sm' : 'border-border/50 bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'}`}>
               <div className="tag-paper-texture pointer-events-none absolute inset-0 z-0 opacity-60" />
               <tag.icon className={`relative z-10 h-[14px] w-[14px] ${isActive ? 'text-primary' : 'text-slate-500'}`} />
-              <span className="relative z-10 hidden sm:inline">{tag.id === ALL_TAG ? '全部' : tag.label.split(' ')[0]}</span>
+              <span className="relative z-10 hidden sm:inline">{tag.id === ALL_NODE_STORE_CATEGORY_ID ? '全部' : tag.label.split(' ')[0]}</span>
             </button>
           );
         })}
@@ -94,9 +111,31 @@ function CategorySection({
 
 export default function DefaultNodeStoreView() {
   const [search, setSearch] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>(ALL_TAG);
-  const { manifest } = useNodeManifest();
-  const visibleCategories = useMemo(() => selectedCategory === ALL_TAG ? NODE_CATEGORIES : NODE_CATEGORIES.filter((c) => c.id === selectedCategory), [selectedCategory]);
+  const [selectedCategory, setSelectedCategory] = useState<NodeStoreCategoryId>(ALL_NODE_STORE_CATEGORY_ID);
+  const { manifest, isLoading, error } = useNodeManifest();
+  const { groups } = useMemo(
+    () => resolveNodeStoreGroupsForView(manifest, isLoading, error),
+    [error, isLoading, manifest],
+  );
+  const categories = useMemo<NodeStoreTagCategory[]>(
+    () =>
+      groups.map((group) => ({
+        ...group,
+        icon: NODE_STORE_GROUP_ICONS[group.id],
+      })),
+    [groups],
+  );
+  const resolvedSelectedCategory = useMemo(
+    () => resolveSelectedNodeStoreCategory(selectedCategory, groups),
+    [groups, selectedCategory],
+  );
+  const visibleCategories = useMemo(
+    () =>
+      resolvedSelectedCategory === ALL_NODE_STORE_CATEGORY_ID
+        ? categories
+        : categories.filter((c) => c.id === resolvedSelectedCategory),
+    [categories, resolvedSelectedCategory],
+  );
   const manifestByType = useMemo(
     () =>
       manifest.reduce<NodeManifestLookup>((lookup, item) => {
@@ -121,10 +160,18 @@ export default function DefaultNodeStoreView() {
           {search && <button type="button" onClick={() => setSearch('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground/60 hover:text-foreground"><X className="h-3 w-3" /></button>}
         </div>
       </div>
-      <TagFilterBar selectedCategoryId={selectedCategory} onSelect={setSelectedCategory} />
+      <TagFilterBar
+        categories={categories}
+        selectedCategoryId={resolvedSelectedCategory}
+        onSelect={setSelectedCategory}
+      />
       <div className="shrink-0 px-3 py-1">
         <p className="text-[9px] text-muted-foreground/50">
-          {search ? `找到 ${totalFiltered} 个节点` : selectedCategory === ALL_TAG ? '拖拽到画布，或点击添加' : `已筛选：${NODE_CATEGORIES.find((c) => c.id === selectedCategory)?.label}`}
+          {search
+            ? `找到 ${totalFiltered} 个节点`
+            : resolvedSelectedCategory === ALL_NODE_STORE_CATEGORY_ID
+              ? '拖拽到画布，或点击添加'
+              : `已筛选：${categories.find((c) => c.id === resolvedSelectedCategory)?.label}`}
         </p>
       </div>
       <div className="scrollbar-hide flex-1 overflow-y-auto px-2 pb-2">
