@@ -8,7 +8,12 @@ def auth_headers(settings):
 def completion_payload(settings, stream: bool = False):
     return {
         "model": settings.model_id,
-        "messages": [{"role": "user", "content": "Review this diff"}],
+        "messages": [
+            {
+                "role": "user",
+                "content": "Review this snippet:\n```ts\nconsole.log('debug');\n```",
+            }
+        ],
         "stream": stream,
     }
 
@@ -79,7 +84,11 @@ def test_non_stream_response_format(client, settings):
     assert data["object"] == "chat.completion"
     assert data["model"] == settings.model_id
     assert data["choices"][0]["message"]["role"] == "assistant"
-    assert "Code review stub." in data["choices"][0]["message"]["content"]
+    content = data["choices"][0]["message"]["content"]
+    assert "Summary" in content
+    assert "Findings" in content
+    assert "Limitations" in content
+    assert "Debug artifact" in content
     assert data["usage"]["total_tokens"] == (
         data["usage"]["prompt_tokens"] + data["usage"]["completion_tokens"]
     )
