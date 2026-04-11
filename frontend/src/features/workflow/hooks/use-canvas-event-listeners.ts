@@ -3,7 +3,7 @@ import type { Node, ReactFlowInstance } from '@xyflow/react';
 import type { CanvasTool } from '@/features/workflow/components/toolbar/FloatingToolbar';
 import type { NodeConfigAnchorRect } from '@/features/workflow/components/node-config/popover-position';
 import { createDefaultNodeData, createCommunityNodeData } from '@/features/workflow/components/canvas/canvas-node-factory';
-import { useWorkflowStore } from '@/stores/use-workflow-store';
+import { useWorkflowStore } from '@/stores/workflow/use-workflow-store';
 import type { CommunityNodeInsertPayload } from '@/types';
 
 interface UseCanvasEventListenersOptions {

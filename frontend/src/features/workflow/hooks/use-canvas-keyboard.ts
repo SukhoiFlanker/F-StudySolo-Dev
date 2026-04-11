@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ReactFlowInstance } from '@xyflow/react';
-import { useWorkflowStore } from '@/stores/use-workflow-store';
+import { useWorkflowStore } from '@/stores/workflow/use-workflow-store';
 
 interface UseCanvasKeyboardOptions {
   reactFlowInstance: ReactFlowInstance;

@@ -4,7 +4,7 @@ import dynamic from 'next/dynamic';
 import { useEffect, useRef } from 'react';
 import localforage from 'localforage';
 import { useWorkflowSync, type LocalWorkflowCache } from '@/features/workflow/hooks/use-workflow-sync';
-import { useWorkflowStore } from '@/stores/use-workflow-store';
+import { useWorkflowStore } from '@/stores/workflow/use-workflow-store';
 import CanvasTraceLoader from '@/features/workflow/components/canvas/CanvasTraceLoader';
 import type { Node, Edge } from '@xyflow/react';
 

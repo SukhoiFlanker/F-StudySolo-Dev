@@ -2,7 +2,7 @@
 
 import { useCallback } from 'react';
 import type { Node } from '@xyflow/react';
-import { useWorkflowStore } from '@/stores/use-workflow-store';
+import { useWorkflowStore } from '@/stores/workflow/use-workflow-store';
 import { applyLoopGroupDrop } from '@/features/workflow/utils/loop-group-drop';
 
 export function useLoopGroupDrop() {

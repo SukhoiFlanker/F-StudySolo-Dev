@@ -6,8 +6,8 @@ import RightPanel from '@/components/layout/RightPanel';
 import CollaborationPopover from '@/components/workflow/CollaborationPopover';
 import CollaboratorAvatars from '@/components/workflow/CollaboratorAvatars';
 import RunHistoryPopover from '@/components/workflow/RunHistoryPopover';
-import { useWorkflowStore } from '@/stores/use-workflow-store';
-import { useSettingsStore } from '@/stores/use-settings-store';
+import { useWorkflowStore } from '@/stores/workflow/use-workflow-store';
+import { useSettingsStore } from '@/stores/ui/use-settings-store';
 
 interface WorkflowPageShellProps {
   workflowId?: string;

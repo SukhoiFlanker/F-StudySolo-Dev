@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import type { Node, ReactFlowInstance } from '@xyflow/react';
-import { useWorkflowStore } from '@/stores/use-workflow-store';
+import { useWorkflowStore } from '@/stores/workflow/use-workflow-store';
 
 /**
  * Paste nodes from clipboard at a given screen position.

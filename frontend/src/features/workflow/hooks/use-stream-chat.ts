@@ -15,10 +15,10 @@
 
 import { useCallback } from 'react';
 import type { CanvasContext } from './use-canvas-context';
-import type { ChatEntry } from '@/stores/use-conversation-store';
+import type { ChatEntry } from '@/stores/chat/use-conversation-store';
 import type { ThinkingDepth } from '@/components/layout/sidebar/SidebarAIPanel';
-import { useAIChatStore, abortAIChatStream } from '@/stores/use-ai-chat-store';
-import { useWorkflowStore } from '@/stores/use-workflow-store';
+import { useAIChatStore, abortAIChatStream } from '@/stores/chat/use-ai-chat-store';
+import { useWorkflowStore } from '@/stores/workflow/use-workflow-store';
 import { persistConversationMessage } from './chat-conversation-sync';
 import { executeCanvasActions, type CanvasAction } from './use-action-executor';
 

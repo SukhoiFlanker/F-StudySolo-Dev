@@ -1,5 +1,5 @@
-import type { ChatEntry } from '@/stores/use-conversation-store';
-import { useConversationStore } from '@/stores/use-conversation-store';
+import type { ChatEntry } from '@/stores/chat/use-conversation-store';
+import { useConversationStore } from '@/stores/chat/use-conversation-store';
 
 export function ensureConversationReady(): string {
   const store = useConversationStore.getState();

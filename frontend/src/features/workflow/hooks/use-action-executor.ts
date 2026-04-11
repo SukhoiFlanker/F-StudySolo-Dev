@@ -7,9 +7,8 @@
  * 严格按顺序执行, 任一步骤失败则返回错误。
  */
 
-import { useCallback } from 'react';
 import type { Node, Edge } from '@xyflow/react';
-import { useWorkflowStore } from '@/stores/use-workflow-store';
+import { useWorkflowStore } from '@/stores/workflow/use-workflow-store';
 import { NODE_TYPE_META } from '../constants/workflow-meta';
 
 export interface CanvasAction {
@@ -35,10 +34,6 @@ export interface ExecutionResult {
 }
 
 /** 安全获取 position, fallback 到 {x:120, y:120} */
-function safePos(pos?: { x?: number; y?: number }) {
-  return { x: pos?.x ?? 120, y: pos?.y ?? 120 };
-}
-
 /** 计算不与现有节点重叠的 x 位置 */
 function calcSafeX(existingNodes: Node[], anchorX: number): number {
   const maxX = existingNodes.reduce((m, n) => Math.max(m, n.position?.x ?? 0), 0);

@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import type { Node, ReactFlowInstance } from '@xyflow/react';
 import { createDefaultNodeData, createCommunityNodeData } from '@/features/workflow/components/canvas/canvas-node-factory';
-import { useWorkflowStore } from '@/stores/use-workflow-store';
+import { useWorkflowStore } from '@/stores/workflow/use-workflow-store';
 import type { CommunityNodeInsertPayload } from '@/types';
 
 /**

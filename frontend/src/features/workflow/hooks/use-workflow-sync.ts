@@ -4,7 +4,7 @@ import { useEffect, useRef, useCallback, useState } from 'react';
 import localforage from 'localforage';
 import { toast } from 'sonner';
 import { authedFetch } from '@/services/api-client';
-import { useWorkflowStore } from '@/stores/use-workflow-store';
+import { useWorkflowStore } from '@/stores/workflow/use-workflow-store';
 import type { Node, Edge } from '@xyflow/react';
 
 export type SyncStatus = 'synced' | 'saving_local' | 'saving_cloud' | 'offline' | 'error';
