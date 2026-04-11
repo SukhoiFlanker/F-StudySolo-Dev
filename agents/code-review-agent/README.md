@@ -68,6 +68,26 @@ export function debugLog(message: string) {
 - 若不存在 `<review_target>`，会回退到 legacy 行为：整条 `user` 消息都作为 review target
 - `repo_context` 不单独产生 findings，只用于补充上下文计数与后续 repo-aware 演进入口
 
+## Review Backend
+
+当前内部 review backend 已拆出明确 seam：
+
+- `heuristic`
+  - 默认后端
+  - 直接执行本地规则审查
+- `upstream_reserved`
+  - 预留给后续真实外部 LLM 接入
+  - 当前只构建 upstream request payload，然后立即回退到 `heuristic`
+  - 本轮不会发真实网络请求，也不会改变对外 HTTP 契约
+
+当前预留配置项均沿用 `AGENT_` 前缀环境变量：
+
+- `AGENT_REVIEW_BACKEND`
+- `AGENT_UPSTREAM_MODEL`
+- `AGENT_UPSTREAM_BASE_URL`
+- `AGENT_UPSTREAM_API_KEY`
+- `AGENT_UPSTREAM_TIMEOUT_SECONDS`
+
 ## 输出格式
 
 当前 assistant 内容保持为纯文本三段式：
