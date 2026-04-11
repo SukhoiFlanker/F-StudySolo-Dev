@@ -21,6 +21,8 @@ class CompareNode(BaseNode, LLMStreamMixin, JsonOutputMixin):
     output_format = "json"
     icon = "⚖️"
     color = "#06b6d4"
+    version = "1.0.0"
+    changelog = {"1.0.0": "初始版本"}
     renderer = "CompareRenderer"
     config_schema = [
         {

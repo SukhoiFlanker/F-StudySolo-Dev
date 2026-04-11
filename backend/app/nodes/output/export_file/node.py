@@ -32,6 +32,8 @@ class ExportFileNode(BaseNode):
     output_format = "markdown"
     icon = "📥"
     color = "#10b981"
+    version = "1.0.0"
+    changelog = {"1.0.0": "初始版本"}
     config_schema = [
         {
             "key": "format",

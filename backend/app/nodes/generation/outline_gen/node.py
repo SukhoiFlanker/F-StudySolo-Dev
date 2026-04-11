@@ -14,6 +14,8 @@ class OutlineGenNode(BaseNode, LLMStreamMixin):
     output_format = "markdown"
     icon = "📋"
     color = "#3b82f6"
+    version = "1.0.0"
+    changelog = {"1.0.0": "初始版本"}
     renderer = "OutlineRenderer"
     config_schema = [
         {

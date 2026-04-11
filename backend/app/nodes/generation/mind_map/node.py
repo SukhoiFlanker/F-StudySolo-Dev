@@ -21,6 +21,8 @@ class MindMapNode(BaseNode, LLMStreamMixin, JsonOutputMixin):
     output_format = "json"
     icon = "🧠"
     color = "#10b981"
+    version = "1.0.0"
+    changelog = {"1.0.0": "初始版本"}
     renderer = "MindMapRenderer"
     config_schema = [
         {

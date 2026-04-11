@@ -28,6 +28,8 @@ class WebSearchNode(BaseNode):
     output_format = "markdown"
     icon = "🌐"
     color = "#0ea5e9"
+    version = "1.0.0"
+    changelog = {"1.0.0": "初始版本"}
     config_schema = [
         {
             "key": "max_results",

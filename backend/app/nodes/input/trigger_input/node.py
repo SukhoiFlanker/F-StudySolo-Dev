@@ -17,6 +17,8 @@ class TriggerInputNode(BaseNode):
     output_format = "passthrough"
     icon = "▶️"
     color = "#10b981"
+    version = "1.0.0"
+    changelog = {"1.0.0": "初始版本"}
     config_schema = [
         {
             "key": "input_template",

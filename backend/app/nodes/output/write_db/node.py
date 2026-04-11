@@ -18,6 +18,8 @@ class WriteDBNode(BaseNode):
     output_format = "json"
     icon = "💾"
     color = "#6b7280"
+    version = "1.0.0"
+    changelog = {"1.0.0": "初始版本"}
     config_schema = [
         {
             "key": "target_key",

@@ -1,3 +1,5 @@
+import re
+
 from fastapi.testclient import TestClient
 
 from app.main import app
@@ -36,6 +38,9 @@ EXPECTED_TYPES = {
     "loop_group",
     "community_node",
 }
+
+OFFICIAL_NODE_TYPES = EXPECTED_TYPES - {"community_node"}
+SEMVER_PATTERN = re.compile(r"^\d+\.\d+\.\d+$")
 
 
 def _install_auth_stub(monkeypatch):
@@ -87,7 +92,12 @@ def test_node_manifest_route_exposes_frozen_contract_fields(monkeypatch):
         assert isinstance(item["supports_preview"], bool)
         assert item["deprecated_surface"] is None or isinstance(item["deprecated_surface"], str)
         assert item["renderer"] == EXPECTED_RENDERERS.get(node_type)
-        assert item["version"] == "1.0.0"
+        assert isinstance(item["version"], str) and SEMVER_PATTERN.match(item["version"])
+        if node_type in OFFICIAL_NODE_TYPES:
+            assert isinstance(item["changelog"], dict) and item["changelog"]
+            assert item["version"] in item["changelog"]
+        else:
+            assert item["changelog"] is None
 
 
 def test_node_manifest_route_keeps_known_display_name_mappings_stable(monkeypatch):

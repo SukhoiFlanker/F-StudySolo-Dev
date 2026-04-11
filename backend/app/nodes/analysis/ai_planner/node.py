@@ -16,6 +16,8 @@ class AIPlannerNode(BaseNode, LLMStreamMixin, JsonOutputMixin):
     output_format = "json"
     icon = "📐"
     color = "#8b5cf6"
+    version = "1.0.0"
+    changelog = {"1.0.0": "初始版本"}
     output_capabilities = ["preview", "compact"]
 
     async def execute(

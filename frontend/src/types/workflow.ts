@@ -102,6 +102,7 @@ export interface NodeManifestItem {
   deprecated_surface?: string | null;
   renderer: string | null;
   version: string;
+  changelog: Record<string, string> | null;
 }
 
 /** AI 步骤节点数据（存储在 WorkflowNode.data 中） */

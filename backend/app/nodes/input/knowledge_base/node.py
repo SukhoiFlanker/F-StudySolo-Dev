@@ -28,6 +28,8 @@ class KnowledgeBaseNode(BaseNode):
     output_format = "markdown"
     icon = "📚"
     color = "#8b5cf6"
+    version = "1.0.0"
+    changelog = {"1.0.0": "初始版本"}
     config_schema = [
         {
             "key": "top_k",

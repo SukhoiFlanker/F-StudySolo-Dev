@@ -100,6 +100,7 @@ class BaseNode(ABC):
     deprecated_surface: ClassVar[str | None] = None
     renderer: ClassVar[str | None] = None
     version: ClassVar[str] = "1.0.0"
+    changelog: ClassVar[dict[str, str] | None] = None
 
     # ── System prompt (unified three-segment assembly) ─────────────────────────
 
@@ -240,6 +241,7 @@ class BaseNode(ABC):
                 "deprecated_surface": nc.deprecated_surface,
                 "renderer": nc.renderer,
                 "version": nc.version,
+                "changelog": nc.changelog,
             }
             for _, nc in sorted(cls._registry.items(), key=lambda item: item[0])
         ]

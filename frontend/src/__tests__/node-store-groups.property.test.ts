@@ -48,6 +48,7 @@ function makeManifestItem(type: NodeType): NodeManifestItem {
     deprecated_surface: null,
     renderer: null,
     version: '1.0.0',
+    changelog: { '1.0.0': '初始版本' },
   };
 }
 

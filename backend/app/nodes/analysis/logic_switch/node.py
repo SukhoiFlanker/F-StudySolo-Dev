@@ -35,6 +35,8 @@ class LogicSwitchNode(BaseNode, LLMStreamMixin, JsonOutputMixin):
     output_format = "json"
     icon = "🔀"
     color = "#f59e0b"
+    version = "1.0.0"
+    changelog = {"1.0.0": "初始版本"}
     config_schema = [
         {
             "key": "branch_options",
