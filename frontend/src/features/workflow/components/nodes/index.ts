@@ -1,81 +1,91 @@
 /**
- * Node renderer registry — maps node types to their renderer components.
+ * Node renderer registry maps workflow node types to renderer components.
  *
- * The frontend equivalent of the backend's NODE_REGISTRY.
- * AIStepNode uses getRenderer(nodeType) to dynamically select the
- * correct renderer, eliminating the need for hardcoded switch/case.
+ * The static node-type fallback remains the active behavior today. Renderer-name
+ * resolution is exposed separately so manifest-first wiring can be enabled later
+ * without reshaping the existing callers.
  */
 
-import React from "react";
-import { MarkdownRenderer } from "./renderers/MarkdownRenderer";
-import { FlashcardRenderer } from "./renderers/FlashcardRenderer";
-import { OutlineRenderer } from "./renderers/OutlineRenderer";
-import { JsonRenderer } from "./renderers/JsonRenderer";
-import { PassthroughRenderer } from "./renderers/PassthroughRenderer";
-import { CompareRenderer } from "./renderers/CompareRenderer";
-import { MindMapRenderer } from "./renderers/MindMapRenderer";
-import { QuizRenderer } from "./renderers/QuizRenderer";
-import ExportRenderer from "./renderers/ExportRenderer";
+import React from 'react';
+import { MarkdownRenderer } from './renderers/MarkdownRenderer';
+import { FlashcardRenderer } from './renderers/FlashcardRenderer';
+import { OutlineRenderer } from './renderers/OutlineRenderer';
+import { JsonRenderer } from './renderers/JsonRenderer';
+import { PassthroughRenderer } from './renderers/PassthroughRenderer';
+import { CompareRenderer } from './renderers/CompareRenderer';
+import { MindMapRenderer } from './renderers/MindMapRenderer';
+import { QuizRenderer } from './renderers/QuizRenderer';
+import ExportRenderer from './renderers/ExportRenderer';
 
-/**
- * Props passed to every node renderer.
- */
 export interface NodeRendererProps {
-    output: string;
-    format: string;
-    nodeType: string;
-    isStreaming: boolean;
-    compact?: boolean;
+  output: string;
+  format: string;
+  nodeType: string;
+  isStreaming: boolean;
+  compact?: boolean;
 }
 
-/**
- * Registry: node type string → React renderer component.
- *
- * To add a new renderer, simply add an entry here and create
- * the renderer file in ./renderers/. Zero changes needed in
- * AIStepNode or anywhere else.
- */
-const RENDERER_REGISTRY: Record<string, React.FC<NodeRendererProps>> = {
-    // Special renderers
-    flashcard: FlashcardRenderer,
-    outline_gen: OutlineRenderer,
+const CommunityNodeRenderer: React.FC<NodeRendererProps> = ({ format, ...props }) =>
+  format === 'json'
+    ? React.createElement(JsonRenderer, { ...props, format })
+    : React.createElement(MarkdownRenderer, { ...props, format });
 
-    // JSON renderers
-    ai_analyzer: JsonRenderer,
-    ai_planner: JsonRenderer,
-
-    // Markdown renderers
-    summary: MarkdownRenderer,
-    content_extract: MarkdownRenderer,
-    chat_response: MarkdownRenderer,
-
-    // Passthrough (no output display)
-    trigger_input: PassthroughRenderer,
-    write_db: JsonRenderer,
-
-    // ── P1 新增节点渲染器 ──
-    compare: CompareRenderer,
-    mind_map: MindMapRenderer,
-    quiz_gen: QuizRenderer,
-    merge_polish: MarkdownRenderer,
-    knowledge_base: MarkdownRenderer,
-    web_search: MarkdownRenderer,
-    export_file: ExportRenderer,
-    community_node: ({ format, ...props }) =>
-        format === 'json'
-            ? React.createElement(JsonRenderer, { ...props, format })
-            : React.createElement(MarkdownRenderer, { ...props, format }),
-
-    // ── P2 引擎增强节点渲染器 ──
-    logic_switch: JsonRenderer,
-    loop_map: JsonRenderer,
+const RENDERER_COMPONENTS: Record<string, React.FC<NodeRendererProps>> = {
+  MarkdownRenderer,
+  FlashcardRenderer,
+  OutlineRenderer,
+  JsonRenderer,
+  PassthroughRenderer,
+  CompareRenderer,
+  MindMapRenderer,
+  QuizRenderer,
+  ExportRenderer,
+  CommunityNodeRenderer,
 };
 
-/**
- * Look up the renderer for a node type, with MarkdownRenderer as fallback.
- */
-export function getRenderer(
-    nodeType: string
-): React.FC<NodeRendererProps> {
-    return RENDERER_REGISTRY[nodeType] || MarkdownRenderer;
+const NODE_TYPE_RENDERERS: Record<string, keyof typeof RENDERER_COMPONENTS> = {
+  flashcard: 'FlashcardRenderer',
+  outline_gen: 'OutlineRenderer',
+  ai_analyzer: 'JsonRenderer',
+  ai_planner: 'JsonRenderer',
+  summary: 'MarkdownRenderer',
+  content_extract: 'MarkdownRenderer',
+  chat_response: 'MarkdownRenderer',
+  trigger_input: 'PassthroughRenderer',
+  write_db: 'JsonRenderer',
+  compare: 'CompareRenderer',
+  mind_map: 'MindMapRenderer',
+  quiz_gen: 'QuizRenderer',
+  merge_polish: 'MarkdownRenderer',
+  knowledge_base: 'MarkdownRenderer',
+  web_search: 'MarkdownRenderer',
+  export_file: 'ExportRenderer',
+  community_node: 'CommunityNodeRenderer',
+  logic_switch: 'JsonRenderer',
+  loop_map: 'JsonRenderer',
+};
+
+export function getRendererByName(
+  rendererName: string | null | undefined,
+): React.FC<NodeRendererProps> | null {
+  if (!rendererName) {
+    return null;
+  }
+
+  return RENDERER_COMPONENTS[rendererName] ?? null;
+}
+
+export function getRenderer(nodeType: string): React.FC<NodeRendererProps> {
+  const rendererName = NODE_TYPE_RENDERERS[nodeType];
+  return getRendererByName(rendererName) ?? MarkdownRenderer;
+}
+
+export function resolveRenderer({
+  nodeType,
+  rendererName,
+}: {
+  nodeType: string;
+  rendererName?: string | null;
+}): React.FC<NodeRendererProps> {
+  return getRendererByName(rendererName) ?? getRenderer(nodeType);
 }
