@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import { usePathname } from 'next/navigation';
-import { useAdminStore } from '@/stores/use-admin-store';
+import { useAdminStore } from '@/stores/admin/use-admin-store';
 import { ADMIN_NAV_ITEMS } from './AdminSidebar';
 
 function resolvePageMeta(pathname: string) {

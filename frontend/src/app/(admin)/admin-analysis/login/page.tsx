@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { adminLogin } from '@/services/admin.service';
-import { useAdminStore } from '@/stores/use-admin-store';
+import { useAdminStore } from '@/stores/admin/use-admin-store';
 
 const LOCK_FAILS_KEY = 'admin_lock_fails';
 const LOCK_WINDOW_MS = 3 * 60 * 1000;

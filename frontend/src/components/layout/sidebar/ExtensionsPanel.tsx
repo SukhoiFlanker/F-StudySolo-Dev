@@ -2,7 +2,7 @@
 
 import { Pin, Puzzle, FileText, GraduationCap, BarChart3, Crown } from 'lucide-react';
 import { toast } from 'sonner';
-import { usePanelStore, PINNABLE_PANELS, type SidebarPanel } from '@/stores/use-panel-store';
+import { usePanelStore, PINNABLE_PANELS, type SidebarPanel } from '@/stores/ui/use-panel-store';
 import type { LucideIcon } from 'lucide-react';
 
 // ─── Phase 1 Mock 数据（Phase 2 替换为 GET /api/extensions/） ─────────────────

@@ -10,7 +10,7 @@ import {
   type FontSize,
   type ThemeMode,
   type SidebarPosition,
-} from '@/stores/use-settings-store';
+} from '@/stores/ui/use-settings-store';
 import {
   ACCENT_OPTIONS,
   FONT_OPTIONS,

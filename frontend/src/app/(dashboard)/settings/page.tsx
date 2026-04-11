@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { usePanelStore } from '@/stores/use-panel-store';
+import { usePanelStore } from '@/stores/ui/use-panel-store';
 
 /**
  * /settings route now redirects back to workspace and opens the

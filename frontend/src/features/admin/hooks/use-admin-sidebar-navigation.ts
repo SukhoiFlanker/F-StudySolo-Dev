@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { usePathname } from 'next/navigation';
-import { useAdminStore } from '@/stores/use-admin-store';
+import { useAdminStore } from '@/stores/admin/use-admin-store';
 
 const MOBILE_WIDTH = 768;
 

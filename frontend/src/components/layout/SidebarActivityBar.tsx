@@ -9,7 +9,7 @@ import {
   IMMOVABLE_PANELS,
   PINNABLE_PANELS,
   type SidebarPanel,
-} from '@/stores/use-panel-store';
+} from '@/stores/ui/use-panel-store';
 import { PANEL_CONFIG, IMMOVABLE_UPPER, getPanelLabel } from './sidebar-constants';
 import SidebarActivityContextMenu from './sidebar/SidebarActivityContextMenu';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';

@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Puzzle, Wallet, Settings, UserCircle, PanelRightDashed, Database,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import type { SidebarPanel } from '@/stores/use-panel-store';
+import type { SidebarPanel } from '@/stores/ui/use-panel-store';
 
 export const PANEL_CONFIG: Record<SidebarPanel, { icon: LucideIcon; label: string }> = {
   'workflows':          { icon: LayoutList,        label: '工作流' },

@@ -8,8 +8,8 @@ import {
   PanelLeftDashed,
   PanelRightDashed,
 } from 'lucide-react';
-import { usePanelStore, RIGHT_PANEL_MIN, RIGHT_PANEL_MAX } from '@/stores/use-panel-store';
-import { useSettingsStore } from '@/stores/use-settings-store';
+import { usePanelStore, RIGHT_PANEL_MIN, RIGHT_PANEL_MAX } from '@/stores/ui/use-panel-store';
+import { useSettingsStore } from '@/stores/ui/use-settings-store';
 import ResizableHandle from './ResizableHandle';
 import RightPanelContent from './sidebar/RightPanelContent';
 

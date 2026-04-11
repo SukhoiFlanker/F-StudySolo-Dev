@@ -1,7 +1,7 @@
 'use client';
 
 import { Sun, Moon, Monitor } from 'lucide-react';
-import { useSettingsStore, type ThemeMode } from '@/stores/use-settings-store';
+import { useSettingsStore, type ThemeMode } from '@/stores/ui/use-settings-store';
 
 const THEME_CYCLE: ThemeMode[] = ['dark', 'light', 'system'];
 const THEME_ICON: Record<ThemeMode, typeof Sun> = {

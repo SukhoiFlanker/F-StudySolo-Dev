@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useSettingsStore, type ThemeMode } from '@/stores/use-settings-store';
+import { useSettingsStore, type ThemeMode } from '@/stores/ui/use-settings-store';
 
 /**
  * ThemeProvider — syncs Zustand theme state to the <html> element.

@@ -8,7 +8,7 @@ import {
   type AccentColor,
   type FontSize,
   type ThemeMode,
-} from '@/stores/use-settings-store';
+} from '@/stores/ui/use-settings-store';
 import { SettingSection, ToggleItem } from '@/features/settings/components';
 import {
   ACCENT_OPTIONS,

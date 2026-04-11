@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { FileText, Eye, Star, Heart, Search, Filter, AlertTriangle } from 'lucide-react';
 import { fetchMarketplace } from '@/services/workflow.service';
-import { usePanelStore } from '@/stores/use-panel-store';
+import { usePanelStore } from '@/stores/ui/use-panel-store';
 import type { WorkflowMeta } from '@/types/workflow';
 
 type FilterType = 'all' | 'official' | 'featured' | 'public';

@@ -1,7 +1,7 @@
 ﻿import { useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { adminLogout } from '@/services/admin.service';
-import { useAdminStore } from '@/stores/use-admin-store';
+import { useAdminStore } from '@/stores/admin/use-admin-store';
 
 interface UseAdminLogoutActionResult {
   loggingOut: boolean;

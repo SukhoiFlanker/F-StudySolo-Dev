@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useAdminSidebarNavigation } from '@/features/admin/hooks/use-admin-sidebar-navigation';
 import { useAdminLogoutAction } from '@/features/admin/hooks/use-admin-logout-action';
-import { useAdminStore } from '@/stores/use-admin-store';
+import { useAdminStore } from '@/stores/admin/use-admin-store';
 
 export const ADMIN_NAV_ITEMS = [
   { href: '/admin-analysis', label: '概览', icon: 'space_dashboard', group: 'main' },

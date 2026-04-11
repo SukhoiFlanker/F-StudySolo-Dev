@@ -13,7 +13,7 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import * as fc from 'fast-check';
-import { useWorkflowStore } from '@/stores/use-workflow-store';
+import { useWorkflowStore } from '@/stores/workflow/use-workflow-store';
 import type { Node } from '@xyflow/react';
 import type { AIStepNodeData } from '@/types';
 

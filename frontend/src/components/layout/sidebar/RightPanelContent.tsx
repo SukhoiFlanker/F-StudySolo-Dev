@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import type { Node } from '@xyflow/react';
-import { useWorkflowStore } from '@/stores/use-workflow-store';
+import { useWorkflowStore } from '@/stores/workflow/use-workflow-store';
 import { CollapsibleSection } from '../CollapsibleSection';
 import type { AIStepNodeData } from '@/types';
 import {

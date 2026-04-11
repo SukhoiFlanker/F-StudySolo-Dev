@@ -6,13 +6,13 @@ import { ChatMessages } from './ChatMessages';
 import { ChatInputBar } from './ChatInputBar';
 import { persistConversationMessage } from '@/features/workflow/hooks/chat-conversation-sync';
 import { useCanvasContext } from '@/features/workflow/hooks/use-canvas-context';
-import { useConversationStore } from '@/stores/use-conversation-store';
+import { useConversationStore } from '@/stores/chat/use-conversation-store';
 import { useStreamChat } from '@/features/workflow/hooks/use-stream-chat';
 import { useWorkflowExecution } from '@/features/workflow/hooks/use-workflow-execution';
 import { getChatModelList, type ChatModelOption } from '@/services/ai-catalog.service';
 import { getUser, type TierType } from '@/services/auth.service';
-import { useAIChatStore } from '@/stores/use-ai-chat-store';
-import { useWorkflowStore } from '@/stores/use-workflow-store';
+import { useAIChatStore } from '@/stores/chat/use-ai-chat-store';
+import { useWorkflowStore } from '@/stores/workflow/use-workflow-store';
 
 export type AIMode = 'plan' | 'chat' | 'create';
 export type ThinkingDepth = 'fast' | 'balanced' | 'deep';

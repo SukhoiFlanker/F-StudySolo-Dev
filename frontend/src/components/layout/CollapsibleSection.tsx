@@ -1,7 +1,7 @@
 'use client';
 
 import { ChevronDown } from 'lucide-react';
-import { usePanelStore } from '@/stores/use-panel-store';
+import { usePanelStore } from '@/stores/ui/use-panel-store';
 
 interface CollapsibleSectionProps {
   id: string;

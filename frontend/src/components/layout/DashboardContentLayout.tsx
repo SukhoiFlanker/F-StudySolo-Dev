@@ -1,6 +1,6 @@
 'use client';
 
-import { useSettingsStore } from '@/stores/use-settings-store';
+import { useSettingsStore } from '@/stores/ui/use-settings-store';
 
 /**
  * Client wrapper that applies sidebar position mirroring.

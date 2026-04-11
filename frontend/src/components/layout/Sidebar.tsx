@@ -8,8 +8,8 @@ import { toggleFavorite as apiToggleFavorite, updateWorkflow } from '@/services/
 import { useSidebarNavigation } from '@/hooks/use-sidebar-navigation';
 import { useWorkflowContextMenu } from '@/features/workflow/hooks/use-workflow-context-menu';
 import { useWorkflowSidebarActions } from '@/features/workflow/hooks/use-workflow-sidebar-actions';
-import { usePanelStore, LEFT_PANEL_MIN, LEFT_PANEL_MAX } from '@/stores/use-panel-store';
-import { useSettingsStore } from '@/stores/use-settings-store';
+import { usePanelStore, LEFT_PANEL_MIN, LEFT_PANEL_MAX } from '@/stores/ui/use-panel-store';
+import { useSettingsStore } from '@/stores/ui/use-settings-store';
 import { getPanelLabel } from './sidebar-constants';
 import { SidebarActivityBar } from './SidebarActivityBar';
 import { SidebarContextMenu } from './sidebar/SidebarContextMenu';

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { useAIChatStore } from '@/stores/use-ai-chat-store';
-import { useConversationStore } from '@/stores/use-conversation-store';
+import { useAIChatStore } from '@/stores/chat/use-ai-chat-store';
+import { useConversationStore } from '@/stores/chat/use-conversation-store';
 
 describe('ai chat store side-effect boundary', () => {
   beforeEach(() => {

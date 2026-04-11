@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { persistConversationMessage } from '@/features/workflow/hooks/chat-conversation-sync';
-import { useConversationStore } from '@/stores/use-conversation-store';
+import { useConversationStore } from '@/stores/chat/use-conversation-store';
 
 function createLocalStorageMock() {
   const store = new Map<string, string>();
