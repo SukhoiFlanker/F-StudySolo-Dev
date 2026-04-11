@@ -49,19 +49,20 @@
   - 稳定的 `Summary + Findings + Limitations` 输出格式
   - `heuristic / upstream_reserved / upstream_openai_compatible` 三种 review backend seam
   - 真实 OpenAI-compatible non-stream upstream 调用，以及配置缺失、超时、HTTP 异常、空内容、非法 JSON、非法 findings 的严格回退
+  - 真实 provider streaming：`stream=True + upstream_openai_compatible` 已接通，但仍坚持“稳定模板优先”，会先在服务端完整消费并校验上游 JSON findings，再按当前 SSE 外壳输出内容 chunk
   - 定向规则逻辑测试闭环
 
 ### Part B：仍未完成
 
 - `code-review-agent` 当前仍不读取本地仓库文件，也没有完整跨文件 / 全仓库推理
-- provider streaming 尚未接通；当前 live upstream 仅覆盖 non-stream 调用，并继续复用现有 SSE 外层协议
+- `code-review-agent` 当前仍不透传 provider usage，也不暴露 provider model；live upstream 已覆盖 non-stream 与 streaming，但公共响应继续保持稳定文本模板与现有 SSE 外壳
 - `backend/config/agents.yaml`、Agent Gateway、`/api/agents/*` 尚未开始
 - 其他 agent 目录仍未迁移成真实可运行骨架
 - Docker / compose / pyproject 等外圈基础设施本轮未纳入
 
 > [!NOTE]
 > 当前默认下一步不再是“补 `_template` 与 `code-review-agent` 最小骨架”，而是：
-> 1. 继续推进 **Phase 4B 深化**（如 provider streaming / repo-aware 深化 / 上游输出治理）
+> 1. 继续推进 **Phase 4B 深化**（如 repo-aware 深化 / 上游输出治理 / Gateway 前置设计准备）
 > 2. `workflow-meta.ts` 的 deprecate 收口继续保留在 **Phase 4A 长尾** 中，但不再作为当前 blocker
 
 ---
@@ -275,7 +276,7 @@ agents/
 ### Task 4B.2：实现一个最小 Agent 样板
 
 > [!NOTE]
-> **当前真实状态**：最小三端点样板已完成，且 `code-review-agent` 已进一步从 deterministic stub 推进为规则型真实审查 Agent。当前已具备结构化 repo-aware 前置输入、稳定纯文本 findings 模板、以及真实 OpenAI-compatible non-stream upstream + 严格回退；但仍不读取本地仓库文件，也未进入完整跨文件 / 全仓库推理。
+> **当前真实状态**：最小三端点样板已完成，且 `code-review-agent` 已进一步从 deterministic stub 推进为规则型真实审查 Agent。当前已具备结构化 repo-aware 前置输入、稳定纯文本 findings 模板、以及真实 OpenAI-compatible non-stream + streaming upstream 与严格回退；但仍不读取本地仓库文件，也未进入完整跨文件 / 全仓库推理。
 
 以 `code-review-agent` 为例，实际实现 3 个必要端点：
 
@@ -292,12 +293,13 @@ agents/
 5. 多文件 unified diff 感知：仅分析新增行，并输出目标文件路径与行号
 6. `heuristic / upstream_reserved / upstream_openai_compatible` 三种内部 review backend
 7. 真实 OpenAI-compatible non-stream upstream 调用与严格回退
-8. 只分析最新一条 `user` 消息；历史消息仅参与 prompt token 统计
+8. `stream=True + upstream_openai_compatible` 时会真实消费 provider stream，但继续先在服务端归一化 findings，再按现有 SSE 外壳输出
+9. 只分析最新一条 `user` 消息；历史消息仅参与 prompt token 统计
 
 ### Task 4B.3：编写四层契约测试
 
 > [!NOTE]
-> **当前真实状态**：已完成“协议 + 规则逻辑”双层测试闭环。`agents/_template/tests/test_contract.py` 与 `agents/code-review-agent/tests/test_contract.py` 已通过；`agents/code-review-agent/tests/test_review_logic.py` 已覆盖 7 类规则命中、clean case、最新 user 消息边界、多文件 diff 路径/行号、unified diff 仅检查新增行、结构化 repo-aware 输入边界、稳定文本输出模板、以及 live upstream 成功 / strict fallback 路径。
+> **当前真实状态**：已完成“协议 + 规则逻辑”双层测试闭环。`agents/_template/tests/test_contract.py` 与 `agents/code-review-agent/tests/test_contract.py` 已通过；`agents/code-review-agent/tests/test_review_logic.py` 已覆盖 7 类规则命中、clean case、最新 user 消息边界、多文件 diff 路径/行号、unified diff 仅检查新增行、结构化 repo-aware 输入边界、稳定文本输出模板、以及 live upstream non-stream / streaming 成功与 strict fallback 路径。
 
 ```python
 # tests/test_contract.py
