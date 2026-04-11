@@ -66,6 +66,73 @@ def test_clean_input_reports_no_findings():
     assert "No deterministic findings" in review
 
 
+def test_structured_review_target_assigns_path_to_snippet_findings():
+    review = render_review(
+        """<review_target path="frontend/app.tsx">
+```ts
+console.log('debug');
+```
+</review_target>"""
+    )
+
+    assert "Debug artifact [low]" in review
+    assert "File: frontend/app.tsx:1" in review
+
+
+def test_structured_review_target_path_is_used_for_headerless_diff():
+    review = render_review(
+        """<review_target path="frontend/unsafe.tsx">
+```diff
+@@ -4,0 +12,1 @@
++dangerouslySetInnerHTML = html
+```
+</review_target>"""
+    )
+
+    assert "Unsafe HTML sink [high]" in review
+    assert "File: frontend/unsafe.tsx:12" in review
+
+
+def test_repo_context_is_counted_but_not_reviewed():
+    review = render_review(
+        """<review_target path="frontend/app.tsx">
+```ts
+const total = items.length;
+return total;
+```
+</review_target>
+<repo_context path="frontend/helper.ts">
+```ts
+console.log('debug');
+```
+</repo_context>
+<repo_context path="backend/service.py">
+```python
+os.system("whoami")
+```
+</repo_context>"""
+    )
+
+    assert "- Context files supplied: 2" in review
+    assert "Findings found: 0" in review
+    assert "Debug artifact [low]" not in review
+    assert "Shell command execution [high]" not in review
+
+
+def test_malformed_review_target_falls_back_to_legacy_parsing():
+    review = render_review(
+        """Please review this snippet:
+<review_target path="frontend/app.tsx">
+```ts
+console.log('debug');
+```"""
+    )
+
+    assert "Debug artifact [low]" in review
+    assert "Context files supplied" not in review
+    assert "File: frontend/app.tsx:1" not in review
+
+
 def test_broad_exception_swallow_detects_bare_except_with_nested_continue():
     review = render_review(
         "```python\ntry:\n    sync()\nexcept:\n    continue\n```"
@@ -102,6 +169,42 @@ def test_complete_only_analyzes_latest_user_message():
 
     assert "No deterministic findings" in result.content
     assert "Debug artifact" not in result.content
+
+
+def test_complete_only_uses_latest_user_message_for_structured_repo_context():
+    agent = CodeReviewAgent(agent_name="code-review")
+    result = asyncio.run(
+        agent.complete(
+            [
+                {
+                    "role": "user",
+                    "content": """<review_target path="frontend/old.tsx">
+```ts
+console.log('debug');
+```
+</review_target>""",
+                },
+                {"role": "assistant", "content": "Send the latest target."},
+                {
+                    "role": "user",
+                    "content": """<review_target path="frontend/new.tsx">
+```ts
+const total = items.length;
+```
+</review_target>
+<repo_context path="frontend/helper.ts">
+```ts
+console.log('debug');
+```
+</repo_context>""",
+                },
+            ]
+        )
+    )
+
+    assert "Findings found: 0" in result.content
+    assert "- Context files supplied: 1" in result.content
+    assert "Debug artifact [low]" not in result.content
 
 
 def test_unified_diff_only_reviews_added_lines():

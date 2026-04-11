@@ -31,6 +31,10 @@ InputKind = Literal["unified_diff", "code_snippet", "plain_text"]
 SEVERITY_ORDER = {"high": 0, "medium": 1, "low": 2}
 MAX_FINDINGS = 5
 CODE_BLOCK_PATTERN = re.compile(r"```[^\n]*\n(.*?)```", re.DOTALL)
+STRUCTURED_BLOCK_PATTERN = re.compile(
+    r"<(?P<tag>review_target|repo_context)\s+path\s*=\s*(?P<quote>[\"'])(?P<path>[^\"']+)(?P=quote)\s*>(?P<content>.*?)</(?P=tag)>",
+    re.IGNORECASE | re.DOTALL,
+)
 DIFF_FILE_PATTERN = re.compile(r"^diff --git (?P<old>\S+) (?P<new>\S+)$")
 DIFF_HUNK_PATTERN = re.compile(
     r"^@@ -\d+(?:,\d+)? \+(?P<new_start>\d+)(?:,\d+)? @@(?: .*)?$"
@@ -74,6 +78,15 @@ class ReviewInput:
     raw_text: str
     lines: list[ReviewLine]
     files_reviewed: tuple[str, ...] = ()
+    context_file_paths: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class StructuredReviewPayload:
+    review_target_text: str
+    review_target_path: str | None = None
+    context_file_paths: tuple[str, ...] = ()
+    uses_structured_input: bool = False
 
 
 @dataclass(slots=True)
@@ -221,7 +234,44 @@ def ordered_unique(values: list[str]) -> tuple[str, ...]:
     return tuple(unique)
 
 
-def build_diff_review_input(source_text: str) -> ReviewInput:
+def extract_structured_review_payload(text: str) -> StructuredReviewPayload:
+    stripped = text.strip()
+    review_target_match = STRUCTURED_BLOCK_PATTERN.search(text)
+    if not review_target_match:
+        return StructuredReviewPayload(review_target_text=stripped)
+
+    if review_target_match.group("tag").lower() != "review_target":
+        return StructuredReviewPayload(review_target_text=stripped)
+
+    review_target_content = review_target_match.group("content").strip()
+    review_target_path = review_target_match.group("path").strip()
+    if not review_target_path or not extract_review_text(review_target_content):
+        return StructuredReviewPayload(review_target_text=stripped)
+
+    context_paths: list[str] = []
+    for match in STRUCTURED_BLOCK_PATTERN.finditer(text):
+        if match.group("tag").lower() != "repo_context":
+            continue
+        context_content = match.group("content").strip()
+        context_path = match.group("path").strip()
+        if not context_path or not extract_review_text(context_content):
+            continue
+        context_paths.append(context_path)
+
+    return StructuredReviewPayload(
+        review_target_text=review_target_content,
+        review_target_path=review_target_path,
+        context_file_paths=ordered_unique(context_paths),
+        uses_structured_input=True,
+    )
+
+
+def build_diff_review_input(
+    source_text: str,
+    *,
+    default_file_path: str | None = None,
+    context_file_paths: tuple[str, ...] = (),
+) -> ReviewInput:
     raw_lines = source_text.splitlines()
     lines: list[ReviewLine] = []
     files_reviewed: list[str] = []
@@ -252,7 +302,7 @@ def build_diff_review_input(source_text: str) -> ReviewInput:
             continue
 
         if raw_line.startswith("+") and not raw_line.startswith("+++"):
-            file_path = current_file or "<unknown>"
+            file_path = current_file or default_file_path or "<unknown>"
             files_reviewed.append(file_path)
             content = raw_line[1:]
             if content.strip():
@@ -281,15 +331,25 @@ def build_diff_review_input(source_text: str) -> ReviewInput:
         raw_text=source_text,
         lines=lines,
         files_reviewed=ordered_unique(files_reviewed),
+        context_file_paths=context_file_paths,
     )
 
 
-def build_review_input(text: str) -> ReviewInput:
+def build_review_input(
+    text: str,
+    *,
+    default_file_path: str | None = None,
+    context_file_paths: tuple[str, ...] = (),
+) -> ReviewInput:
     source_text = extract_review_text(text)
     kind = detect_input_kind(source_text, text)
 
     if kind == "unified_diff":
-        return build_diff_review_input(source_text)
+        return build_diff_review_input(
+            source_text,
+            default_file_path=default_file_path,
+            context_file_paths=context_file_paths,
+        )
 
     raw_lines = source_text.splitlines() or ([source_text] if source_text else [])
     lines: list[ReviewLine] = []
@@ -301,10 +361,19 @@ def build_review_input(text: str) -> ReviewInput:
                     text=raw_line,
                     evidence=raw_line,
                     position=position,
+                    file_path=default_file_path,
+                    line_number=position if default_file_path else None,
                 )
             )
 
-    return ReviewInput(kind=kind, raw_text=source_text, lines=lines)
+    files_reviewed = (default_file_path,) if default_file_path else ()
+    return ReviewInput(
+        kind=kind,
+        raw_text=source_text,
+        lines=lines,
+        files_reviewed=files_reviewed,
+        context_file_paths=context_file_paths,
+    )
 
 
 def shorten_evidence(text: str, limit: int = 96) -> str:
@@ -425,6 +494,9 @@ def format_review(review_input: ReviewInput, findings: list[ReviewFinding]) -> s
             ]
         )
 
+    if review_input.context_file_paths:
+        sections.append(f"- Context files supplied: {len(review_input.context_file_paths)}")
+
     sections.extend(["", "Findings"])
 
     if findings:
@@ -450,7 +522,8 @@ def format_review(review_input: ReviewInput, findings: list[ReviewFinding]) -> s
             "",
             "Limitations",
             "- Deterministic heuristics only; only the latest user message was analyzed.",
-            "- No repository context, control-flow analysis, or external model reasoning is used.",
+            "- Structured repo context input is supported, but findings are only produced from the review target.",
+            "- No cross-file control-flow analysis, full-repository reasoning, or external model reasoning is used.",
             "- A clean result does not prove the code is safe.",
         ]
     )
@@ -475,7 +548,12 @@ class CodeReviewAgent:
         return iter_text_chunks(content)
 
     def review_text(self, text: str) -> str:
-        review_input = build_review_input(text)
+        payload = extract_structured_review_payload(text)
+        review_input = build_review_input(
+            payload.review_target_text,
+            default_file_path=payload.review_target_path,
+            context_file_paths=payload.context_file_paths,
+        )
         findings = collect_findings(review_input)
         return format_review(review_input, findings)
 
