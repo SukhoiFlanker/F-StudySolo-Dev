@@ -36,6 +36,7 @@
 - `agents/code-review-agent/` 已从“只有 README”推进为可运行实例，并已从 deterministic stub 升级为规则型本地真实审查 Agent
 - 当前 `agents/_template/` 与 `agents/code-review-agent/` 都已具备：
   - `GET /health`
+  - `GET /health/ready`
   - `GET /v1/models`
   - `POST /v1/chat/completions`
   - non-stream / SSE stream
@@ -279,13 +280,14 @@ agents/
 ### Task 4B.2：实现一个最小 Agent 样板
 
 > [!NOTE]
-> **当前真实状态**：最小三端点样板已完成，且 `code-review-agent` 已进一步从 deterministic stub 推进为规则型真实审查 Agent。当前已具备结构化 repo-aware 前置输入、稳定纯文本 findings 模板、真实 OpenAI-compatible non-stream + streaming upstream、live upstream findings 治理、repo-context forwarding governance、repo-aware utilization hints 与严格回退；但仍不读取本地仓库文件，也未进入完整跨文件 / 全仓库推理。
+> **当前真实状态**：最小 readiness-aware 协议样板已完成，且 `code-review-agent` 已进一步从 deterministic stub 推进为规则型真实审查 Agent。当前已具备结构化 repo-aware 前置输入、稳定纯文本 findings 模板、真实 OpenAI-compatible non-stream + streaming upstream、live upstream findings 治理、repo-context forwarding governance、repo-aware utilization hints 与严格回退；但仍不读取本地仓库文件，也未进入完整跨文件 / 全仓库推理。
 
-以 `code-review-agent` 为例，实际实现 3 个必要端点：
+以 `code-review-agent` 为例，实际实现 4 个必要端点：
 
 1. `GET /health` → 健康检查（返回 status, agent, version）
-2. `GET /v1/models` → 模型列表（OpenAI 兼容格式）
-3. `POST /v1/chat/completions` → Chat Completions（支持 stream/non-stream）
+2. `GET /health/ready` → 就绪检查（当前静态返回 `{"ready": true}`，为 Gateway readiness probe 预留）
+3. `GET /v1/models` → 模型列表（OpenAI 兼容格式）
+4. `POST /v1/chat/completions` → Chat Completions（支持 stream/non-stream）
 
 当前 `src/core/agent.py` 已额外具备：
 
@@ -305,7 +307,7 @@ agents/
 ### Task 4B.3：编写四层契约测试
 
 > [!NOTE]
-> **当前真实状态**：已完成“协议 + 规则逻辑”双层测试闭环。`agents/_template/tests/test_contract.py` 与 `agents/code-review-agent/tests/test_contract.py` 已通过；`agents/code-review-agent/tests/test_review_logic.py` 已覆盖 7 类规则命中、clean case、最新 user 消息边界、多文件 diff 路径/行号、unified diff 仅检查新增行、结构化 repo-aware 输入边界、稳定文本输出模板、live upstream non-stream / streaming 成功与 strict fallback 路径、findings 治理场景，以及 prompt forwarding + utilization hints 场景。当前测试基线已推进到 `66 passed`。
+> **当前真实状态**：已完成“协议 + 规则逻辑”双层测试闭环。`agents/_template/tests/test_contract.py` 与 `agents/code-review-agent/tests/test_contract.py` 已通过，并已补齐冻结契约中的 `/health/ready` readiness 检查；`agents/code-review-agent/tests/test_review_logic.py` 已覆盖 7 类规则命中、clean case、最新 user 消息边界、多文件 diff 路径/行号、unified diff 仅检查新增行、结构化 repo-aware 输入边界、稳定文本输出模板、live upstream non-stream / streaming 成功与 strict fallback 路径、findings 治理场景，以及 prompt forwarding + utilization hints 场景。当前测试基线已推进到 `67 passed`。
 
 ```python
 # tests/test_contract.py

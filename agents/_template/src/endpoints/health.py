@@ -3,7 +3,7 @@ import time
 from fastapi import APIRouter, Request
 
 from src.config import get_settings
-from src.schemas.response import HealthResponse
+from src.schemas.response import HealthResponse, ReadyResponse
 
 router = APIRouter(tags=["health"])
 
@@ -18,3 +18,8 @@ async def health(request: Request) -> HealthResponse:
         uptime_seconds=max(0, int(time.monotonic() - started_at)),
         models=settings.models,
     )
+
+
+@router.get("/health/ready", response_model=ReadyResponse)
+async def health_ready() -> ReadyResponse:
+    return ReadyResponse()

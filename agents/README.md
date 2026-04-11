@@ -40,7 +40,7 @@
 |------|--------|------|
 | 框架 | ✅ FastAPI | 完全匹配 |
 | 目录 | ✅ `app/api/routes/` + `schemas/` + `middleware/` | 几乎 1:1 对应模板 |
-| 三端点 | ⚠️ 缺 `/health` | 需补充 `agent` + `version` 字段 |
+| 核心协议端点 | ⚠️ 缺 `/health` / `/health/ready` | 需补充 `agent` + `version` 字段，并补 readiness |
 | Schema | ✅ Pydantic V2 OpenAI 兼容 | 直接可用 |
 | SSE | ✅ `data: {json}\n\n` + `[DONE]` | 合规 |
 | Auth | ✅ API Key 中间件 | 匹配 |
@@ -60,7 +60,7 @@
 | 维度 | 兼容性 | 说明 |
 |------|--------|------|
 | 框架 | ✅ FastAPI | 完全匹配 |
-| 三端点 | ✅ 全有（+ 额外的 `/v1/responses`） | 合规 |
+| 核心协议端点 | ⚠️ 缺 `/health/ready`（其余已具备，且额外支持 `/v1/responses`） | 迁移时需补 readiness |
 | SSE | ✅ 完全合规 | 双换行 + `[DONE]` |
 | Auth | ✅ `verify_auth` | 匹配 |
 | 功能 | ✅ **生产可用**（41 个 lib，覆盖 Reddit/X/YouTube/HN/小红书/Brave 等） | 最完整 |
@@ -98,10 +98,10 @@ StudySolo/
 │   │   │   ├── __init__.py
 │   │   │   ├── main.py                      ← FastAPI 入口 + uvicorn.run()
 │   │   │   ├── config.py                    ← pydantic-settings 配置
-│   │   │   ├── router.py                    ← 路由注册（统一挂载 3 个端点）
+│   │   │   ├── router.py                    ← 路由注册（统一挂载 health/ready/models/completions）
 │   │   │   ├── endpoints/
 │   │   │   │   ├── __init__.py
-│   │   │   │   ├── health.py                ← GET /health（必须实现）
+│   │   │   │   ├── health.py                ← GET /health + GET /health/ready（必须实现）
 │   │   │   │   ├── models.py                ← GET /v1/models（必须实现）
 │   │   │   │   └── completions.py           ← POST /v1/chat/completions（必须实现）
 │   │   │   ├── core/
@@ -140,7 +140,7 @@ StudySolo/
 │   │   │   ├── main.py
 │   │   │   ├── config.py
 │   │   │   ├── router.py
-│   │   │   ├── endpoints/                   ← 标准三端点
+│   │   │   ├── endpoints/                   ← 标准 readiness-aware 协议端点
 │   │   │   ├── core/
 │   │   │   │   ├── pipeline.py              ← 研究管线（迁移自 server/pipeline.py）
 │   │   │   │   ├── progress_sse.py          ← 进度 SSE
@@ -293,6 +293,7 @@ data: [DONE]\n\n
 
 ```
 GET /health       → {"status":"ok","agent":"code-review","version":"1.0.0"}
+GET /health/ready → {"ready":true}
 GET /v1/models    → {"object":"list","data":[{"id":"code-review-v1","object":"model"}]}
 ```
 

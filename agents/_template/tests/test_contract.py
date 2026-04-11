@@ -24,6 +24,13 @@ def test_health_endpoint(client, settings):
     assert data["models"] == settings.models
 
 
+def test_health_ready_endpoint(client):
+    response = client.get("/health/ready")
+
+    assert response.status_code == 200
+    assert response.json() == {"ready": True}
+
+
 def test_models_endpoint(client, settings):
     response = client.get("/v1/models")
 

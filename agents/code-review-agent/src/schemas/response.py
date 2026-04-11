@@ -81,6 +81,10 @@ class HealthResponse(BaseModel):
     models: list[str]
 
 
+class ReadyResponse(BaseModel):
+    ready: bool = True
+
+
 class ModelCard(BaseModel):
     id: str
     object: str = "model"

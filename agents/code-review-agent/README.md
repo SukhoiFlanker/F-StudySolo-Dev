@@ -14,6 +14,7 @@
 ## 当前能力
 
 - `GET /health`
+- `GET /health/ready`
 - `GET /v1/models`
 - `POST /v1/chat/completions`
 - non-stream JSON 响应
@@ -152,7 +153,7 @@ export function debugLog(message: string) {
 ## 当前测试基线
 
 - `pytest tests -q`
-- 最新真实结果：`66 passed`
+- 最新真实结果：`67 passed`
 
 ## 参考
 
