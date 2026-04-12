@@ -1011,6 +1011,66 @@ request body status code
     assert "Context file 2 shared identifiers: <none>" in upstream_prompt
 
 
+def test_non_stream_live_backend_canonicalizes_style_equivalent_known_rule_id(
+    monkeypatch,
+):
+    state = install_fake_upstream(
+        monkeypatch,
+        content=json.dumps(
+            {
+                "findings": [
+                    {
+                        "title": "Temporary secret",
+                        "rule_id": "hardcodedSecret",
+                        "severity": "low",
+                        "file_path": "frontend/app.tsx",
+                        "line_number": 1,
+                        "evidence": "const token = 'sk-test-1234567890';",
+                        "fix": "Delete the statement.",
+                    }
+                ]
+            }
+        ),
+    )
+    monkeypatch.setenv("AGENT_API_KEY", "test-agent-key")
+    monkeypatch.setenv("AGENT_REVIEW_BACKEND", "upstream_openai_compatible")
+    monkeypatch.setenv("AGENT_UPSTREAM_MODEL", "review-upstream-v1")
+    monkeypatch.setenv("AGENT_UPSTREAM_BASE_URL", "https://example.test/v1")
+    monkeypatch.setenv("AGENT_UPSTREAM_API_KEY", "upstream-key")
+    get_settings.cache_clear()
+
+    settings = get_settings()
+    with TestClient(create_app()) as client:
+        response = client.post(
+            "/v1/chat/completions",
+            json=structured_completion_payload(
+                settings,
+                content="""<review_target path="frontend/app.tsx">
+```ts
+const token = 'sk-test-1234567890';
+```
+</review_target>""",
+            ),
+            headers=auth_headers(settings),
+        )
+
+    get_settings.cache_clear()
+
+    assert response.status_code == 200
+    content = response.json()["choices"][0]["message"]["content"]
+    assert "Title: Hardcoded secret" in content
+    assert "Rule ID: hardcoded_secret" in content
+    assert "Severity: high" in content
+    assert (
+        "Fix: Move the credential into environment variables or secret storage and load it at runtime."
+        in content
+    )
+    assert "Temporary secret" not in content
+    assert "Delete the statement." not in content
+    assert len(state["instances"]) == 1
+    assert state["instances"][0]["calls"][0]["stream"] is False
+
+
 def test_stream_response_sse_format_with_upstream_live_backend(monkeypatch):
     payload = json.dumps(
         {
@@ -1072,6 +1132,67 @@ const token = 'sk-test-1234567890';
     )
     assert "Temporary secret" not in stream_content
     assert "Delete the statement." not in stream_content
+    assert len(state["instances"]) == 1
+    assert state["instances"][0]["calls"][0]["stream"] is True
+
+
+def test_stream_response_sse_format_with_style_equivalent_known_rule_id(monkeypatch):
+    payload = json.dumps(
+        {
+            "findings": [
+                {
+                    "title": "Temporary logger",
+                    "rule_id": "debug-artifact",
+                    "severity": "high",
+                    "file_path": "frontend/app.tsx",
+                    "line_number": 1,
+                    "evidence": "console.log('debug')",
+                    "fix": "Keep it for now.",
+                }
+            ]
+        }
+    )
+    state = install_fake_upstream(
+        monkeypatch,
+        content=payload,
+        stream_chunks=[payload[:30], payload[30:62], payload[62:]],
+    )
+    monkeypatch.setenv("AGENT_API_KEY", "test-agent-key")
+    monkeypatch.setenv("AGENT_REVIEW_BACKEND", "upstream_openai_compatible")
+    monkeypatch.setenv("AGENT_UPSTREAM_MODEL", "review-upstream-v1")
+    monkeypatch.setenv("AGENT_UPSTREAM_BASE_URL", "https://example.test/v1")
+    monkeypatch.setenv("AGENT_UPSTREAM_API_KEY", "upstream-key")
+    get_settings.cache_clear()
+
+    settings = get_settings()
+    with TestClient(create_app()) as client:
+        response = client.post(
+            "/v1/chat/completions",
+            json=structured_completion_payload(
+                settings,
+                content="""<review_target path="frontend/app.tsx">
+```ts
+console.log('debug');
+```
+</review_target>""",
+                stream=True,
+            ),
+            headers=auth_headers(settings),
+        )
+
+    get_settings.cache_clear()
+
+    assert response.status_code == 200
+    stream_content = collect_stream_content(response)
+    assert "Title: Debug artifact" in stream_content
+    assert "Rule ID: debug_artifact" in stream_content
+    assert "Severity: low" in stream_content
+    assert (
+        "Fix: Remove the debug statement or replace it with structured, production-safe logging."
+        in stream_content
+    )
+    assert "Temporary logger" not in stream_content
+    assert "Keep it for now." not in stream_content
     assert len(state["instances"]) == 1
     assert state["instances"][0]["calls"][0]["stream"] is True
 

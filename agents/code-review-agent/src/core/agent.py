@@ -255,6 +255,47 @@ KNOWN_RULE_SPECS: dict[str, RuleSpec] = {
 }
 
 
+def canonical_known_rule_id(rule_id: str) -> str | None:
+    normalized_rule_id = rule_id.strip()
+    if not normalized_rule_id:
+        return None
+
+    if not re.fullmatch(r"[A-Za-z0-9_-]+", normalized_rule_id):
+        return None
+
+    segments = normalized_rule_id.replace("-", "_").split("_")
+    if any(not segment for segment in segments):
+        return None
+
+    canonical_parts: list[str] = []
+    for segment in segments:
+        subtokens = upstream_review.IDENTIFIER_SUBTOKEN_PATTERN.findall(segment)
+        if not subtokens:
+            return None
+        canonical_parts.extend(subtoken.lower() for subtoken in subtokens)
+
+    return "_".join(canonical_parts) or None
+
+
+KNOWN_RULE_SPECS_BY_CANONICAL_ID: dict[str, RuleSpec] = {
+    canonical_rule_id: rule
+    for rule in (*RULES, BROAD_EXCEPTION_SWALLOW_RULE)
+    if (canonical_rule_id := canonical_known_rule_id(rule.rule_id)) is not None
+}
+
+
+def resolve_known_live_rule_spec(rule_id: str) -> RuleSpec | None:
+    known_rule = KNOWN_RULE_SPECS.get(rule_id)
+    if known_rule is not None:
+        return known_rule
+
+    canonical_rule_id = canonical_known_rule_id(rule_id)
+    if canonical_rule_id is None:
+        return None
+
+    return KNOWN_RULE_SPECS_BY_CANONICAL_ID.get(canonical_rule_id)
+
+
 def extract_review_text(text: str) -> str:
     blocks = [block.strip() for block in CODE_BLOCK_PATTERN.findall(text) if block.strip()]
     if blocks:
@@ -1070,7 +1111,7 @@ def normalize_live_upstream_findings(
         ):
             continue
 
-        known_rule = KNOWN_RULE_SPECS.get(finding.rule_id)
+        known_rule = resolve_known_live_rule_spec(finding.rule_id)
         rule_id = (
             known_rule.rule_id
             if known_rule

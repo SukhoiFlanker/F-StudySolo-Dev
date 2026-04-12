@@ -11,10 +11,12 @@ from src.core.agent import (
     UNVALIDATED_UPSTREAM_RULE_ID,
     UNVALIDATED_UPSTREAM_SEVERITY,
     UNVALIDATED_UPSTREAM_TITLE,
+    canonical_known_rule_id,
     normalize_unknown_live_rule_id,
     normalize_unknown_live_title,
     normalize_unknown_live_fix_advice,
     preprocess_forwarded_context,
+    resolve_known_live_rule_spec,
 )
 import src.core.upstream_review as upstream_review_module
 from src.core.upstream_review import (
@@ -657,6 +659,102 @@ def handler():
     assert "Ignore it." not in review
 
 
+def test_upstream_openai_compatible_backend_canonicalizes_style_equivalent_known_rule_metadata(
+    monkeypatch,
+):
+    install_fake_upstream(
+        monkeypatch,
+        content=json.dumps(
+            {
+                "findings": [
+                    {
+                        "title": "Temporary logger",
+                        "rule_id": "debugArtifact",
+                        "severity": "high",
+                        "file_path": "frontend/app.tsx",
+                        "line_number": 1,
+                        "evidence": "console.log('debug')",
+                        "fix": "Keep it for now.",
+                    }
+                ]
+            }
+        ),
+    )
+
+    review = render_review(
+        """<review_target path="frontend/app.tsx">
+```ts
+console.log('debug');
+```
+</review_target>""",
+        review_backend="upstream_openai_compatible",
+        upstream_settings=UpstreamReviewSettings(
+            model="review-upstream-v1",
+            base_url="https://example.test/v1",
+            api_key="upstream-key",
+            timeout_seconds=12.5,
+        ),
+    )
+
+    assert "1. Title: Debug artifact" in review
+    assert "Rule ID: debug_artifact" in review
+    assert "Severity: low" in review
+    assert (
+        "Fix: Remove the debug statement or replace it with structured, production-safe logging."
+        in review
+    )
+    assert "Temporary logger" not in review
+    assert "Keep it for now." not in review
+
+
+def test_upstream_openai_compatible_backend_canonicalizes_style_equivalent_known_rule_metadata_with_kebab_case(
+    monkeypatch,
+):
+    install_fake_upstream(
+        monkeypatch,
+        content=json.dumps(
+            {
+                "findings": [
+                    {
+                        "title": "Loose TLS setting",
+                        "rule_id": "tls-verification-disabled",
+                        "severity": "low",
+                        "file_path": "backend/client.py",
+                        "line_number": 1,
+                        "evidence": "requests.get(url, verify=False)",
+                        "fix": "Skip certificate checks for now.",
+                    }
+                ]
+            }
+        ),
+    )
+
+    review = render_review(
+        """<review_target path="backend/client.py">
+```py
+requests.get(url, verify=False)
+```
+</review_target>""",
+        review_backend="upstream_openai_compatible",
+        upstream_settings=UpstreamReviewSettings(
+            model="review-upstream-v1",
+            base_url="https://example.test/v1",
+            api_key="upstream-key",
+            timeout_seconds=12.5,
+        ),
+    )
+
+    assert "1. Title: TLS verification disabled" in review
+    assert "Rule ID: tls_verification_disabled" in review
+    assert "Severity: high" in review
+    assert (
+        "Fix: Keep certificate verification enabled and trust only known CAs or pinned certificates."
+        in review
+    )
+    assert "Loose TLS setting" not in review
+    assert "Skip certificate checks for now." not in review
+
+
 def test_upstream_openai_compatible_backend_maps_foreign_single_target_path_to_review_target(
     monkeypatch,
 ):
@@ -1053,6 +1151,59 @@ console.log('debug');
     )
 
 
+def test_upstream_openai_compatible_backend_deduplicates_style_equivalent_known_rule_ids(
+    monkeypatch,
+):
+    install_fake_upstream(
+        monkeypatch,
+        content=json.dumps(
+            {
+                "findings": [
+                    {
+                        "title": "Debug artifact",
+                        "rule_id": "debug_artifact",
+                        "severity": "low",
+                        "file_path": "frontend/app.tsx",
+                        "line_number": 1,
+                        "evidence": "console.log('debug')",
+                        "fix": "Remove it.",
+                    },
+                    {
+                        "title": "Temporary logger",
+                        "rule_id": "debugArtifact",
+                        "severity": "high",
+                        "file_path": "frontend/app.tsx",
+                        "line_number": 1,
+                        "evidence": "console.log('debug')",
+                        "fix": "Keep it for now.",
+                    },
+                ]
+            }
+        ),
+    )
+
+    review = render_review(
+        """<review_target path="frontend/app.tsx">
+```ts
+console.log('debug');
+```
+</review_target>""",
+        review_backend="upstream_openai_compatible",
+        upstream_settings=UpstreamReviewSettings(
+            model="review-upstream-v1",
+            base_url="https://example.test/v1",
+            api_key="upstream-key",
+            timeout_seconds=12.5,
+        ),
+    )
+
+    assert "Findings found: 1" in review
+    assert review.count("Rule ID: debug_artifact") == 1
+    assert review.count("Title: Debug artifact") == 1
+    assert "Temporary logger" not in review
+    assert "Keep it for now." not in review
+
+
 def test_upstream_openai_compatible_backend_preserves_unknown_rule_metadata_when_anchored(
     monkeypatch,
 ):
@@ -1272,6 +1423,49 @@ return total;
     assert "Rule ID: custom_rule" in review
     assert f"Severity: {UNVALIDATED_UPSTREAM_SEVERITY}" in review
     assert "Severity: low" not in review
+
+
+def test_upstream_openai_compatible_backend_rewrites_invalid_style_like_known_rule_id(
+    monkeypatch,
+):
+    install_fake_upstream(
+        monkeypatch,
+        content=json.dumps(
+            {
+                "findings": [
+                    {
+                        "title": "Custom upstream rule",
+                        "rule_id": "debug/artifact",
+                        "severity": "medium",
+                        "file_path": "frontend/app.tsx",
+                        "line_number": 1,
+                        "evidence": "console.log('debug')",
+                        "fix": "Review carefully.",
+                    }
+                ]
+            }
+        ),
+    )
+
+    review = render_review(
+        """<review_target path="frontend/app.tsx">
+```ts
+console.log('debug');
+```
+</review_target>""",
+        review_backend="upstream_openai_compatible",
+        upstream_settings=UpstreamReviewSettings(
+            model="review-upstream-v1",
+            base_url="https://example.test/v1",
+            api_key="upstream-key",
+            timeout_seconds=12.5,
+        ),
+    )
+
+    assert "1. Title: Custom upstream rule" in review
+    assert f"Rule ID: {UNVALIDATED_UPSTREAM_RULE_ID}" in review
+    assert "Title: Debug artifact" not in review
+    assert "Rule ID: debug_artifact" not in review
 
 
 def test_upstream_openai_compatible_backend_preserves_unknown_rule_title_with_matching_identifier(
@@ -1798,6 +1992,39 @@ return cacheAdapter;
 
 def test_normalize_unknown_live_rule_id_rewrites_empty_rule_id():
     assert normalize_unknown_live_rule_id("   ") == UNVALIDATED_UPSTREAM_RULE_ID
+
+
+def test_canonical_known_rule_id_matches_style_equivalent_ids():
+    assert canonical_known_rule_id("debug_artifact") == "debug_artifact"
+    assert canonical_known_rule_id("debugArtifact") == "debug_artifact"
+    assert canonical_known_rule_id("DebugArtifact") == "debug_artifact"
+    assert canonical_known_rule_id("debug-artifact") == "debug_artifact"
+    assert canonical_known_rule_id("hardcodedSecret") == "hardcoded_secret"
+    assert (
+        canonical_known_rule_id("tlsVerificationDisabled")
+        == "tls_verification_disabled"
+    )
+    assert canonical_known_rule_id("broadExceptionSwallow") == "broad_exception_swallow"
+
+
+def test_resolve_known_live_rule_spec_matches_style_equivalent_ids():
+    assert resolve_known_live_rule_spec("debugArtifact").rule_id == "debug_artifact"
+    assert resolve_known_live_rule_spec("debug-artifact").rule_id == "debug_artifact"
+    assert resolve_known_live_rule_spec("hardcodedSecret").rule_id == "hardcoded_secret"
+    assert (
+        resolve_known_live_rule_spec("tlsVerificationDisabled").rule_id
+        == "tls_verification_disabled"
+    )
+    assert (
+        resolve_known_live_rule_spec("broadExceptionSwallow").rule_id
+        == "broad_exception_swallow"
+    )
+
+
+def test_resolve_known_live_rule_spec_rejects_reordered_or_invalid_ids():
+    assert resolve_known_live_rule_spec("artifact_debug") is None
+    assert resolve_known_live_rule_spec("disabled_tls_verification") is None
+    assert resolve_known_live_rule_spec("debug/artifact") is None
 
 
 def test_normalize_unknown_live_fix_advice_rewrites_empty_fix():
