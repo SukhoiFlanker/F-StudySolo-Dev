@@ -11,13 +11,19 @@ from src.core.agent import (
     UNVALIDATED_UPSTREAM_RULE_ID,
     UNVALIDATED_UPSTREAM_SEVERITY,
     UNVALIDATED_UPSTREAM_TITLE,
+    anchor_text_matches,
+    canonical_anchor_text,
+    canonical_live_finding_text_identity,
     canonical_review_path,
     canonical_known_rule_id,
+    live_finding_identity_key,
+    normalize_live_finding_evidence,
     normalize_unknown_live_rule_id,
     normalize_unknown_live_title,
     normalize_unknown_live_fix_advice,
     preprocess_forwarded_context,
     resolve_known_live_rule_spec,
+    shorten_evidence,
 )
 import src.core.upstream_review as upstream_review_module
 from src.core.upstream_review import (
@@ -757,6 +763,54 @@ console.log('debug');
     assert "Keep it for now." not in review
 
 
+def test_upstream_openai_compatible_backend_preserves_known_rule_with_slash_equivalent_path_like_evidence(
+    monkeypatch,
+):
+    install_fake_upstream(
+        monkeypatch,
+        content=json.dumps(
+            {
+                "findings": [
+                    {
+                        "title": "Temporary logger",
+                        "rule_id": "debugArtifact",
+                        "severity": "high",
+                        "file_path": "frontend/app.tsx",
+                        "line_number": 1,
+                        "evidence": 'console.log(targetPath, "backend\\service.py");',
+                        "fix": "Keep it for now.",
+                    }
+                ]
+            }
+        ),
+    )
+
+    review = render_review(
+        """<review_target path="frontend/app.tsx">
+```ts
+console.log(targetPath, "backend/service.py");
+```
+</review_target>""",
+        review_backend="upstream_openai_compatible",
+        upstream_settings=UpstreamReviewSettings(
+            model="review-upstream-v1",
+            base_url="https://example.test/v1",
+            api_key="upstream-key",
+            timeout_seconds=12.5,
+        ),
+    )
+
+    assert "1. Title: Debug artifact" in review
+    assert "Rule ID: debug_artifact" in review
+    assert "Severity: low" in review
+    assert (
+        "Fix: Remove the debug statement or replace it with structured, production-safe logging."
+        in review
+    )
+    assert 'Evidence: console.log(targetPath, "backend\\service.py");' in review
+    assert 'Evidence: console.log(targetPath, "backend/service.py");' not in review
+
+
 def test_upstream_openai_compatible_backend_canonicalizes_style_equivalent_known_rule_metadata_with_kebab_case(
     monkeypatch,
 ):
@@ -1063,6 +1117,59 @@ diff --git a/backend/service.py b/backend/service.py
     assert "external model reasoning is limited" not in review
 
 
+def test_upstream_openai_compatible_backend_keeps_style_equivalent_multi_file_diff_evidence(
+    monkeypatch,
+):
+    install_fake_upstream(
+        monkeypatch,
+        content=json.dumps(
+            {
+                "findings": [
+                    {
+                        "title": "Custom upstream rule",
+                        "rule_id": "custom_rule",
+                        "severity": "medium",
+                        "file_path": "backend/service.py",
+                        "line_number": 21,
+                        "evidence": "return status_code",
+                        "fix": "Review carefully.",
+                    }
+                ]
+            }
+        ),
+    )
+
+    review = render_review(
+        """```diff
+diff --git a/frontend/app.tsx b/frontend/app.tsx
+--- a/frontend/app.tsx
++++ b/frontend/app.tsx
+@@ -8,2 +8,3 @@
+ const ready = true;
++const requestBody = payload;
+ export default ready;
+diff --git a/backend/service.py b/backend/service.py
+--- a/backend/service.py
++++ b/backend/service.py
+@@ -20,2 +20,3 @@
+ def handler():
++    return statusCode
+     return "ok"
+```""",
+        review_backend="upstream_openai_compatible",
+        upstream_settings=UpstreamReviewSettings(
+            model="review-upstream-v1",
+            base_url="https://example.test/v1",
+            api_key="upstream-key",
+            timeout_seconds=12.5,
+        ),
+    )
+
+    assert "1. Title: Custom upstream rule" in review
+    assert "Evidence: return status_code" in review
+    assert "File: backend/service.py:21" in review
+
+
 def test_upstream_openai_compatible_backend_clears_out_of_range_line_numbers(monkeypatch):
     install_fake_upstream(
         monkeypatch,
@@ -1151,6 +1258,93 @@ return total;
         "external model reasoning is limited to the review target and supplied repo context"
         in review
     )
+
+
+def test_upstream_openai_compatible_backend_keeps_style_equivalent_evidence(
+    monkeypatch,
+):
+    install_fake_upstream(
+        monkeypatch,
+        content=json.dumps(
+            {
+                "findings": [
+                    {
+                        "title": "Custom upstream rule",
+                        "rule_id": "custom_rule",
+                        "severity": "medium",
+                        "file_path": "frontend/app.tsx",
+                        "line_number": 2,
+                        "evidence": "return status_code;",
+                        "fix": "Review carefully.",
+                    }
+                ]
+            }
+        ),
+    )
+
+    review = render_review(
+        """<review_target path="frontend/app.tsx">
+```ts
+const requestBody = payload;
+return statusCode;
+```
+</review_target>""",
+        review_backend="upstream_openai_compatible",
+        upstream_settings=UpstreamReviewSettings(
+            model="review-upstream-v1",
+            base_url="https://example.test/v1",
+            api_key="upstream-key",
+            timeout_seconds=12.5,
+        ),
+    )
+
+    assert "1. Title: Custom upstream rule" in review
+    assert "Evidence: return status_code;" in review
+    assert "Rule ID: custom_rule" in review
+
+
+def test_upstream_openai_compatible_backend_keeps_style_equivalent_evidence_after_line_number_is_cleared(
+    monkeypatch,
+):
+    install_fake_upstream(
+        monkeypatch,
+        content=json.dumps(
+            {
+                "findings": [
+                    {
+                        "title": "Custom upstream rule",
+                        "rule_id": "custom_rule",
+                        "severity": "medium",
+                        "file_path": "frontend/app.tsx",
+                        "line_number": 99,
+                        "evidence": "return status_code;",
+                        "fix": "Review carefully.",
+                    }
+                ]
+            }
+        ),
+    )
+
+    review = render_review(
+        """<review_target path="frontend/app.tsx">
+```ts
+const requestBody = payload;
+return statusCode;
+```
+</review_target>""",
+        review_backend="upstream_openai_compatible",
+        upstream_settings=UpstreamReviewSettings(
+            model="review-upstream-v1",
+            base_url="https://example.test/v1",
+            api_key="upstream-key",
+            timeout_seconds=12.5,
+        ),
+    )
+
+    assert "1. Title: Custom upstream rule" in review
+    assert "Evidence: return status_code;" in review
+    assert "File: frontend/app.tsx" in review
+    assert "File: frontend/app.tsx:99" not in review
 
 
 def test_upstream_openai_compatible_backend_drops_unanchored_evidence_after_line_number_is_cleared(
@@ -1306,6 +1500,474 @@ console.log('debug');
     assert review.count("Title: Debug artifact") == 1
     assert "Temporary logger" not in review
     assert "Keep it for now." not in review
+
+
+def test_upstream_openai_compatible_backend_deduplicates_style_equivalent_unknown_evidence_and_keeps_first_text(
+    monkeypatch,
+):
+    install_fake_upstream(
+        monkeypatch,
+        content=json.dumps(
+            {
+                "findings": [
+                    {
+                        "title": "Custom upstream rule",
+                        "rule_id": "custom_rule",
+                        "severity": "medium",
+                        "file_path": "frontend/app.tsx",
+                        "line_number": 2,
+                        "evidence": "return statusCode;",
+                        "fix": "Review carefully.",
+                    },
+                    {
+                        "title": "Custom upstream rule",
+                        "rule_id": "custom_rule",
+                        "severity": "medium",
+                        "file_path": "frontend/app.tsx",
+                        "line_number": 2,
+                        "evidence": "return status_code;",
+                        "fix": "Review carefully.",
+                    },
+                ]
+            }
+        ),
+    )
+
+    review = render_review(
+        """<review_target path="frontend/app.tsx">
+```ts
+const requestBody = payload;
+return statusCode;
+```
+</review_target>""",
+        review_backend="upstream_openai_compatible",
+        upstream_settings=UpstreamReviewSettings(
+            model="review-upstream-v1",
+            base_url="https://example.test/v1",
+            api_key="upstream-key",
+            timeout_seconds=12.5,
+        ),
+    )
+
+    assert "Findings found: 1" in review
+    assert review.count("Rule ID: custom_rule") == 1
+    assert "Evidence: return statusCode;" in review
+    assert "Evidence: return status_code;" not in review
+
+
+def test_upstream_openai_compatible_backend_preserves_unknown_rule_with_slash_equivalent_path_like_evidence(
+    monkeypatch,
+):
+    install_fake_upstream(
+        monkeypatch,
+        content=json.dumps(
+            {
+                "findings": [
+                    {
+                        "title": "Custom upstream rule",
+                        "rule_id": "custom_rule",
+                        "severity": "medium",
+                        "file_path": "frontend/app.tsx",
+                        "line_number": 1,
+                        "evidence": 'const targetPath = "backend\\service.py";',
+                        "fix": "Review carefully.",
+                    }
+                ]
+            }
+        ),
+    )
+
+    review = render_review(
+        """<review_target path="frontend/app.tsx">
+```ts
+const targetPath = "backend/service.py";
+```
+</review_target>""",
+        review_backend="upstream_openai_compatible",
+        upstream_settings=UpstreamReviewSettings(
+            model="review-upstream-v1",
+            base_url="https://example.test/v1",
+            api_key="upstream-key",
+            timeout_seconds=12.5,
+        ),
+    )
+
+    assert "Findings found: 1" in review
+    assert "Title: Custom upstream rule" in review
+    assert "Rule ID: custom_rule" in review
+    assert 'Evidence: const targetPath = "backend\\service.py";' in review
+    assert 'Evidence: const targetPath = "backend/service.py";' not in review
+
+
+def test_upstream_openai_compatible_backend_deduplicates_style_equivalent_unknown_advice_and_keeps_first_text(
+    monkeypatch,
+):
+    install_fake_upstream(
+        monkeypatch,
+        content=json.dumps(
+            {
+                "findings": [
+                    {
+                        "title": "Custom upstream rule",
+                        "rule_id": "custom_rule",
+                        "severity": "medium",
+                        "file_path": "frontend/app.tsx",
+                        "line_number": 2,
+                        "evidence": "return statusCode;",
+                        "fix": "Rename requestBody before comparing statusCode.",
+                    },
+                    {
+                        "title": "Custom upstream rule",
+                        "rule_id": "custom_rule",
+                        "severity": "medium",
+                        "file_path": "frontend/app.tsx",
+                        "line_number": 2,
+                        "evidence": "return statusCode;",
+                        "fix": "Rename request_body before comparing status_code.",
+                    },
+                ]
+            }
+        ),
+    )
+
+    review = render_review(
+        """<review_target path="frontend/app.tsx">
+```ts
+const requestBody = payload;
+return statusCode;
+```
+</review_target>""",
+        review_backend="upstream_openai_compatible",
+        upstream_settings=UpstreamReviewSettings(
+            model="review-upstream-v1",
+            base_url="https://example.test/v1",
+            api_key="upstream-key",
+            timeout_seconds=12.5,
+        ),
+    )
+
+    assert "Findings found: 1" in review
+    assert review.count("Rule ID: custom_rule") == 1
+    assert "Fix: Rename requestBody before comparing statusCode." in review
+    assert "Fix: Rename request_body before comparing status_code." not in review
+
+
+def test_upstream_openai_compatible_backend_deduplicates_style_equivalent_known_rule_evidence_and_keeps_first_text(
+    monkeypatch,
+):
+    install_fake_upstream(
+        monkeypatch,
+        content=json.dumps(
+            {
+                "findings": [
+                    {
+                        "title": "Temporary logger",
+                        "rule_id": "debug_artifact",
+                        "severity": "low",
+                        "file_path": "frontend/app.tsx",
+                        "line_number": 1,
+                        "evidence": "console.log(requestBody);",
+                        "fix": "Keep it for now.",
+                    },
+                    {
+                        "title": "Temporary logger",
+                        "rule_id": "debug_artifact",
+                        "severity": "low",
+                        "file_path": "frontend/app.tsx",
+                        "line_number": 1,
+                        "evidence": "console.log(request_body);",
+                        "fix": "Keep it for now.",
+                    },
+                ]
+            }
+        ),
+    )
+
+    review = render_review(
+        """<review_target path="frontend/app.tsx">
+```ts
+console.log(requestBody);
+```
+</review_target>""",
+        review_backend="upstream_openai_compatible",
+        upstream_settings=UpstreamReviewSettings(
+            model="review-upstream-v1",
+            base_url="https://example.test/v1",
+            api_key="upstream-key",
+            timeout_seconds=12.5,
+        ),
+    )
+
+    assert "Findings found: 1" in review
+    assert review.count("Rule ID: debug_artifact") == 1
+    assert "Evidence: console.log(requestBody);" in review
+    assert "Evidence: console.log(request_body);" not in review
+
+
+def test_upstream_openai_compatible_backend_keeps_unknown_long_evidence_with_same_display_prefix_as_two_findings(
+    monkeypatch,
+):
+    shared_prefix = "const requestBody = payload; " * 4
+    evidence_one = shared_prefix + "return statusCode;"
+    evidence_two = shared_prefix + "return errorCode;"
+    install_fake_upstream(
+        monkeypatch,
+        content=json.dumps(
+            {
+                "findings": [
+                    {
+                        "title": "Custom upstream rule",
+                        "rule_id": "custom_rule",
+                        "severity": "medium",
+                        "file_path": "frontend/app.tsx",
+                        "line_number": None,
+                        "evidence": evidence_one,
+                        "fix": "Review carefully.",
+                    },
+                    {
+                        "title": "Custom upstream rule",
+                        "rule_id": "custom_rule",
+                        "severity": "medium",
+                        "file_path": "frontend/app.tsx",
+                        "line_number": None,
+                        "evidence": evidence_two,
+                        "fix": "Review carefully.",
+                    },
+                ]
+            }
+        ),
+    )
+
+    review = render_review(
+        f"""<review_target path="frontend/app.tsx">
+```ts
+{evidence_one}
+{evidence_two}
+```
+</review_target>""",
+        review_backend="upstream_openai_compatible",
+        upstream_settings=UpstreamReviewSettings(
+            model="review-upstream-v1",
+            base_url="https://example.test/v1",
+            api_key="upstream-key",
+            timeout_seconds=12.5,
+        ),
+    )
+
+    assert "Findings found: 2" in review
+    assert review.count("Rule ID: custom_rule") == 2
+
+
+def test_upstream_openai_compatible_backend_keeps_known_rule_long_evidence_with_same_display_prefix_as_two_findings(
+    monkeypatch,
+):
+    shared_prefix = "console.log(requestBody); " * 4
+    evidence_one = shared_prefix + "console.log(statusCode);"
+    evidence_two = shared_prefix + "console.log(errorCode);"
+    install_fake_upstream(
+        monkeypatch,
+        content=json.dumps(
+            {
+                "findings": [
+                    {
+                        "title": "Temporary logger",
+                        "rule_id": "debug_artifact",
+                        "severity": "low",
+                        "file_path": "frontend/app.tsx",
+                        "line_number": None,
+                        "evidence": evidence_one,
+                        "fix": "Keep it for now.",
+                    },
+                    {
+                        "title": "Temporary logger",
+                        "rule_id": "debug_artifact",
+                        "severity": "low",
+                        "file_path": "frontend/app.tsx",
+                        "line_number": None,
+                        "evidence": evidence_two,
+                        "fix": "Keep it for now.",
+                    },
+                ]
+            }
+        ),
+    )
+
+    review = render_review(
+        f"""<review_target path="frontend/app.tsx">
+```ts
+{evidence_one}
+{evidence_two}
+```
+</review_target>""",
+        review_backend="upstream_openai_compatible",
+        upstream_settings=UpstreamReviewSettings(
+            model="review-upstream-v1",
+            base_url="https://example.test/v1",
+            api_key="upstream-key",
+            timeout_seconds=12.5,
+        ),
+    )
+
+    assert "Findings found: 2" in review
+    assert review.count("Rule ID: debug_artifact") == 2
+
+
+def test_upstream_openai_compatible_backend_deduplicates_slash_equivalent_unknown_advice_paths_and_keeps_first_text(
+    monkeypatch,
+):
+    install_fake_upstream(
+        monkeypatch,
+        content=json.dumps(
+            {
+                "findings": [
+                    {
+                        "title": "Custom upstream rule",
+                        "rule_id": "custom_rule",
+                        "severity": "medium",
+                        "file_path": "backend/service.py",
+                        "line_number": 2,
+                        "evidence": "return total",
+                        "fix": "Move the logic into backend\\service.py.",
+                    },
+                    {
+                        "title": "Custom upstream rule",
+                        "rule_id": "custom_rule",
+                        "severity": "medium",
+                        "file_path": "backend/service.py",
+                        "line_number": 2,
+                        "evidence": "return total",
+                        "fix": "Move the logic into backend/service.py.",
+                    },
+                ]
+            }
+        ),
+    )
+
+    review = render_review(
+        """<review_target path="backend/service.py">
+```py
+value = total
+return total
+```
+</review_target>""",
+        review_backend="upstream_openai_compatible",
+        upstream_settings=UpstreamReviewSettings(
+            model="review-upstream-v1",
+            base_url="https://example.test/v1",
+            api_key="upstream-key",
+            timeout_seconds=12.5,
+        ),
+    )
+
+    assert "Findings found: 1" in review
+    assert review.count("Rule ID: custom_rule") == 1
+    assert "Fix: Move the logic into backend\\service.py." in review
+    assert "Fix: Move the logic into backend/service.py." not in review
+
+
+def test_upstream_openai_compatible_backend_keeps_materially_different_unknown_advice_as_two_findings(
+    monkeypatch,
+):
+    install_fake_upstream(
+        monkeypatch,
+        content=json.dumps(
+            {
+                "findings": [
+                    {
+                        "title": "Custom upstream rule",
+                        "rule_id": "custom_rule",
+                        "severity": "medium",
+                        "file_path": "frontend/app.tsx",
+                        "line_number": 2,
+                        "evidence": "return statusCode;",
+                        "fix": "Rename requestBody before comparing statusCode.",
+                    },
+                    {
+                        "title": "Custom upstream rule",
+                        "rule_id": "custom_rule",
+                        "severity": "medium",
+                        "file_path": "frontend/app.tsx",
+                        "line_number": 2,
+                        "evidence": "return statusCode;",
+                        "fix": "Validate requestBody before comparing statusCode.",
+                    },
+                ]
+            }
+        ),
+    )
+
+    review = render_review(
+        """<review_target path="frontend/app.tsx">
+```ts
+const requestBody = payload;
+return statusCode;
+```
+</review_target>""",
+        review_backend="upstream_openai_compatible",
+        upstream_settings=UpstreamReviewSettings(
+            model="review-upstream-v1",
+            base_url="https://example.test/v1",
+            api_key="upstream-key",
+            timeout_seconds=12.5,
+        ),
+    )
+
+    assert "Findings found: 2" in review
+    assert "Fix: Rename requestBody before comparing statusCode." in review
+    assert "Fix: Validate requestBody before comparing statusCode." in review
+
+
+def test_upstream_openai_compatible_backend_keeps_same_finding_text_on_different_lines_as_two_findings(
+    monkeypatch,
+):
+    install_fake_upstream(
+        monkeypatch,
+        content=json.dumps(
+            {
+                "findings": [
+                    {
+                        "title": "Custom upstream rule",
+                        "rule_id": "custom_rule",
+                        "severity": "medium",
+                        "file_path": "frontend/app.tsx",
+                        "line_number": 2,
+                        "evidence": "return total;",
+                        "fix": "Review carefully.",
+                    },
+                    {
+                        "title": "Custom upstream rule",
+                        "rule_id": "custom_rule",
+                        "severity": "medium",
+                        "file_path": "frontend/app.tsx",
+                        "line_number": 3,
+                        "evidence": "return total;",
+                        "fix": "Review carefully.",
+                    },
+                ]
+            }
+        ),
+    )
+
+    review = render_review(
+        """<review_target path="frontend/app.tsx">
+```ts
+const total = items.length;
+return total;
+return total;
+```
+</review_target>""",
+        review_backend="upstream_openai_compatible",
+        upstream_settings=UpstreamReviewSettings(
+            model="review-upstream-v1",
+            base_url="https://example.test/v1",
+            api_key="upstream-key",
+            timeout_seconds=12.5,
+        ),
+    )
+
+    assert "Findings found: 2" in review
+    assert "File: frontend/app.tsx:2" in review
+    assert "File: frontend/app.tsx:3" in review
 
 
 def test_upstream_openai_compatible_backend_preserves_unknown_rule_metadata_when_anchored(
@@ -2176,6 +2838,196 @@ def test_canonical_review_path_normalizes_slash_equivalent_paths():
     assert canonical_review_path("backend\\service.py") == "backend/service.py"
     assert canonical_review_path("C:\\repo\\frontend\\app.tsx") == "C:/repo/frontend/app.tsx"
     assert canonical_review_path("<unknown>") is None
+
+
+def test_canonical_anchor_text_normalizes_style_equivalent_identifiers():
+    assert canonical_anchor_text("return requestBody;") == "return request_body;"
+    assert (
+        canonical_anchor_text("const HTTPClient = createClient();")
+        == "const http_client = create_client();"
+    )
+    assert canonical_anchor_text("if userID != nil") == "if user_id != nil"
+
+
+def test_canonical_anchor_text_normalizes_slash_equivalent_paths_and_preserves_path_boundaries():
+    assert (
+        canonical_anchor_text('const targetPath = "backend\\service.py";')
+        == 'const target_path = "backend/service.py";'
+    )
+    assert canonical_anchor_text(
+        'const targetPath = "backend\\service.py";'
+    ) == canonical_anchor_text('const targetPath = "backend/service.py";')
+    assert canonical_anchor_text(
+        'const targetPath = "backend/service.py";'
+    ) != canonical_anchor_text('const targetPath = "service.py";')
+    assert canonical_anchor_text(
+        'const targetPath = "backend/service.py";'
+    ) != canonical_anchor_text('const targetPath = "C:\\repo\\backend\\service.py";')
+    assert canonical_anchor_text(
+        'const targetPath = "backend/service.py";'
+    ) != canonical_anchor_text('const targetPath = "Backend/Service.py";')
+    assert canonical_anchor_text(
+        'const targetPath = "serviceFile.py";'
+    ) != canonical_anchor_text('const targetPath = "service_file.py";')
+
+
+def test_anchor_text_matches_style_equivalent_identifiers():
+    assert anchor_text_matches("return request_body;", "return requestBody;")
+    assert anchor_text_matches(
+        "const http_client = create_client();",
+        "const HTTPClient = createClient();",
+    )
+    assert anchor_text_matches("if user_id != nil", "if userID != nil")
+
+
+def test_anchor_text_matches_slash_equivalent_path_like_tokens():
+    assert anchor_text_matches(
+        'const targetPath = "backend\\service.py";',
+        'const targetPath = "backend/service.py";',
+    )
+
+
+def test_anchor_text_matches_rejects_reordered_or_generic_identifiers():
+    assert not anchor_text_matches("return adapter_cache;", "return cacheAdapter;")
+    assert not anchor_text_matches("if id_user != nil", "if userID != nil")
+    assert not anchor_text_matches(
+        "request body status code",
+        "const requestBody = payload; return statusCode;",
+    )
+
+
+def test_anchor_text_matches_rejects_non_equivalent_path_like_tokens():
+    assert not anchor_text_matches(
+        'const targetPath = "service.py";',
+        'const targetPath = "backend/service.py";',
+    )
+    assert not anchor_text_matches(
+        'const targetPath = "C:\\repo\\backend\\service.py";',
+        'const targetPath = "backend/service.py";',
+    )
+    assert not anchor_text_matches(
+        'const targetPath = "Backend/Service.py";',
+        'const targetPath = "backend/service.py";',
+    )
+    assert not anchor_text_matches(
+        'const targetPath = "serviceFile.py";',
+        'const targetPath = "service_file.py";',
+    )
+
+
+def test_normalize_live_finding_evidence_preserves_full_text_and_only_normalizes_whitespace():
+    raw_evidence = """
+      const requestBody = payload;
+      const requestBody = payload;
+      const requestBody = payload;
+      return statusCode;
+    """
+
+    normalized = normalize_live_finding_evidence(raw_evidence)
+
+    assert (
+        normalized
+        == "const requestBody = payload; const requestBody = payload; const requestBody = payload; return statusCode;"
+    )
+    assert len(normalized) > 96
+    assert shorten_evidence(normalized) != normalized
+
+
+def test_canonical_live_finding_text_identity_normalizes_style_equivalent_identifiers_and_paths():
+    assert (
+        canonical_live_finding_text_identity(
+            "Rename requestBody in backend\\service.py before comparing statusCode."
+        )
+        == "Rename request_body in backend/service.py before comparing status_code."
+    )
+
+
+def test_canonical_live_finding_text_identity_keeps_path_tokens_atomic_and_preserves_boundaries():
+    assert (
+        canonical_live_finding_text_identity("Move logic into serviceFile.py.")
+        == "Move logic into serviceFile.py."
+    )
+    assert canonical_live_finding_text_identity(
+        "Move logic into backend/service.py."
+    ) != canonical_live_finding_text_identity("Move logic into service.py.")
+    assert canonical_live_finding_text_identity(
+        "Move logic into backend/service.py."
+    ) != canonical_live_finding_text_identity("Move logic into C:\\repo\\backend\\service.py.")
+    assert canonical_live_finding_text_identity(
+        "Move logic into backend/service.py."
+    ) != canonical_live_finding_text_identity("Move logic into Backend/Service.py.")
+    assert canonical_live_finding_text_identity(
+        "Rename cacheAdapter before returning."
+    ) != canonical_live_finding_text_identity("Rename adapter_cache before returning.")
+
+
+def test_live_finding_identity_key_merges_style_equivalent_evidence_and_advice():
+    assert live_finding_identity_key(
+        rule_id="custom_rule",
+        file_path="frontend/app.tsx",
+        line_number=2,
+        evidence="return statusCode;",
+        advice="Rename requestBody in backend\\service.py before comparing statusCode.",
+    ) == live_finding_identity_key(
+        rule_id="custom_rule",
+        file_path="frontend/app.tsx",
+        line_number=2,
+        evidence="return status_code;",
+        advice="Rename request_body in backend/service.py before comparing status_code.",
+    )
+
+
+def test_live_finding_identity_key_keeps_long_evidence_that_only_diverges_after_display_limit_distinct():
+    shared_prefix = "const requestBody = payload; " * 4
+    evidence_one = normalize_live_finding_evidence(shared_prefix + "return statusCode;")
+    evidence_two = normalize_live_finding_evidence(shared_prefix + "return errorCode;")
+
+    assert shorten_evidence(evidence_one) == shorten_evidence(evidence_two)
+    assert live_finding_identity_key(
+        rule_id="custom_rule",
+        file_path="frontend/app.tsx",
+        line_number=None,
+        evidence=evidence_one,
+        advice="Review carefully.",
+    ) != live_finding_identity_key(
+        rule_id="custom_rule",
+        file_path="frontend/app.tsx",
+        line_number=None,
+        evidence=evidence_two,
+        advice="Review carefully.",
+    )
+
+
+def test_live_finding_identity_key_keeps_reordered_materially_different_and_different_line_findings_distinct():
+    base_key = live_finding_identity_key(
+        rule_id="custom_rule",
+        file_path="frontend/app.tsx",
+        line_number=2,
+        evidence="return cacheAdapter;",
+        advice="Rename requestBody before comparing statusCode.",
+    )
+
+    assert base_key != live_finding_identity_key(
+        rule_id="custom_rule",
+        file_path="frontend/app.tsx",
+        line_number=2,
+        evidence="return adapter_cache;",
+        advice="Rename requestBody before comparing statusCode.",
+    )
+    assert base_key != live_finding_identity_key(
+        rule_id="custom_rule",
+        file_path="frontend/app.tsx",
+        line_number=2,
+        evidence="return cacheAdapter;",
+        advice="Validate requestBody before comparing statusCode.",
+    )
+    assert base_key != live_finding_identity_key(
+        rule_id="custom_rule",
+        file_path="frontend/app.tsx",
+        line_number=3,
+        evidence="return cacheAdapter;",
+        advice="Rename requestBody before comparing statusCode.",
+    )
 
 
 def test_canonical_known_rule_id_matches_style_equivalent_ids():

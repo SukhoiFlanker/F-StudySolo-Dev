@@ -674,6 +674,244 @@ return statusCode;
     assert f"Title: {UNVALIDATED_UPSTREAM_TITLE}" not in content
 
 
+def test_non_stream_response_format_with_upstream_live_backend_preserves_style_equivalent_evidence(
+    monkeypatch,
+):
+    install_fake_upstream(
+        monkeypatch,
+        content=json.dumps(
+            {
+                "findings": [
+                    {
+                        "title": "Custom upstream rule",
+                        "rule_id": "custom_rule",
+                        "severity": "medium",
+                        "file_path": "frontend/app.tsx",
+                        "line_number": 2,
+                        "evidence": "return status_code;",
+                        "fix": "Review carefully.",
+                    }
+                ]
+            }
+        ),
+    )
+    monkeypatch.setenv("AGENT_API_KEY", "test-agent-key")
+    monkeypatch.setenv("AGENT_REVIEW_BACKEND", "upstream_openai_compatible")
+    monkeypatch.setenv("AGENT_UPSTREAM_MODEL", "review-upstream-v1")
+    monkeypatch.setenv("AGENT_UPSTREAM_BASE_URL", "https://example.test/v1")
+    monkeypatch.setenv("AGENT_UPSTREAM_API_KEY", "upstream-key")
+    get_settings.cache_clear()
+
+    settings = get_settings()
+    with TestClient(create_app()) as client:
+        response = client.post(
+            "/v1/chat/completions",
+            json=structured_completion_payload(
+                settings,
+                content="""<review_target path="frontend/app.tsx">
+```ts
+const requestBody = payload;
+return statusCode;
+```
+</review_target>""",
+            ),
+            headers=auth_headers(settings),
+        )
+
+    get_settings.cache_clear()
+
+    assert response.status_code == 200
+    data = response.json()
+    content = data["choices"][0]["message"]["content"]
+    assert "Title: Custom upstream rule" in content
+    assert "Rule ID: custom_rule" in content
+    assert "Evidence: return status_code;" in content
+    assert "Evidence: return statusCode;" not in content
+
+
+def test_non_stream_response_format_with_upstream_live_backend_preserves_slash_equivalent_path_like_evidence(
+    monkeypatch,
+):
+    install_fake_upstream(
+        monkeypatch,
+        content=json.dumps(
+            {
+                "findings": [
+                    {
+                        "title": "Custom upstream rule",
+                        "rule_id": "custom_rule",
+                        "severity": "medium",
+                        "file_path": "frontend/app.tsx",
+                        "line_number": 1,
+                        "evidence": 'const targetPath = "backend\\service.py";',
+                        "fix": "Review carefully.",
+                    }
+                ]
+            }
+        ),
+    )
+    monkeypatch.setenv("AGENT_API_KEY", "test-agent-key")
+    monkeypatch.setenv("AGENT_REVIEW_BACKEND", "upstream_openai_compatible")
+    monkeypatch.setenv("AGENT_UPSTREAM_MODEL", "review-upstream-v1")
+    monkeypatch.setenv("AGENT_UPSTREAM_BASE_URL", "https://example.test/v1")
+    monkeypatch.setenv("AGENT_UPSTREAM_API_KEY", "upstream-key")
+    get_settings.cache_clear()
+
+    settings = get_settings()
+    with TestClient(create_app()) as client:
+        response = client.post(
+            "/v1/chat/completions",
+            json=structured_completion_payload(
+                settings,
+                content="""<review_target path="frontend/app.tsx">
+```ts
+const targetPath = "backend/service.py";
+```
+</review_target>""",
+            ),
+            headers=auth_headers(settings),
+        )
+
+    get_settings.cache_clear()
+
+    assert response.status_code == 200
+    data = response.json()
+    content = data["choices"][0]["message"]["content"]
+    assert "Findings found: 1" in content
+    assert "Rule ID: custom_rule" in content
+    assert 'Evidence: const targetPath = "backend\\service.py";' in content
+    assert 'Evidence: const targetPath = "backend/service.py";' not in content
+
+
+def test_non_stream_response_format_with_upstream_live_backend_deduplicates_style_equivalent_evidence_and_keeps_first_text(
+    monkeypatch,
+):
+    install_fake_upstream(
+        monkeypatch,
+        content=json.dumps(
+            {
+                "findings": [
+                    {
+                        "title": "Custom upstream rule",
+                        "rule_id": "custom_rule",
+                        "severity": "medium",
+                        "file_path": "frontend/app.tsx",
+                        "line_number": 2,
+                        "evidence": "return statusCode;",
+                        "fix": "Review carefully.",
+                    },
+                    {
+                        "title": "Custom upstream rule",
+                        "rule_id": "custom_rule",
+                        "severity": "medium",
+                        "file_path": "frontend/app.tsx",
+                        "line_number": 2,
+                        "evidence": "return status_code;",
+                        "fix": "Review carefully.",
+                    },
+                ]
+            }
+        ),
+    )
+    monkeypatch.setenv("AGENT_API_KEY", "test-agent-key")
+    monkeypatch.setenv("AGENT_REVIEW_BACKEND", "upstream_openai_compatible")
+    monkeypatch.setenv("AGENT_UPSTREAM_MODEL", "review-upstream-v1")
+    monkeypatch.setenv("AGENT_UPSTREAM_BASE_URL", "https://example.test/v1")
+    monkeypatch.setenv("AGENT_UPSTREAM_API_KEY", "upstream-key")
+    get_settings.cache_clear()
+
+    settings = get_settings()
+    with TestClient(create_app()) as client:
+        response = client.post(
+            "/v1/chat/completions",
+            json=structured_completion_payload(
+                settings,
+                content="""<review_target path="frontend/app.tsx">
+```ts
+const requestBody = payload;
+return statusCode;
+```
+</review_target>""",
+            ),
+            headers=auth_headers(settings),
+        )
+
+    get_settings.cache_clear()
+
+    assert response.status_code == 200
+    data = response.json()
+    content = data["choices"][0]["message"]["content"]
+    assert "Findings found: 1" in content
+    assert content.count("Rule ID: custom_rule") == 1
+    assert "Evidence: return statusCode;" in content
+    assert "Evidence: return status_code;" not in content
+
+
+def test_non_stream_response_format_with_upstream_live_backend_keeps_long_evidence_collisions_distinct(
+    monkeypatch,
+):
+    shared_prefix = "const requestBody = payload; " * 4
+    evidence_one = shared_prefix + "return statusCode;"
+    evidence_two = shared_prefix + "return errorCode;"
+    install_fake_upstream(
+        monkeypatch,
+        content=json.dumps(
+            {
+                "findings": [
+                    {
+                        "title": "Custom upstream rule",
+                        "rule_id": "custom_rule",
+                        "severity": "medium",
+                        "file_path": "frontend/app.tsx",
+                        "line_number": None,
+                        "evidence": evidence_one,
+                        "fix": "Review carefully.",
+                    },
+                    {
+                        "title": "Custom upstream rule",
+                        "rule_id": "custom_rule",
+                        "severity": "medium",
+                        "file_path": "frontend/app.tsx",
+                        "line_number": None,
+                        "evidence": evidence_two,
+                        "fix": "Review carefully.",
+                    },
+                ]
+            }
+        ),
+    )
+    monkeypatch.setenv("AGENT_API_KEY", "test-agent-key")
+    monkeypatch.setenv("AGENT_REVIEW_BACKEND", "upstream_openai_compatible")
+    monkeypatch.setenv("AGENT_UPSTREAM_MODEL", "review-upstream-v1")
+    monkeypatch.setenv("AGENT_UPSTREAM_BASE_URL", "https://example.test/v1")
+    monkeypatch.setenv("AGENT_UPSTREAM_API_KEY", "upstream-key")
+    get_settings.cache_clear()
+
+    settings = get_settings()
+    with TestClient(create_app()) as client:
+        response = client.post(
+            "/v1/chat/completions",
+            json=structured_completion_payload(
+                settings,
+                content=f"""<review_target path="frontend/app.tsx">
+```ts
+{evidence_one}
+{evidence_two}
+```
+</review_target>""",
+            ),
+            headers=auth_headers(settings),
+        )
+
+    get_settings.cache_clear()
+
+    assert response.status_code == 200
+    data = response.json()
+    content = data["choices"][0]["message"]["content"]
+    assert "Findings found: 2" in content
+    assert content.count("Rule ID: custom_rule") == 2
+
+
 def test_non_stream_live_backend_filters_and_prioritizes_repo_context_before_upstream(
     monkeypatch,
 ):
@@ -1713,6 +1951,252 @@ return statusCode;
     assert "Rule ID: custom_rule" in stream_content
     assert "Fix: Rename request_body before comparing status_code." in stream_content
     assert f"Fix: {UNVALIDATED_UPSTREAM_FIX_ADVICE}" not in stream_content
+
+
+def test_stream_response_sse_format_with_upstream_live_backend_preserves_style_equivalent_evidence(
+    monkeypatch,
+):
+    payload = json.dumps(
+        {
+            "findings": [
+                {
+                    "title": "Custom upstream rule",
+                    "rule_id": "custom_rule",
+                    "severity": "medium",
+                    "file_path": "frontend/app.tsx",
+                    "line_number": 2,
+                    "evidence": "return status_code;",
+                    "fix": "Review carefully.",
+                }
+            ]
+        }
+    )
+    install_fake_upstream(
+        monkeypatch,
+        content=payload,
+        stream_chunks=[payload[:30], payload[30:62], payload[62:]],
+    )
+    monkeypatch.setenv("AGENT_API_KEY", "test-agent-key")
+    monkeypatch.setenv("AGENT_REVIEW_BACKEND", "upstream_openai_compatible")
+    monkeypatch.setenv("AGENT_UPSTREAM_MODEL", "review-upstream-v1")
+    monkeypatch.setenv("AGENT_UPSTREAM_BASE_URL", "https://example.test/v1")
+    monkeypatch.setenv("AGENT_UPSTREAM_API_KEY", "upstream-key")
+    get_settings.cache_clear()
+
+    settings = get_settings()
+    with TestClient(create_app()) as client:
+        response = client.post(
+            "/v1/chat/completions",
+            json=structured_completion_payload(
+                settings,
+                content="""<review_target path="frontend/app.tsx">
+```ts
+const requestBody = payload;
+return statusCode;
+```
+</review_target>""",
+                stream=True,
+            ),
+            headers=auth_headers(settings),
+        )
+
+    get_settings.cache_clear()
+
+    assert response.status_code == 200
+    stream_content = collect_stream_content(response)
+    assert "Title: Custom upstream rule" in stream_content
+    assert "Rule ID: custom_rule" in stream_content
+    assert "Evidence: return status_code;" in stream_content
+    assert "Evidence: return statusCode;" not in stream_content
+
+
+def test_stream_response_sse_format_with_upstream_live_backend_preserves_slash_equivalent_path_like_evidence(
+    monkeypatch,
+):
+    payload = json.dumps(
+        {
+            "findings": [
+                {
+                    "title": "Custom upstream rule",
+                    "rule_id": "custom_rule",
+                    "severity": "medium",
+                    "file_path": "frontend/app.tsx",
+                    "line_number": 1,
+                    "evidence": 'const targetPath = "backend\\service.py";',
+                    "fix": "Review carefully.",
+                }
+            ]
+        }
+    )
+    install_fake_upstream(
+        monkeypatch,
+        content=payload,
+        stream_chunks=[payload[:30], payload[30:62], payload[62:]],
+    )
+    monkeypatch.setenv("AGENT_API_KEY", "test-agent-key")
+    monkeypatch.setenv("AGENT_REVIEW_BACKEND", "upstream_openai_compatible")
+    monkeypatch.setenv("AGENT_UPSTREAM_MODEL", "review-upstream-v1")
+    monkeypatch.setenv("AGENT_UPSTREAM_BASE_URL", "https://example.test/v1")
+    monkeypatch.setenv("AGENT_UPSTREAM_API_KEY", "upstream-key")
+    get_settings.cache_clear()
+
+    settings = get_settings()
+    with TestClient(create_app()) as client:
+        response = client.post(
+            "/v1/chat/completions",
+            json=structured_completion_payload(
+                settings,
+                content="""<review_target path="frontend/app.tsx">
+```ts
+const targetPath = "backend/service.py";
+```
+</review_target>""",
+                stream=True,
+            ),
+            headers=auth_headers(settings),
+        )
+
+    get_settings.cache_clear()
+
+    assert response.status_code == 200
+    stream_content = collect_stream_content(response)
+    assert "Findings found: 1" in stream_content
+    assert "Rule ID: custom_rule" in stream_content
+    assert 'Evidence: const targetPath = "backend\\service.py";' in stream_content
+    assert 'Evidence: const targetPath = "backend/service.py";' not in stream_content
+
+
+def test_stream_response_sse_format_with_upstream_live_backend_deduplicates_style_equivalent_advice_and_keeps_first_text(
+    monkeypatch,
+):
+    payload = json.dumps(
+        {
+            "findings": [
+                {
+                    "title": "Custom upstream rule",
+                    "rule_id": "custom_rule",
+                    "severity": "medium",
+                    "file_path": "frontend/app.tsx",
+                    "line_number": 2,
+                    "evidence": "return statusCode;",
+                    "fix": "Rename requestBody before comparing statusCode.",
+                },
+                {
+                    "title": "Custom upstream rule",
+                    "rule_id": "custom_rule",
+                    "severity": "medium",
+                    "file_path": "frontend/app.tsx",
+                    "line_number": 2,
+                    "evidence": "return statusCode;",
+                    "fix": "Rename request_body before comparing status_code.",
+                },
+            ]
+        }
+    )
+    install_fake_upstream(
+        monkeypatch,
+        content=payload,
+        stream_chunks=[payload[:30], payload[30:62], payload[62:]],
+    )
+    monkeypatch.setenv("AGENT_API_KEY", "test-agent-key")
+    monkeypatch.setenv("AGENT_REVIEW_BACKEND", "upstream_openai_compatible")
+    monkeypatch.setenv("AGENT_UPSTREAM_MODEL", "review-upstream-v1")
+    monkeypatch.setenv("AGENT_UPSTREAM_BASE_URL", "https://example.test/v1")
+    monkeypatch.setenv("AGENT_UPSTREAM_API_KEY", "upstream-key")
+    get_settings.cache_clear()
+
+    settings = get_settings()
+    with TestClient(create_app()) as client:
+        response = client.post(
+            "/v1/chat/completions",
+            json=structured_completion_payload(
+                settings,
+                content="""<review_target path="frontend/app.tsx">
+```ts
+const requestBody = payload;
+return statusCode;
+```
+</review_target>""",
+                stream=True,
+            ),
+            headers=auth_headers(settings),
+        )
+
+    get_settings.cache_clear()
+
+    assert response.status_code == 200
+    stream_content = collect_stream_content(response)
+    assert "Findings found: 1" in stream_content
+    assert stream_content.count("Rule ID: custom_rule") == 1
+    assert "Fix: Rename requestBody before comparing statusCode." in stream_content
+    assert "Fix: Rename request_body before comparing status_code." not in stream_content
+
+
+def test_stream_response_sse_format_with_upstream_live_backend_keeps_long_evidence_collisions_distinct(
+    monkeypatch,
+):
+    shared_prefix = "const requestBody = payload; " * 4
+    evidence_one = shared_prefix + "return statusCode;"
+    evidence_two = shared_prefix + "return errorCode;"
+    payload = json.dumps(
+        {
+            "findings": [
+                {
+                    "title": "Custom upstream rule",
+                    "rule_id": "custom_rule",
+                    "severity": "medium",
+                    "file_path": "frontend/app.tsx",
+                    "line_number": None,
+                    "evidence": evidence_one,
+                    "fix": "Review carefully.",
+                },
+                {
+                    "title": "Custom upstream rule",
+                    "rule_id": "custom_rule",
+                    "severity": "medium",
+                    "file_path": "frontend/app.tsx",
+                    "line_number": None,
+                    "evidence": evidence_two,
+                    "fix": "Review carefully.",
+                },
+            ]
+        }
+    )
+    install_fake_upstream(
+        monkeypatch,
+        content=payload,
+        stream_chunks=[payload[:32], payload[32:74], payload[74:]],
+    )
+    monkeypatch.setenv("AGENT_API_KEY", "test-agent-key")
+    monkeypatch.setenv("AGENT_REVIEW_BACKEND", "upstream_openai_compatible")
+    monkeypatch.setenv("AGENT_UPSTREAM_MODEL", "review-upstream-v1")
+    monkeypatch.setenv("AGENT_UPSTREAM_BASE_URL", "https://example.test/v1")
+    monkeypatch.setenv("AGENT_UPSTREAM_API_KEY", "upstream-key")
+    get_settings.cache_clear()
+
+    settings = get_settings()
+    with TestClient(create_app()) as client:
+        response = client.post(
+            "/v1/chat/completions",
+            json=structured_completion_payload(
+                settings,
+                content=f"""<review_target path="frontend/app.tsx">
+```ts
+{evidence_one}
+{evidence_two}
+```
+</review_target>""",
+                stream=True,
+            ),
+            headers=auth_headers(settings),
+        )
+
+    get_settings.cache_clear()
+
+    assert response.status_code == 200
+    stream_content = collect_stream_content(response)
+    assert "Findings found: 2" in stream_content
+    assert stream_content.count("Rule ID: custom_rule") == 2
 
 
 def test_stream_response_sse_format_with_upstream_live_backend_context_findings_fall_back(

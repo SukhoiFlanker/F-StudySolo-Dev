@@ -14,7 +14,7 @@
 
 ---
 
-## 当前真实状态（2026-04-11）
+## 当前真实状态（2026-04-12）
 
 ### Part A：工程主线已完成
 
@@ -30,7 +30,7 @@
 - 19 个官方节点已显式声明 `version / changelog`，形成第一版治理基线；`community_node` 继续排除在官方治理基线外
 - `workflow-meta.ts` 仍继续承担部分结构性元数据职责，但当前属于后续 deprecate 长尾，不再作为本阶段主线 blocker
 
-### Part B：前两个闭环已完成
+### Part B：当前 owner 侧治理闭环已完成
 
 - `agents/_template/` 已从“不存在”推进为最小可运行模板
 - `agents/code-review-agent/` 已从“只有 README”推进为可运行实例，并已从 deterministic stub 升级为规则型本地真实审查 Agent
@@ -52,8 +52,18 @@
   - 真实 OpenAI-compatible non-stream upstream 调用，以及配置缺失、超时、HTTP 异常、空内容、非法 JSON、非法 findings 的严格回退
   - 真实 provider streaming：`stream=True + upstream_openai_compatible` 已接通，但仍坚持“稳定模板优先”，会先在服务端完整消费并校验上游 JSON findings，再按当前 SSE 外壳输出内容 chunk
   - live upstream findings 治理已落地：会丢弃 `repo_context` findings、将 single-target foreign `file_path` 收口到 `review_target`、丢弃 multi-file diff foreign 文件、清空越界 `line_number`、去重重复 findings，并新增最小 evidence anchoring、known-rule metadata canonicalization、unknown-rule `Rule ID` 安全治理、unknown-rule `Title:` groundedness、unknown-rule `Severity:` 占位治理与 unknown-rule `Fix:` groundedness 治理；若 finding 无法被 `review_target` 的目标文本真实支撑，会在治理阶段被丢弃；若命中本地已知 `rule_id`，`title / severity / fix` 会收口到本地规则表；若为 unknown rule 且 `Rule ID` 不够干净、`Title:` 或 `Fix:` 不够 grounded，则会分别收口到统一安全占位 `rule_id`、占位标题或占位文案；unknown `Severity:` 则统一收口到 `medium`，并在治理后全丢弃时严格回退到 `heuristic`
-- repo-context forwarding 治理已落地：会先对 `repo_context` 做路径归一化、丢弃与 `review_target` 重复的 context、按路径去重，并按 `usage priority -> shared identifier count -> same_dir / same_top_level / same_extension / other -> 原始顺序` 排序，再按 `4` 文件 / 单文件 `80` 行 / 总计 `200` 行预算裁剪；超限内容会以 `... [truncated]` 标记后再 forward 给 upstream；排序现在会基于当前预算内真正可见的 context 切片逐轮重算，不再受长文件后半段隐藏 identifier 误导；当 context 超过单文件预算时，会优先选择预算内包含 shared identifier 的最佳连续窗口，而不是固定保留前 `80` 行
+  - repo-context forwarding 治理已落地：会先对 `repo_context` 做路径归一化、丢弃与 `review_target` 重复的 context、按路径去重，并按 `usage priority -> shared identifier count -> same_dir / same_top_level / same_extension / other -> 原始顺序` 排序，再按 `4` 文件 / 单文件 `80` 行 / 总计 `200` 行预算裁剪；超限内容会以 `... [truncated]` 标记后再 forward 给 upstream；排序现在会基于当前预算内真正可见的 context 切片逐轮重算，不再受长文件后半段隐藏 identifier 误导；当 context 超过单文件预算时，会优先选择预算内包含 shared identifier 的最佳连续窗口，而不是固定保留前 `80` 行
   - repo-aware utilization hints 已落地：upstream system prompt 已明确“findings 只能针对 `review_target`、`repo_context` 只能辅助解释 review target 风险”；upstream user prompt 也已补入 `review scope hint`、逐 context 的 `shared identifiers`、`usage priority`，并继续保留 `relationship / truncated` 提示；这些元数据现在也会直接参与 forwarding 排序与预算分配，而不再只是 prompt hints；在 `unified_diff` 场景下，它们会只基于真正可审查的新增行计算；其中 zero-overlap 的 `same_dir` context 不再自动标为 `high`，而是收口到 `medium`；`data / status / message / items / value / result / path` 这类泛化 token 也不再单独抬高 shared identifier overlap
+  - 额外 4B 治理收口也已落地：
+    - repo-aware 同序风格等价 identifier canonicalization
+    - unknown-rule `Title` / `Fix` groundedness canonicalization
+    - known-rule ID canonicalization
+    - slash-equivalent path canonicalization
+    - style-equivalent evidence anchoring canonicalization
+    - style-equivalent live finding identity canonicalization
+    - live evidence governance truth / display truth separation
+    - slash-equivalent live evidence anchoring canonicalization
+  - 当前 live upstream findings 的最终 dedupe 语义已经明确为 **first-win**：同 identity finding 只保留第一条，最终展示继续保留第一条原始 `Evidence:` / `Fix:` 文本
   - 定向规则逻辑测试闭环
 
 ### Part B：仍未完成
@@ -63,11 +73,14 @@
 - `backend/config/agents.yaml`、Agent Gateway、`/api/agents/*` 尚未开始
 - 其他 agent 目录仍未迁移成真实可运行骨架
 - Docker / compose / pyproject 等外圈基础设施本轮未纳入
+- 当前 owner 不再继续扩 `_template` / 其他 agent 骨架；这属于小李或其他 lane 的后续工作，不应和当前 `code-review-agent` 收口 lane 混写
 
 > [!NOTE]
-> 当前默认下一步不再是“补 `_template` 与 `code-review-agent` 最小骨架”，也不再是“先做 repo-aware 利用层深化”，而是：
-> 1. 继续推进 **Phase 4B 深化**（首选更进一步的 repo-aware 利用效果评估 / 治理，其次 Gateway 前置设计准备；若继续做治理，应是更进一步的上游治理细化）
-> 2. `workflow-meta.ts` 的 deprecate 收口继续保留在 **Phase 4A 长尾** 中，但不再作为当前 blocker
+> 当前默认下一步不再是继续深挖 **Phase 4B**，而是：
+> 1. 以现有 `code-review-agent` 作为 **Phase 5.1 Agent Gateway** 的首个集成对象
+> 2. 进入 **Phase 5.3 / 5.4 / 5.5** 的治理、文档对齐与 CI 收口
+> 3. `workflow-meta.ts` 的 deprecate 收口继续保留在 **Phase 4A 长尾** 中，但不再作为当前 blocker
+> 4. 其他 Agent 扩展与子 Agent 侧工作由小李或其他 lane 并行推进，不再作为当前 owner 的默认主线
 
 ---
 
@@ -280,7 +293,7 @@ agents/
 ### Task 4B.2：实现一个最小 Agent 样板
 
 > [!NOTE]
-> **当前真实状态**：最小 readiness-aware 协议样板已完成，且 `code-review-agent` 已进一步从 deterministic stub 推进为规则型真实审查 Agent。当前已具备结构化 repo-aware 前置输入、稳定纯文本 findings 模板、真实 OpenAI-compatible non-stream + streaming upstream、live upstream findings 治理（含 evidence anchoring、known-rule metadata canonicalization、unknown-rule `Rule ID` 安全治理、unknown-rule `Title:` groundedness、unknown-rule `Severity:` 占位治理与 unknown-rule `Fix:` groundedness 治理）、repo-context forwarding governance、repo-aware utilization hints 与严格回退；但仍不读取本地仓库文件，也未进入完整跨文件 / 全仓库推理。
+> **当前真实状态**：最小 readiness-aware 协议样板已完成，且 `code-review-agent` 已进一步从 deterministic stub 推进为规则型真实审查 Agent。当前已具备结构化 repo-aware 前置输入、稳定纯文本 findings 模板、真实 OpenAI-compatible non-stream + streaming upstream、live upstream findings 治理（现已覆盖 evidence anchoring、known-rule metadata canonicalization、unknown-rule `Rule ID` 安全治理、unknown-rule `Title:` groundedness、unknown-rule `Severity:` 占位治理、unknown-rule `Fix:` groundedness、style-equivalent live finding identity canonicalization、live evidence governance truth / display truth separation、slash-equivalent live evidence anchoring）、repo-context forwarding governance、repo-aware utilization hints 与严格回退；但仍不读取本地仓库文件，也未进入完整跨文件 / 全仓库推理。
 
 以 `code-review-agent` 为例，实际实现 4 个必要端点：
 
@@ -307,7 +320,7 @@ agents/
 ### Task 4B.3：编写四层契约测试
 
 > [!NOTE]
-> **当前真实状态**：已完成“协议 + 规则逻辑”双层测试闭环。`agents/_template/tests/test_contract.py` 与 `agents/code-review-agent/tests/test_contract.py` 已通过，并已补齐冻结契约中的 `/health/ready` readiness 检查；`agents/code-review-agent/tests/test_review_logic.py` 已覆盖 7 类规则命中、clean case、最新 user 消息边界、多文件 diff 路径/行号、unified diff 仅检查新增行、结构化 repo-aware 输入边界、稳定文本输出模板、live upstream non-stream / streaming 成功与 strict fallback 路径、findings 治理场景（含 evidence anchoring、known-rule metadata canonicalization、unknown-rule `Rule ID` 安全治理、unknown-rule `Title:` groundedness、unknown-rule `Severity:` 占位治理与 unknown-rule `Fix:` groundedness），以及 prompt forwarding + utilization hints 场景（含 zero-overlap `same_dir` usage priority 校准、budget-aware 可见切片排序、generic-token-aware shared identifier 治理与 identifier-aware 连续窗口抽取）。当前测试基线已推进到 `110 passed`。
+> **当前真实状态**：已完成“协议 + 规则逻辑”双层测试闭环。`agents/_template/tests/test_contract.py` 与 `agents/code-review-agent/tests/test_contract.py` 已通过，并已补齐冻结契约中的 `/health/ready` readiness 检查；`agents/code-review-agent/tests/test_review_logic.py` 已覆盖 7 类规则命中、clean case、最新 user 消息边界、多文件 diff 路径/行号、unified diff 仅检查新增行、结构化 repo-aware 输入边界、稳定文本输出模板、live upstream non-stream / streaming 成功与 strict fallback 路径、findings 治理场景（现已覆盖 style-equivalent evidence/advice identity dedupe、long-evidence governance truth / display truth separation、slash-equivalent path-like evidence anchoring），以及 prompt forwarding + utilization hints 场景（含 zero-overlap `same_dir` usage priority 校准、budget-aware 可见切片排序、generic-token-aware shared identifier 治理与 identifier-aware 连续窗口抽取）。当前测试基线已推进到 `177 passed`。
 
 ```python
 # tests/test_contract.py
@@ -404,7 +417,7 @@ def test_request_id_propagation(client): ...
 > [!IMPORTANT]
 > **Phase 4 当前最准确的判断**：
 > - Part A：工程主线已完成；仅剩 `workflow-meta.ts` 的长期 deprecate 长尾
-> - Part B：最小样板已完成，且 `code-review-agent` 已进入规则型真实能力阶段；后续进入 4B 深化阶段
+> - Part B：最小样板已完成，且 `code-review-agent` 已在当前 owner 的责任边界内完成 4B 治理收口；除非发现阻塞 Gateway 的真实缺口，否则不再继续深挖 4B 细节
 > - Phase 5 的 Agent Gateway / Wiki / 治理层仍未开始，不应混入当前波次
 
 > [!IMPORTANT]

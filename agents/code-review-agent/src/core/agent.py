@@ -768,6 +768,109 @@ def normalize_anchor_text(text: str) -> str:
     return " ".join(text.strip().split())
 
 
+def normalize_live_finding_evidence(text: str) -> str:
+    return normalize_anchor_text(text)
+
+
+def canonical_anchor_text(text: str) -> str:
+    normalized = normalize_anchor_text(text)
+    if not normalized:
+        return ""
+
+    canonical_parts: list[str] = []
+    last_end = 0
+    for match in PATH_LIKE_TOKEN_PATTERN.finditer(normalized):
+        prefix = normalized[last_end:match.start()]
+        canonical_parts.append(
+            upstream_review.IDENTIFIER_PATTERN.sub(
+                lambda identifier_match: upstream_review.canonical_shared_identifier(
+                    identifier_match.group(0)
+                ),
+                prefix,
+            )
+        )
+        canonical_parts.append(normalize_path_reference(match.group(1)))
+        last_end = match.end()
+
+    suffix = normalized[last_end:]
+    canonical_parts.append(
+        upstream_review.IDENTIFIER_PATTERN.sub(
+            lambda identifier_match: upstream_review.canonical_shared_identifier(
+                identifier_match.group(0)
+            ),
+            suffix,
+        )
+    )
+    return "".join(canonical_parts)
+
+
+def substantive_anchor_identifiers(text: str) -> set[str]:
+    return {
+        identifier
+        for identifier in upstream_review.repo_aware_identifiers(text)
+        if identifier not in upstream_review.LOW_SIGNAL_SHARED_IDENTIFIER_TOKENS
+    }
+
+
+def anchor_text_matches(evidence: str, candidate: str) -> bool:
+    normalized_evidence = normalize_anchor_text(evidence)
+    normalized_candidate = normalize_anchor_text(candidate)
+    if not normalized_evidence or not normalized_candidate:
+        return False
+    if normalized_evidence in normalized_candidate:
+        return True
+
+    evidence_identifiers = substantive_anchor_identifiers(evidence)
+    candidate_identifiers = substantive_anchor_identifiers(candidate)
+    if not evidence_identifiers or not candidate_identifiers:
+        return False
+    if evidence_identifiers.isdisjoint(candidate_identifiers):
+        return False
+
+    return canonical_anchor_text(evidence) in canonical_anchor_text(candidate)
+
+
+def canonical_live_finding_text_identity(text: str) -> str:
+    normalized = normalize_anchor_text(text)
+    if not normalized:
+        return ""
+
+    def canonicalize_identifier_like_token(token: str) -> str:
+        if (
+            "_" not in token
+            and not any(character.isdigit() for character in token)
+            and not any(character.isupper() for character in token[1:])
+        ):
+            return token
+        return upstream_review.canonical_shared_identifier(token)
+
+    canonical_parts: list[str] = []
+    last_end = 0
+    for match in PATH_LIKE_TOKEN_PATTERN.finditer(normalized):
+        prefix = normalized[last_end:match.start()]
+        canonical_parts.append(
+            upstream_review.IDENTIFIER_PATTERN.sub(
+                lambda identifier_match: canonicalize_identifier_like_token(
+                    identifier_match.group(0)
+                ),
+                prefix,
+            )
+        )
+        canonical_parts.append(normalize_path_reference(match.group(1)))
+        last_end = match.end()
+
+    suffix = normalized[last_end:]
+    canonical_parts.append(
+        upstream_review.IDENTIFIER_PATTERN.sub(
+            lambda identifier_match: canonicalize_identifier_like_token(
+                identifier_match.group(0)
+            ),
+            suffix,
+        )
+    )
+    return "".join(canonical_parts)
+
+
 def normalize_path_reference(text: str) -> str:
     normalized = text.strip().strip("\"'`").rstrip(".,:;!?)]}")
     return canonical_review_path(normalized) or normalized.replace("\\", "/")
@@ -1026,8 +1129,7 @@ def evidence_is_anchored_to_review_target(
     line_number: int | None,
     evidence: str,
 ) -> bool:
-    normalized_evidence = normalize_anchor_text(evidence)
-    if not normalized_evidence:
+    if not normalize_anchor_text(evidence):
         return False
 
     candidate_lines = [
@@ -1039,20 +1141,14 @@ def evidence_is_anchored_to_review_target(
         )
     ]
     if candidate_lines:
-        return any(
-            normalized_evidence in normalize_anchor_text(line.evidence)
-            for line in candidate_lines
-        )
+        return any(anchor_text_matches(evidence, line.evidence) for line in candidate_lines)
 
     if file_path is not None:
         file_lines = [line for line in review_input.lines if line.file_path == file_path]
         if file_lines:
-            return any(
-                normalized_evidence in normalize_anchor_text(line.evidence)
-                for line in file_lines
-            )
+            return any(anchor_text_matches(evidence, line.evidence) for line in file_lines)
 
-    return normalized_evidence in normalize_anchor_text(review_input.raw_text)
+    return anchor_text_matches(evidence, review_input.raw_text)
 
 
 def normalize_live_finding_line_number(
@@ -1070,6 +1166,23 @@ def normalize_live_finding_line_number(
         return line_number if line_number in allowed_line_numbers else None
 
     return line_number if 1 <= line_number <= len(review_input.lines) else None
+
+
+def live_finding_identity_key(
+    *,
+    rule_id: str,
+    file_path: str | None,
+    line_number: int | None,
+    evidence: str,
+    advice: str,
+) -> tuple[str, str | None, int | None, str, str]:
+    return (
+        rule_id,
+        file_path,
+        line_number,
+        canonical_live_finding_text_identity(evidence),
+        canonical_live_finding_text_identity(advice),
+    )
 
 
 def normalize_live_upstream_findings(
@@ -1100,7 +1213,7 @@ def normalize_live_upstream_findings(
     reviewable_line_numbers = collect_reviewable_line_numbers(review_input)
 
     normalized_findings: list[ReviewFinding] = []
-    seen_display_keys: set[tuple[str, str | None, int | None, str, str]] = set()
+    seen_identity_keys: set[tuple[str, str | None, int | None, str, str]] = set()
 
     for position, finding in enumerate(findings, start=1):
         file_path = normalize_live_finding_path(finding.file_path)
@@ -1113,7 +1226,8 @@ def normalize_live_upstream_findings(
         elif file_path is not None and file_path != review_target_path:
             file_path = review_target_path
 
-        evidence = shorten_evidence(finding.evidence)
+        governed_evidence = normalize_live_finding_evidence(finding.evidence)
+        display_evidence = shorten_evidence(governed_evidence)
         line_number = normalize_live_finding_line_number(
             review_input,
             file_path=file_path,
@@ -1124,7 +1238,7 @@ def normalize_live_upstream_findings(
             review_input,
             file_path=file_path,
             line_number=line_number,
-            evidence=evidence,
+            evidence=governed_evidence,
         ):
             continue
 
@@ -1141,7 +1255,7 @@ def normalize_live_upstream_findings(
                 review_input,
                 review_target_path=review_target_path,
                 file_path=file_path,
-                evidence=evidence,
+                evidence=governed_evidence,
                 title=finding.title,
             )
         )
@@ -1157,28 +1271,28 @@ def normalize_live_upstream_findings(
                 review_input,
                 review_target_path=review_target_path,
                 file_path=file_path,
-                evidence=evidence,
+                evidence=governed_evidence,
                 fix=finding.fix,
             )
         )
 
-        display_key = (
-            rule_id,
-            file_path,
-            line_number,
-            evidence,
-            advice,
+        identity_key = live_finding_identity_key(
+            rule_id=rule_id,
+            file_path=file_path,
+            line_number=line_number,
+            evidence=governed_evidence,
+            advice=advice,
         )
-        if display_key in seen_display_keys:
+        if identity_key in seen_identity_keys:
             continue
-        seen_display_keys.add(display_key)
+        seen_identity_keys.add(identity_key)
 
         normalized_findings.append(
             ReviewFinding(
                 rule_id=rule_id,
                 title=title,
                 severity=severity,
-                evidence=evidence,
+                evidence=display_evidence,
                 advice=advice,
                 position=position,
                 file_path=file_path,

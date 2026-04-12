@@ -1,7 +1,7 @@
 # Phase 5: 平台集成 + 根级治理 + Wiki
 
 > 预估时间：10-15 天
-> 前置依赖：Phase 2 + Phase 3 + Phase 4 全部完成
+> 前置依赖：Phase 2 + Phase 3 完成，且 Phase 4 已具备至少 1 个可调用子后端
 > 负责人：全体（分模块）
 
 ---
@@ -12,7 +12,34 @@
 
 ---
 
+## 当前起点（2026-04-12）
+
+- Phase 2 后端重构已完成，主后端目录与 API 分组已稳定
+- Phase 3 前端重构已完成，工程主线已切到 `features/` / `services/` / `stores/` 新结构
+- Phase 4A 节点系统主线已完成，仅剩 `workflow-meta.ts` 的 deprecate 长尾
+- Phase 4B 在当前 owner 侧已经收口到 `code-review-agent`：现有 `code-review-agent` 已具备 `GET /health`、`GET /health/ready`、`GET /v1/models`、`POST /v1/chat/completions`、non-stream / SSE、真实 upstream seam，以及 `177 passed` 的测试基线
+- 当前 owner 的默认下一主线不再是继续深挖 `code-review-agent` 的 4B 细节，而是直接进入 Phase 5 的平台集成、治理、文档对齐与 CI 增强
+- 子 Agent 扩展、其他 Agent 迁移与骨架补全不属于当前 owner lane；这部分由小李或其他 lane 并行推进，不应阻塞 Phase 5.1 Gateway 启动
+
+## 建议执行顺序
+
+1. **Task 5.1 Agent Gateway**
+   - 以当前 `code-review-agent` 作为首个接入目标，先把注册、调用、健康检查、SSE 透传、超时链和审计主线跑通
+2. **Task 5.3 根级 Monorepo 治理**
+   - 补 `CODEOWNERS`、治理文档、ownership 划分，减少 Phase 5 并行推进时的边界歧义
+3. **Task 5.4 文档与代码对齐**
+   - 先同步 `README` / `ARCHITECTURE` / `project-context` / 旧路径引用，保证后续 Claude 或其他 agent 的上下文一致
+4. **Task 5.5 CI/CD 增强**
+   - 在治理边界明确后补路径触发与依赖方向检查，避免对正在进行的实现造成误伤
+5. **Task 5.2 Wiki**
+   - 由小陈并行推进；当前 owner 主要负责保证 `docs/wiki-content/` 与整体重构事实对齐
+
+---
+
 ## Task 5.1：Agent Gateway 实现
+
+> [!NOTE]
+> **当前起点已经具备**：`code-review-agent` 是一个已通过契约测试、具备 non-stream / SSE、并且经过 Phase 4B 治理收口的真实子后端，可直接作为 Gateway 的第一个接入对象；这一阶段不需要等待更多 Agent 骨架或新的 4B 深挖。
 
 ### 后端 Gateway 层
 
