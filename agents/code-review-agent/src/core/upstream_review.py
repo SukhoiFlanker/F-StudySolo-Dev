@@ -159,6 +159,8 @@ class UpstreamContextBlock:
     path: str
     content: str
     relationship: ContextRelationship
+    shared_identifiers: tuple[str, ...] = ()
+    usage_priority: UsagePriority = "low"
     truncated: bool = False
 
 
@@ -236,15 +238,16 @@ def build_upstream_review_request(
     ]
 
     for index, context_block in enumerate(forwarded_context, start=1):
-        context_shared_identifiers = shared_identifiers(review_target_text, context_block.content)
         shared_identifier_text = (
-            ", ".join(context_shared_identifiers) if context_shared_identifiers else "<none>"
+            ", ".join(context_block.shared_identifiers)
+            if context_block.shared_identifiers
+            else "<none>"
         )
         sections.extend(
             [
                 f"- Context file {index} path: {context_block.path}",
                 f"- Context file {index} relationship: {context_block.relationship}",
-                f"- Context file {index} usage priority: {usage_priority(context_block.relationship, len(context_shared_identifiers))}",
+                f"- Context file {index} usage priority: {context_block.usage_priority}",
                 f"- Context file {index} shared identifiers: {shared_identifier_text}",
                 f"- Context file {index} truncated: {'yes' if context_block.truncated else 'no'}",
                 "Context content:",

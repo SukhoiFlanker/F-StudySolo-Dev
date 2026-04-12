@@ -27,11 +27,12 @@
   - `<review_target path="...">...</review_target>`
   - `<repo_context path="...">...</repo_context>`
   - 仍只对 `review_target` 出 findings；`repo_context` 在 live upstream 路径下只作为经过治理后的辅助上下文
-  - forwarded context 会做路径归一化、去重、关系排序与预算裁剪，并在超限时追加 `... [truncated]`
+  - forwarded context 会做路径归一化、去重、shared-identifier-aware 排序与预算裁剪，并在超限时追加 `... [truncated]`
 - repo-aware utilization hints：
   - upstream system prompt 会明确 findings 只能针对 `review_target`
   - upstream user prompt 会显式带上 `review scope hint`
   - 每个 forwarded context 会补入 `shared identifiers`、`usage priority`
+  - 这些元数据现在也会直接参与 forwarding 排序与预算分配，而不再只停留在 prompt hints
   - 既有的 `relationship / truncated` 提示继续保留
 
 ## 运行
@@ -95,8 +96,8 @@ export function debugLog(message: string) {
   - `stream=True` 时走真实 provider stream，但会先在服务端完整消费并校验 JSON findings，再向客户端发出内容 chunk
   - 配置缺失、超时、HTTP 异常、空内容或 JSON / findings 不合规都会严格回退到 `heuristic`
   - 上游成功后只消费内部 JSON findings，并归一化回当前稳定文本模板
-  - 上游 prompt 中的 `repo_context` 会先经过 forwarding governance：归一化路径、丢弃与 `review_target` 重复的 context、按 `same_dir / same_top_level / same_extension / other` 排序，并按 `4` 文件 / 单文件 `80` 行 / 总计 `200` 行预算裁剪
-  - 在 forward 之后，upstream prompt 还会进一步补入 `review scope hint`、逐 context 的 `shared identifiers`、`usage priority`，并继续保留 `relationship / truncated`
+  - 上游 prompt 中的 `repo_context` 会先经过 forwarding governance：归一化路径、丢弃与 `review_target` 重复的 context、按 `usage priority -> shared identifiers -> relationship -> 原始顺序` 排序，并按 `4` 文件 / 单文件 `80` 行 / 总计 `200` 行预算裁剪
+  - forwarded context 现在会在 preprocessing 阶段直接携带 `shared identifiers`、`usage priority`，upstream prompt 只复用这些元数据，并继续保留 `relationship / truncated`
 
 当前预留配置项均沿用 `AGENT_` 前缀环境变量：
 
@@ -135,7 +136,7 @@ export function debugLog(message: string) {
 
 补充说明：
 - `repo_context` 不会单独产出 findings；但在 live upstream 路径下，会以治理后的 forwarded context 形式进入上游 prompt。
-- forwarded context 会显式标记 `relationship` 与 `truncated` 状态，并补入 `shared identifiers` 与 `usage priority`，帮助上游更稳定利用上下文，而不是无上限原样透传。
+- forwarded context 会显式标记 `relationship` 与 `truncated` 状态，并补入 `shared identifiers` 与 `usage priority`；这些信号现在也会前移到 forwarding 排序，帮助上游更稳定利用上下文，而不是无上限原样透传。
 - live upstream findings 现在还会做最小 evidence anchoring 治理：只有当 `evidence` 能被 `review_target` 的目标文本真实支撑时，finding 才会被保留。
 - live upstream findings 对已知 `rule_id` 还会做 metadata canonicalization：`title / severity / fix` 会收口到本地规则表，不再直接信任上游漂移文案。
 - 对 unknown rule，live upstream 的 `Rule ID:` 现在也会做最小安全治理：只有已经是干净稳定 slug 的值才会保留，否则会降级为 `external_review_issue`。
@@ -152,7 +153,7 @@ export function debugLog(message: string) {
 - 当前 `src/core/agent.py` 已可选接入外部 OpenAI-compatible 上游，但默认仍是本地启发式规则审查
 - 当前 `stream=True + upstream_openai_compatible` 已接通真实 provider streaming，但继续采用“稳定模板优先”的本地归一化策略
 - 当前不读取本地仓库文件；repo context 仍必须由调用方显式放进最后一条 `user` 消息，并只会以治理后的 forwarded context 形式进入上游
-- 当前 upstream prompt 已显式具备 `review scope hint`、`shared identifiers`、`usage priority`，用于约束和提升 repo-aware 利用质量
+- 当前 upstream prompt 已显式具备 `review scope hint`、`shared identifiers`、`usage priority`，且 forwarding 预算分配也会复用这些信号来提升 repo-aware 利用质量
 - 当前 live upstream findings 还会校验 `evidence` 是否能锚定到 `review_target`；不能被目标文本支撑的 finding 会被治理丢弃，并在全丢弃时继续严格回退到 `heuristic`
 - 当前 live upstream findings 若命中本地已知 `rule_id`，其 `title / severity / fix` 会强制收口到本地 `RuleSpec`；unknown rule 才继续保留上游元数据
 - 当前 unknown rule 的 `Rule ID:` 若不是干净稳定的 slug，会被改写为 `external_review_issue`
@@ -165,7 +166,7 @@ export function debugLog(message: string) {
 ## 当前测试基线
 
 - `pytest tests -q`
-- 最新真实结果：`98 passed`
+- 最新真实结果：`99 passed`
 
 ## 参考
 

@@ -2037,16 +2037,18 @@ export const ignored = true;
     assert tuple(block.path for block in prepared.forwarded_context) == ("frontend/helper.ts",)
     assert prepared.forwarded_context[0].content == 'export const helper = "first";'
     assert prepared.forwarded_context[0].relationship == "same_dir"
+    assert prepared.forwarded_context[0].shared_identifiers == ()
+    assert prepared.forwarded_context[0].usage_priority == "high"
     assert prepared.forwarded_context[0].truncated is False
 
 
-def test_prepare_review_text_prioritizes_closer_repo_contexts_under_file_limit():
+def test_prepare_review_text_prioritizes_more_relevant_repo_contexts_under_file_limit():
     agent = CodeReviewAgent(agent_name="code-review")
     prepared = agent.prepare_review_text(
         """<review_target path="frontend/components/app.tsx">
 ```tsx
-export default function App() {
-  return null;
+export function AppCard(totalCount: number) {
+  return renderBadge(totalCount);
 }
 ```
 </review_target>
@@ -2062,7 +2064,9 @@ export const backendView = true;
 </repo_context>
 <repo_context path="frontend/utils/math.ts">
 ```ts
-export const add = (a, b) => a + b;
+export function renderBadge(totalCount: number) {
+  return totalCount;
+}
 ```
 </repo_context>
 <repo_context path="frontend/components/button.tsx">
@@ -2080,17 +2084,29 @@ print("task")
     )
 
     assert tuple(block.path for block in prepared.forwarded_context) == (
-        "frontend/components/button.tsx",
         "frontend/utils/math.ts",
+        "frontend/components/button.tsx",
         "backend/render.tsx",
         "docs/readme.md",
     )
     assert tuple(block.relationship for block in prepared.forwarded_context) == (
-        "same_dir",
         "same_top_level",
+        "same_dir",
         "same_extension",
         "other",
     )
+    assert tuple(block.usage_priority for block in prepared.forwarded_context) == (
+        "high",
+        "high",
+        "medium",
+        "low",
+    )
+    assert prepared.forwarded_context[0].shared_identifiers == (
+        "number",
+        "renderbadge",
+        "totalcount",
+    )
+    assert prepared.forwarded_context[1].shared_identifiers == ()
 
 
 def test_prepare_review_text_truncates_long_repo_context_content():
@@ -2117,19 +2133,22 @@ const total = items.length;
     assert forwarded.content.endswith("... [truncated]")
 
 
-def test_preprocess_forwarded_context_preserves_order_without_review_target_path():
+def test_preprocess_forwarded_context_prioritizes_shared_identifiers_without_review_target_path():
     forwarded = preprocess_forwarded_context(
         StructuredReviewPayload(
-            review_target_text="console.log('debug');",
+            review_target_text="cache adapter request",
             context_blocks=(
                 (' "backend/a.py" ', "print('a')"),
-                ("b/frontend/b.py", "print('b')"),
+                ("b/frontend/b.py", "cache adapter response"),
             ),
         )
     )
 
-    assert tuple(block.path for block in forwarded) == ("backend/a.py", "frontend/b.py")
+    assert tuple(block.path for block in forwarded) == ("frontend/b.py", "backend/a.py")
     assert tuple(block.relationship for block in forwarded) == ("other", "other")
+    assert tuple(block.usage_priority for block in forwarded) == ("high", "low")
+    assert forwarded[0].shared_identifiers == ("adapter", "cache")
+    assert forwarded[1].shared_identifiers == ()
 
 
 def test_upstream_review_request_includes_review_target_and_repo_context():
@@ -2164,6 +2183,8 @@ export function debugLog(message: string) {
         uses_structured_input=prepared.payload.uses_structured_input,
     )
 
+    assert prepared.forwarded_context[0].shared_identifiers == ("console", "log")
+    assert prepared.forwarded_context[0].usage_priority == "high"
     assert request.model == "review-upstream-v1"
     assert request.base_url == "https://example.test/v1"
     assert request.api_key == "upstream-key"
@@ -2233,6 +2254,35 @@ export const duplicateTarget = true;
     assert "... [truncated]" in request.messages[1]["content"]
 
 
+def test_upstream_review_request_reuses_forwarded_context_metadata():
+    request = build_upstream_review_request(
+        settings=UpstreamReviewSettings(
+            model="review-upstream-v1",
+            base_url="https://example.test/v1",
+            api_key="upstream-key",
+            timeout_seconds=18.0,
+        ),
+        input_kind="plain_text",
+        review_target_text="Please review the cache invalidation path.",
+        review_target_path="frontend/app.tsx",
+        context_file_count=1,
+        forwarded_context=(
+            upstream_review_module.UpstreamContextBlock(
+                path="docs/readme.md",
+                content="deployment steps and release notes",
+                relationship="other",
+                shared_identifiers=("cache", "path"),
+                usage_priority="high",
+                truncated=False,
+            ),
+        ),
+        uses_structured_input=True,
+    )
+
+    assert "Context file 1 usage priority: high" in request.messages[1]["content"]
+    assert "Context file 1 shared identifiers: cache, path" in request.messages[1]["content"]
+
+
 def test_upstream_review_request_uses_diff_scope_hint_and_medium_priority_with_single_overlap():
     agent = CodeReviewAgent(agent_name="code-review")
     prepared = agent.prepare_review_text(
@@ -2295,6 +2345,8 @@ def test_upstream_review_request_reports_low_priority_when_no_overlap_exists():
                 path="docs/readme.md",
                 content="deployment steps and release notes",
                 relationship="other",
+                shared_identifiers=(),
+                usage_priority="low",
                 truncated=False,
             ),
         ),
@@ -2330,6 +2382,8 @@ def test_upstream_review_request_limits_shared_identifiers_to_five_sorted_values
                     "theta eta zeta epsilon delta gamma beta alpha payload process result"
                 ),
                 relationship="same_top_level",
+                shared_identifiers=("alpha", "beta", "delta", "epsilon", "eta"),
+                usage_priority="high",
                 truncated=False,
             ),
         ),

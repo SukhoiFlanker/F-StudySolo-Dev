@@ -317,6 +317,10 @@ def context_relationship_priority(
     return {"same_dir": 0, "same_top_level": 1, "same_extension": 2, "other": 3}[relationship]
 
 
+def usage_priority_priority(priority: upstream_review.UsagePriority) -> int:
+    return {"high": 0, "medium": 1, "low": 2}[priority]
+
+
 def path_relationship(
     review_target_path: str | None,
     context_path: str,
@@ -347,7 +351,17 @@ def preprocess_forwarded_context(
     payload: StructuredReviewPayload,
 ) -> tuple[upstream_review.UpstreamContextBlock, ...]:
     normalized_target_path = normalize_context_path(payload.review_target_path)
-    unique_contexts: list[tuple[str, str, int]] = []
+    review_target_text = extract_review_text(payload.review_target_text)
+    unique_contexts: list[
+        tuple[
+            str,
+            str,
+            int,
+            upstream_review.ContextRelationship,
+            tuple[str, ...],
+            upstream_review.UsagePriority,
+        ]
+    ] = []
     seen_paths: set[str] = set()
 
     for index, (raw_path, raw_content) in enumerate(payload.context_blocks):
@@ -360,22 +374,39 @@ def preprocess_forwarded_context(
             continue
 
         seen_paths.add(normalized_path)
-        unique_contexts.append((normalized_path, normalized_content, index))
-
-    if normalized_target_path is not None:
-        unique_contexts.sort(
-            key=lambda item: (
-                context_relationship_priority(
-                    path_relationship(normalized_target_path, item[0])
-                ),
-                item[2],
+        relationship = path_relationship(normalized_target_path, normalized_path)
+        shared_identifiers = upstream_review.shared_identifiers(
+            review_target_text,
+            normalized_content,
+        )
+        usage_priority = upstream_review.usage_priority(
+            relationship,
+            len(shared_identifiers),
+        )
+        unique_contexts.append(
+            (
+                normalized_path,
+                normalized_content,
+                index,
+                relationship,
+                shared_identifiers,
+                usage_priority,
             )
         )
+
+    unique_contexts.sort(
+        key=lambda item: (
+            usage_priority_priority(item[5]),
+            -len(item[4]),
+            context_relationship_priority(item[3]),
+            item[2],
+        )
+    )
 
     forwarded_context: list[upstream_review.UpstreamContextBlock] = []
     remaining_total_lines = MAX_FORWARDED_CONTEXT_LINES_TOTAL
 
-    for normalized_path, normalized_content, _ in unique_contexts:
+    for normalized_path, normalized_content, _, relationship, _, _ in unique_contexts:
         if len(forwarded_context) >= MAX_FORWARDED_CONTEXT_FILES or remaining_total_lines <= 0:
             break
 
@@ -386,7 +417,16 @@ def preprocess_forwarded_context(
             continue
 
         truncated = len(kept_lines) < len(content_lines)
-        forwarded_content = "\n".join(kept_lines)
+        kept_content = "\n".join(kept_lines)
+        shared_identifiers = upstream_review.shared_identifiers(
+            review_target_text,
+            kept_content,
+        )
+        usage_priority = upstream_review.usage_priority(
+            relationship,
+            len(shared_identifiers),
+        )
+        forwarded_content = kept_content
         if truncated:
             forwarded_content = f"{forwarded_content}\n... [truncated]"
 
@@ -394,7 +434,9 @@ def preprocess_forwarded_context(
             upstream_review.UpstreamContextBlock(
                 path=normalized_path,
                 content=forwarded_content,
-                relationship=path_relationship(normalized_target_path, normalized_path),
+                relationship=relationship,
+                shared_identifiers=shared_identifiers,
+                usage_priority=usage_priority,
                 truncated=truncated,
             )
         )
