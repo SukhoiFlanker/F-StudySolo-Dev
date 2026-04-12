@@ -321,6 +321,12 @@ def usage_priority_priority(priority: upstream_review.UsagePriority) -> int:
     return {"high": 0, "medium": 1, "low": 2}[priority]
 
 
+def repo_context_ranking_reference_text(review_input: ReviewInput) -> str:
+    if review_input.kind == "unified_diff":
+        return "\n".join(line.text for line in review_input.lines)
+    return review_input.raw_text
+
+
 def path_relationship(
     review_target_path: str | None,
     context_path: str,
@@ -349,9 +355,15 @@ def path_relationship(
 
 def preprocess_forwarded_context(
     payload: StructuredReviewPayload,
+    *,
+    ranking_reference_text: str | None = None,
 ) -> tuple[upstream_review.UpstreamContextBlock, ...]:
     normalized_target_path = normalize_context_path(payload.review_target_path)
-    review_target_text = extract_review_text(payload.review_target_text)
+    review_target_text = (
+        ranking_reference_text
+        if ranking_reference_text is not None
+        else extract_review_text(payload.review_target_text)
+    )
     unique_contexts: list[
         tuple[
             str,
@@ -1147,7 +1159,10 @@ class CodeReviewAgent:
         return PreparedReview(
             payload=payload,
             review_input=review_input,
-            forwarded_context=preprocess_forwarded_context(payload),
+            forwarded_context=preprocess_forwarded_context(
+                payload,
+                ranking_reference_text=repo_context_ranking_reference_text(review_input),
+            ),
         )
 
     def review_text(self, text: str) -> str:

@@ -2109,6 +2109,45 @@ print("task")
     assert prepared.forwarded_context[1].shared_identifiers == ()
 
 
+def test_prepare_review_text_ignores_deleted_diff_identifiers_when_ranking_context():
+    agent = CodeReviewAgent(agent_name="code-review")
+    prepared = agent.prepare_review_text(
+        """<review_target path="frontend/app.tsx">
+```diff
+diff --git a/frontend/app.tsx b/frontend/app.tsx
+--- a/frontend/app.tsx
++++ b/frontend/app.tsx
+@@ -1,1 +1,1 @@
+-legacyCacheAdapter(result)
++renderBadge(totalCount)
+```
+</review_target>
+<repo_context path="frontend/cache.ts">
+```ts
+export function legacyCacheAdapter(result: number) {
+  return result;
+}
+```
+</repo_context>
+<repo_context path="frontend/badge.ts">
+```ts
+export function renderBadge(totalCount: number) {
+  return totalCount;
+}
+```
+</repo_context>"""
+    )
+
+    assert tuple(block.path for block in prepared.forwarded_context) == (
+        "frontend/badge.ts",
+        "frontend/cache.ts",
+    )
+    assert prepared.forwarded_context[0].shared_identifiers == ("renderbadge", "totalcount")
+    assert prepared.forwarded_context[0].usage_priority == "high"
+    assert prepared.forwarded_context[1].shared_identifiers == ()
+    assert prepared.forwarded_context[1].usage_priority == "high"
+
+
 def test_prepare_review_text_truncates_long_repo_context_content():
     agent = CodeReviewAgent(agent_name="code-review")
     long_context = "\n".join(f"line {index}" for index in range(1, 86))
@@ -2326,6 +2365,57 @@ export function debugLog(input: string) {
     assert "Context file 1 relationship: same_top_level" in request.messages[1]["content"]
     assert "Context file 1 usage priority: medium" in request.messages[1]["content"]
     assert "Context file 1 shared identifiers: debuglog" in request.messages[1]["content"]
+
+
+def test_upstream_review_request_diff_shared_identifiers_ignore_deleted_lines():
+    agent = CodeReviewAgent(agent_name="code-review")
+    prepared = agent.prepare_review_text(
+        """<review_target path="frontend/app.tsx">
+```diff
+diff --git a/frontend/app.tsx b/frontend/app.tsx
+--- a/frontend/app.tsx
++++ b/frontend/app.tsx
+@@ -1,1 +1,1 @@
+-legacyCacheAdapter(result)
++renderBadge(totalCount)
+```
+</review_target>
+<repo_context path="frontend/cache.ts">
+```ts
+export function legacyCacheAdapter(result: number) {
+  return result;
+}
+```
+</repo_context>
+<repo_context path="frontend/badge.ts">
+```ts
+export function renderBadge(totalCount: number) {
+  return totalCount;
+}
+```
+</repo_context>"""
+    )
+
+    request = build_upstream_review_request(
+        settings=UpstreamReviewSettings(
+            model="review-upstream-v1",
+            base_url="https://example.test/v1",
+            api_key="upstream-key",
+            timeout_seconds=18.0,
+        ),
+        input_kind=prepared.review_input.kind,
+        review_target_text=prepared.review_input.raw_text,
+        review_target_path=prepared.payload.review_target_path,
+        context_file_count=len(prepared.payload.context_blocks),
+        forwarded_context=prepared.forwarded_context,
+        uses_structured_input=prepared.payload.uses_structured_input,
+    )
+
+    assert "Context file 1 path: frontend/badge.ts" in request.messages[1]["content"]
+    assert "Context file 1 shared identifiers: renderbadge, totalcount" in request.messages[1]["content"]
+    assert "Context file 2 path: frontend/cache.ts" in request.messages[1]["content"]
+    assert "Context file 2 shared identifiers: <none>" in request.messages[1]["content"]
+    assert "legacycacheadapter" not in request.messages[1]["content"]
 
 
 def test_upstream_review_request_reports_low_priority_when_no_overlap_exists():

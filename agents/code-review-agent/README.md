@@ -33,6 +33,7 @@
   - upstream user prompt 会显式带上 `review scope hint`
   - 每个 forwarded context 会补入 `shared identifiers`、`usage priority`
   - 这些元数据现在也会直接参与 forwarding 排序与预算分配，而不再只停留在 prompt hints
+  - 在 `unified_diff` 场景下，这些元数据现在只基于真正可审查的新增行计算，不再被删除行或 diff 元数据误导
   - 既有的 `relationship / truncated` 提示继续保留
 
 ## 运行
@@ -154,6 +155,7 @@ export function debugLog(message: string) {
 - 当前 `stream=True + upstream_openai_compatible` 已接通真实 provider streaming，但继续采用“稳定模板优先”的本地归一化策略
 - 当前不读取本地仓库文件；repo context 仍必须由调用方显式放进最后一条 `user` 消息，并只会以治理后的 forwarded context 形式进入上游
 - 当前 upstream prompt 已显式具备 `review scope hint`、`shared identifiers`、`usage priority`，且 forwarding 预算分配也会复用这些信号来提升 repo-aware 利用质量
+- diff 场景下，forwarding 排序与 prompt 中的 `shared identifiers / usage priority` 现在只会反映新增行，而不会被删除行抬高优先级
 - 当前 live upstream findings 还会校验 `evidence` 是否能锚定到 `review_target`；不能被目标文本支撑的 finding 会被治理丢弃，并在全丢弃时继续严格回退到 `heuristic`
 - 当前 live upstream findings 若命中本地已知 `rule_id`，其 `title / severity / fix` 会强制收口到本地 `RuleSpec`；unknown rule 才继续保留上游元数据
 - 当前 unknown rule 的 `Rule ID:` 若不是干净稳定的 slug，会被改写为 `external_review_issue`
@@ -166,7 +168,7 @@ export function debugLog(message: string) {
 ## 当前测试基线
 
 - `pytest tests -q`
-- 最新真实结果：`99 passed`
+- 最新真实结果：`101 passed`
 
 ## 参考
 
