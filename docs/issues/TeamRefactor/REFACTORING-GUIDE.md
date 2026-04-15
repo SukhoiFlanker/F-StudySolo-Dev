@@ -2,7 +2,7 @@
 
 > 版本：v1.0 | 2026-04-09
 > GitHub Issue：[#10 — Phase 0 收尾 & 完整重构路线图](https://github.com/AIMFllys/StudySolo-Dev/issues/10)
-> 详细计划：`docs/team/refactor/final-plan/`
+> 详细计划：`docs/issues/TeamRefactor/final-plan/`
 
 ---
 
@@ -125,7 +125,7 @@ Week 5-6 Phase 5 集成 + Wiki + CI 治理
 
 ## 如何参与
 
-1. **阅读入口**：`docs/team/refactor/final-plan/00-索引.md`
+1. **阅读入口**：`docs/issues/TeamRefactor/final-plan/00-索引.md`
 2. **当前 Phase**：Phase 0（95% 完成）→ 等待术语表签字后进入 Phase 1
 3. **每个 Phase 有明确 Gate**：没有 checklist 全部 ✅，不能进下一 Phase
 4. **每个 task 独立 PR**：出问题可以单独 revert，不影响其他任务

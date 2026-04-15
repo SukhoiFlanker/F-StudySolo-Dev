@@ -1,6 +1,6 @@
 # StudySolo 团队协作中心
 
-> 最后更新：2026-04-11
+> 最后更新：2026-04-15
 > 定位：本目录用于存放所有团队组织与代码协作指南。
 
 ---
@@ -20,7 +20,7 @@
 ## 其他重要流程入口
 
 - [双仓库协作 SOP（日常/比赛期维护）](../项目规范与框架流程/功能流程/双仓库协作流程.md) — ⚠️ §3.1 「直接 push main」已过期，请以 [commit-conventions.md](commit-conventions.md) 为准
-- [全面代码重构计划导航](refactor/README.md)
+- [全面代码重构计划导航](../issues/TeamRefactor/README.md)
 
 ---
 
@@ -33,11 +33,11 @@
 | **L0（最高）** | `docs/team/*.md` | 团队协作铁规，本目录文件 |
 | **L0** | `.github/CODEOWNERS` | 代码所有权，GitHub 系统强制 |
 | **L0** | `shared/docs/conventions/` | 共享层事实，跨项目稳定 |
-| **L1** | `docs/team/refactor/final-plan/` | 重构实施方案，以 Phase 状态为准 |
+| **L1** | `docs/issues/TeamRefactor/final-plan/` | 重构实施方案，以 Phase 状态为准 |
 | **L1** | `docs/项目规范与框架流程/` | 功能 SOP（注意废弃标记） |
 | **L2** | `agents/README.md` | Agent 开发指南，引用 final-plan |
-| **L3（参考）** | `docs/team/refactor/claude-analysis/` | 历史分析，只读，不作执行依据 |
-| **L3（参考）** | `docs/team/refactor/codex-analysis/` | 历史分析，只读，不作执行依据 |
+| **L3（参考）** | `docs/issues/TeamRefactor/claude-analysis/` | 历史分析，只读，不作执行依据 |
+| **L3（参考）** | `docs/issues/TeamRefactor/codex-analysis/` | 历史分析，只读，不作执行依据 |
 
 > 冲突解决原则：L0 > L1 > L2 > L3。同级冲突以最新更新日期为准。
 

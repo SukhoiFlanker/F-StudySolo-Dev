@@ -110,7 +110,7 @@ lastUpdated: 2026-04-13
 
 创建 `frontend/src/styles/wiki.css`，实现 3 栏 Grid 布局和响应式。
 
-详细 CSS 规范见 `docs/team/refactor/final-plan/wiki-init-plan.md` §Wiki 布局样式。
+详细 CSS 规范见 `docs/issues/TeamRefactor/final-plan/wiki-init-plan.md` §Wiki 布局样式。
 
 关键要求：
 - 桌面端：左侧导航 260px + 内容区 + 右侧 TOC 200px
@@ -147,6 +147,6 @@ lastUpdated: 2026-04-13
 
 ## 参考文档
 
-- 完整原始计划：`docs/team/refactor/final-plan/wiki-init-plan.md`
+- 完整原始计划：`docs/issues/TeamRefactor/final-plan/wiki-init-plan.md`
 - 前端工程规范：`docs/项目规范与框架流程/项目规范/08-前端工程规范.md`
 - 设计规范（颜色/字体/间距）：`docs/项目规范与框架流程/项目规范/05-设计规范.md`

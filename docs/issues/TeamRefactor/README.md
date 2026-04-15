@@ -1,8 +1,14 @@
-# StudySolo 代码重构计划
+# StudySolo 代码重构计划（历史归档）
 
-> 最后更新：2026-04-10
-> 状态：Phase 0 已完成 95% · Phase 1 契约已全部输出（待三人签字）· Phase 2-4 待启动
+> 原路径：`docs/team/refactor/` → 迁移至：`docs/issues/TeamRefactor/`（2026-04-15）
+> 状态：**✅ Phase 0~5 全部完成，本目录已归档，只读参考**
 > GitHub Issue：[#10](https://github.com/AIMFllys/StudySolo-Dev/issues/10)
+
+> [!NOTE]
+> 本目录是重构历史记录，不再更新。当前技术规范请查阅：
+> - 技术规范：`docs/项目规范与框架流程/项目规范/`
+> - 团队协作规范：`docs/team/`
+> - 当前进行中的 Issue：`docs/issues/`
 
 ---
 

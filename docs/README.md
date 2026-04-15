@@ -35,7 +35,7 @@
 | `项目规范与框架流程/项目介绍/` | 面向项目理解的介绍型文档（产品概述、节点体系） |
 | `项目规范与框架流程/功能流程/` | 功能流程规范：双仓库协作流程、新增 AI 工具 SOP 等 |
 | **`team/`** | **团队协作中心**：团队分工、Commit 规范、分支策略、PR 流程、Issue 规范、接口同步 |
-| `team/refactor/` | 代码重构计划：Codex 分析 + Claude 分析 + 对比 + 最终综合方案 |
+| `issues/TeamRefactor/` | 代码重构历史记录：Codex 分析 + Claude 分析 + 对比 + 最终综合方案（已完成，归档） |
 | `plans/` | 规划与专题方案：日常计划、阶段积累计划、Prompt 分析 |
 | `summaries/` | 工程基线和历史阶段总结（历史总结仅用于追溯） |
 | `updates/` | 每日更新日志（只记录当时做了什么，不代表当前结构） |
@@ -45,7 +45,7 @@
 ## 团队协作速查
 
 - **团队协作总纲**：[team/README.md](team/README.md) — 包含分工、Commit 规范、分支策略、SOP 流程
-- **代码重构计划**：[team/refactor/README.md](team/refactor/README.md) — 重构分析与最终方案导航
+- **代码重构历史归档**：[issues/TeamRefactor/README.md](issues/TeamRefactor/README.md) — 重构分析与最终方案导航（已完成）
 - **双仓库协作流程**：[项目规范与框架流程/功能流程/双仓库协作流程.md](项目规范与框架流程/功能流程/双仓库协作流程.md)
 
 ## 文档治理规则

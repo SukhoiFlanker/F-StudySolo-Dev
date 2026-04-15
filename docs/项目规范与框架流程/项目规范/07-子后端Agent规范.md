@@ -3,7 +3,7 @@
 > 文档版本：2.0.0
 > 创建时间：2026-04-09
 > 最后更新：2026-04-11
-> 权威来源：`agents/README.md` + `docs/team/refactor/final-plan/agent-architecture.md`
+> 权威来源：`agents/README.md` + `docs/issues/TeamRefactor/final-plan/agent-architecture.md`
 
 ---
 
@@ -70,7 +70,7 @@ StudySolo/
 
 ## 2. 四层兼容性协议
 
-> **权威定义**：[agent-architecture.md](../../team/refactor/final-plan/agent-architecture.md)
+> **权威定义**：[agent-architecture.md](../../issues/TeamRefactor/final-plan/agent-architecture.md)
 >
 > 四层协议的完整 Pydantic Schema、错误码、超时链规则、日志格式和安全要求均以上述冻结文档为准。本节仅提供速查摘要。
 
@@ -258,6 +258,6 @@ A：**不可以。** 团队统一使用 Python + FastAPI，降低维护成本。
 | 文档 | 说明 |
 |------|------|
 | `agents/README.md` | Agent 开发总指南 |
-| `docs/team/refactor/final-plan/agent-architecture.md` | 四层协议完整规范 |
-| `docs/team/refactor/final-plan/phase-4-nodes-and-agents.md` | Phase 4 任务分解 |
-| `docs/team/refactor/final-plan/phase-5-integration.md` | Phase 5 Gateway 实现计划 |
+| `docs/issues/TeamRefactor/final-plan/agent-architecture.md` | 四层协议完整规范 |
+| `docs/issues/TeamRefactor/final-plan/phase-4-nodes-and-agents.md` | Phase 4 任务分解 |
+| `docs/issues/TeamRefactor/final-plan/phase-5-integration.md` | Phase 5 Gateway 实现计划 |
