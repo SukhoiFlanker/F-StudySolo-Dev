@@ -111,10 +111,11 @@ function Start-Backend {
     Write-Info "正在注入后端引擎 (FastAPI)..."
     
     $venvPath = Join-Path $backendDir ".venv"
+    $venvPython = Join-Path $venvPath "Scripts\python.exe"
     
     # 如果虚拟环境不存在，先创建并安装依赖
-    if (-not (Test-Path $venvPath)) {
-        Write-Warning "未检测到虚拟环境，正在自动创建 .venv ..."
+    if (-not (Test-Path $venvPython)) {
+        Write-Warning "未检测到可用虚拟环境，正在自动创建 .venv ..."
         $setupCmd = "cd '$backendDir'; "
         $setupCmd += "python -m venv .venv; "
         $setupCmd += ".\.venv\Scripts\Activate.ps1; "
@@ -128,6 +129,25 @@ function Start-Backend {
         $setupCmd += "Read-Host '按回车键关闭此窗口'"
         Start-Process powershell -ArgumentList "-NoExit -Command `"$setupCmd`"" -WindowStyle Normal
         Write-Warning "后端虚拟环境正在创建中，请等待完成后重新运行本脚本！"
+        return
+    }
+
+    # 虚拟环境存在但依赖可能不完整：验证 uvicorn 是否可导入
+    & $venvPython -c "import uvicorn" 2>$null
+    if ($LASTEXITCODE -ne 0) {
+        Write-Warning "检测到后端依赖不完整，正在安装 requirements.txt ..."
+        $repairCmd = "cd '$backendDir'; "
+        $repairCmd += ".\.venv\Scripts\Activate.ps1; "
+        $repairCmd += "python -m pip install --upgrade pip; "
+        $repairCmd += "pip install -r requirements.txt; "
+        $repairCmd += "Write-Host ''; "
+        $repairCmd += "Write-Host '==============================' -ForegroundColor Green; "
+        $repairCmd += "Write-Host '  后端依赖安装完成！' -ForegroundColor Green; "
+        $repairCmd += "Write-Host '  请重新运行 start-studysolo.ps1 启动服务' -ForegroundColor Yellow; "
+        $repairCmd += "Write-Host '==============================' -ForegroundColor Green; "
+        $repairCmd += "Read-Host '按回车键关闭此窗口'"
+        Start-Process powershell -ArgumentList "-NoExit -Command `"$repairCmd`"" -WindowStyle Normal
+        Write-Warning "后端依赖修复窗口已打开，请等待安装完成后重试。"
         return
     }
     
@@ -157,8 +177,38 @@ function Start-Frontend {
         Write-Success ".next 缓存已清理。"
     }
     
+    # 自动选择包管理器（优先 pnpm，不可用则降级 npm）
+    $pnpmCmd = Get-Command pnpm -ErrorAction SilentlyContinue
+    $packageManager = if ($pnpmCmd) { "pnpm" } else { "npm" }
+    if (-not $pnpmCmd) {
+        Write-Warning "未检测到 pnpm，自动降级为 npm。"
+    }
+
+    # 依赖检查：node_modules 不存在时先提示安装
+    $nodeModulesDir = Join-Path $frontendDir "node_modules"
+    if (-not (Test-Path $nodeModulesDir)) {
+        Write-Warning "未检测到前端依赖，正在打开安装窗口 ..."
+        $installCmd = "cd '$frontendDir'; "
+        $installCmd += "$packageManager install; "
+        $installCmd += "Write-Host ''; "
+        $installCmd += "Write-Host '==============================' -ForegroundColor Green; "
+        $installCmd += "Write-Host '  前端依赖安装流程已结束' -ForegroundColor Green; "
+        $installCmd += "Write-Host '  若安装报网络错误，请重试安装后再启动' -ForegroundColor Yellow; "
+        $installCmd += "Write-Host '==============================' -ForegroundColor Green; "
+        $installCmd += "Read-Host '按回车键关闭此窗口'"
+        Start-Process powershell -ArgumentList "-NoExit -Command `"$installCmd`"" -WindowStyle Normal
+        Write-Warning "前端依赖安装窗口已打开，完成后请重新运行本脚本。"
+        return
+    }
+    
     # 启动新窗口执行（显式指定端口）
-    $cmd = "cd '$frontendDir'; pnpm dev --port $FrontendPort"
+    $cmd = "cd '$frontendDir'; "
+    if ($packageManager -eq "pnpm") {
+        $cmd += "pnpm dev --port $FrontendPort"
+    }
+    else {
+        $cmd += "npm run dev -- --port $FrontendPort"
+    }
     Start-Process powershell -ArgumentList "-NoExit -Command `"$cmd`"" -WindowStyle Normal
     Write-Success "前端视界面板已展开！"
 }
