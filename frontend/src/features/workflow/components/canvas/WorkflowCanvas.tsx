@@ -63,6 +63,20 @@ function WorkflowCanvasInner() {
   const canvasContainerRef = useRef<HTMLDivElement>(null);
   const handleNodeDragStop = useLoopGroupDrop();
 
+  // #region agent log
+  useEffect(() => {
+    if (!nodes.length) return;
+    const xs = nodes.map((n) => n.position?.x ?? 0);
+    const ys = nodes.map((n) => n.position?.y ?? 0);
+    const minX = Math.min(...xs);
+    const maxX = Math.max(...xs);
+    const minY = Math.min(...ys);
+    const maxY = Math.max(...ys);
+    const viewport = reactFlowInstance.getViewport?.() as { x?: number; y?: number; zoom?: number } | undefined;
+    fetch('/api/debug/log',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'f04052'},body:JSON.stringify({sessionId:'f04052',runId:'pre-fix',hypothesisId:'H6',location:'WorkflowCanvas.tsx:71',message:'canvas viewport + node bbox (post render)',data:{nodeCount:nodes.length,bbox:{minX,maxX,minY,maxY,width:maxX-minX,height:maxY-minY},sample:nodes.slice(0,6).map((n)=>({id:n.id,x:n.position?.x,y:n.position?.y,type:n.type})),viewport},timestamp:Date.now()})}).catch(()=>{});
+  }, [nodes, reactFlowInstance]);
+  // #endregion
+
   // ── Extracted hooks ─────────────────────────────────────────────────────
   const { copyNodes, pasteAtScreen, deleteNode } = useCanvasClipboard(reactFlowInstance);
   const { handleDragOver, handleDrop } = useCanvasDnd(reactFlowInstance, setSelectedNodeId);
@@ -171,11 +185,20 @@ function WorkflowCanvasInner() {
     type: 'default', animated: false,
     markerEnd: { type: MarkerType.ArrowClosed, width: 16, height: 16, color: 'var(--edge-marker-color, #78716c)' },
   }), []);
-  const fitViewOptions = useMemo(() => ({ padding: 0.18 }), []);
   const proOptions = useMemo(() => ({ hideAttribution: true }), []);
 
   const isSelectMode = canvasTool === 'select';
   const bgPreset = BG_PRESETS[bgIndex];
+
+  // Fit view on demand (avoid constant fitView recalculation on every render)
+  useEffect(() => {
+    return eventBus.on('workflow:fit-view-request', () => {
+      // Defer one frame to ensure nodes have mounted & measured.
+      requestAnimationFrame(() => {
+        reactFlowInstance.fitView({ padding: 0.18, duration: 260 });
+      });
+    });
+  }, [reactFlowInstance]);
 
   return (
     <div ref={canvasContainerRef}
@@ -190,7 +213,7 @@ function WorkflowCanvasInner() {
         onNodeContextMenu={handleNodeContextMenu} onPaneContextMenu={handlePaneContextMenu}
         nodeTypes={nodeTypes} edgeTypes={edgeTypes}
         connectionLineType={'smoothstep' as ConnectionLineType}
-        defaultEdgeOptions={defaultEdgeOptions} fitView fitViewOptions={fitViewOptions}
+        defaultEdgeOptions={defaultEdgeOptions}
         edgesReconnectable reconnectRadius={25}
         onReconnectStart={handleReconnectStart} onReconnect={handleEdgeReconnect} onReconnectEnd={handleReconnectEnd}
         onEdgeClick={handleEdgeClick} onEdgeContextMenu={handleEdgeContextMenu}

@@ -5,6 +5,7 @@ import logging
 import re
 from collections import defaultdict, deque
 from pathlib import Path
+from urllib.request import Request, urlopen
 
 from fastapi import HTTPException, status
 from pydantic import ValidationError
@@ -26,7 +27,7 @@ from app.nodes._base import BaseNode
 from app.services.llm.router import AIRouterError, call_llm
 
 logger = logging.getLogger(__name__)
-DEBUG_LOG_PATH = Path("debug-f04052.log")
+DEBUG_LOG_PATH = Path("backend/debug-f04052b.log")
 
 
 def _debug_log(hypothesis_id: str, location: str, message: str, data: dict) -> None:
@@ -40,8 +41,19 @@ def _debug_log(hypothesis_id: str, location: str, message: str, data: dict) -> N
         "timestamp": int(__import__("time").time() * 1000),
     }
     try:
+        # Write to a dedicated dev log file that Cursor can read.
         with DEBUG_LOG_PATH.open("a", encoding="utf-8") as f:
             f.write(json.dumps(payload, ensure_ascii=False) + "\n")
+
+        # Also try to forward to the provisioned ingest server (best-effort).
+        req = Request(
+            "http://127.0.0.1:7807/ingest/6761d4ab-0d6d-4e94-a0bc-90a491230a9a",
+            method="POST",
+            headers={"Content-Type": "application/json", "X-Debug-Session-Id": "f04052"},
+            data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
+        )
+        with urlopen(req, timeout=0.2):
+            pass
     except Exception:
         logger.debug("debug log write failed", exc_info=True)
 

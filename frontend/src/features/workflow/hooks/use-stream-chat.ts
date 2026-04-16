@@ -22,6 +22,7 @@ import { useWorkflowStore } from '@/stores/workflow/use-workflow-store';
 import { persistConversationMessage } from './chat-conversation-sync';
 import { executeCanvasActions, type CanvasAction } from './use-action-executor';
 import { authedFetch, authedStreamFetch } from '@/services/api-client';
+import { eventBus } from '@/lib/events/event-bus';
 
 // ── Types ────────────────────────────────────────────────────────────
 
@@ -139,12 +140,22 @@ async function handleBuildIntent(userInput: string, thinkingDepth: ThinkingDepth
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
   const data = await res.json() as GenerateResponse;
+  // #region agent log
+  fetch('/api/debug/log',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'f04052'},body:JSON.stringify({sessionId:'f04052',runId:'pre-fix',hypothesisId:'H3',location:'use-stream-chat.ts:143',message:'frontend received generated workflow',data:{nodeCount:Array.isArray(data.nodes)?data.nodes.length:0,edgeCount:Array.isArray(data.edges)?data.edges.length:0,positions:(Array.isArray(data.nodes)?data.nodes:[]).slice(0,12).map((n)=>{const t=n as {id?:string;position?:{x?:number;y?:number}};return{id:t.id,x:t.position?.x,y:t.position?.y};})},timestamp:Date.now()})}).catch(()=>{});
+  // #endregion
   const hydratedNodes = hydrateTriggerInputNodes(data.nodes, userInput);
+  // #region agent log
+  fetch('/api/debug/log',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'f04052'},body:JSON.stringify({sessionId:'f04052',runId:'pre-fix',hypothesisId:'H4',location:'use-stream-chat.ts:146',message:'frontend hydrated nodes before replaceWorkflowGraph',data:{nodeCount:hydratedNodes.length,positions:hydratedNodes.slice(0,12).map((n)=>{const t=n as {id?:string;position?:{x?:number;y?:number}};return{id:t.id,x:t.position?.x,y:t.position?.y};})},timestamp:Date.now()})}).catch(()=>{});
+  // #endregion
   wfStore.replaceWorkflowGraph(
     hydratedNodes as Parameters<typeof wfStore.replaceWorkflowGraph>[0],
     data.edges as Parameters<typeof wfStore.replaceWorkflowGraph>[1],
   );
+  // #region agent log
+  fetch('/api/debug/log',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'f04052'},body:JSON.stringify({sessionId:'f04052',runId:'pre-fix',hypothesisId:'H5',location:'use-stream-chat.ts:152',message:'store nodes immediately after replaceWorkflowGraph',data:{nodeCount:wfStore.nodes.length,positions:wfStore.nodes.slice(0,12).map((n)=>({id:n.id,x:n.position?.x,y:n.position?.y}))},timestamp:Date.now()})}).catch(()=>{});
+  // #endregion
   wfStore.setGenerationContext(userInput, data.implicit_context);
+  eventBus.emit('workflow:fit-view-request', { reason: 'ai-build' });
 
   return `✅ 已生成 ${hydratedNodes.length} 个节点。`;
 }

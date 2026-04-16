@@ -15,6 +15,7 @@ export interface EventMap {
   };
   'workflow:close-node-config': undefined;
   'workflow:toggle-all-slips': { expanded: boolean };
+  'workflow:fit-view-request': { reason: 'ai-build' | 'manual' | 'unknown' };
 }
 
 type EventHandler<T> = (payload: T) => void;
