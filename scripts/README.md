@@ -27,6 +27,12 @@ scripts/
 │   ├── 一键git.ps1
 │   └── README.md
 │
+├── diagnostics/              # ⭐ 系统一键诊断脚本
+│   ├── run-diagnostics.ps1   # Windows（UTF-8 with BOM）
+│   ├── run-diagnostics.sh    # Linux/macOS
+│   ├── run_diagnostics.py    # 跨平台 CLI fallback
+│   └── README.md
+│
 ├── logs/                     # 运行日志（已 gitignore）
 ├── temp/                     # 临时输出文件（已 gitignore）
 ├── sandbox/                  # 临时测试脚本（已 gitignore）
@@ -68,6 +74,21 @@ bash scripts/startup/start-studysolo.sh
 # 最常用：一键同步 + 推送
 powershell -ExecutionPolicy Bypass -File "scripts\git\sync-and-push.ps1"
 ```
+
+### 系统诊断（scripts/diagnostics/）
+
+一键测试所有 AI 模型 / 子 Agents / 数据库 / 内部服务，日志统一落盘到 `scripts/logs/`。详见 [diagnostics/README.md](diagnostics/README.md)。
+
+```powershell
+# Windows（推荐）
+$env:STUDYSOLO_ADMIN_TOKEN = "<your-admin-jwt>"
+.\scripts\diagnostics\run-diagnostics.ps1
+
+# Linux/macOS
+bash scripts/diagnostics/run-diagnostics.sh
+```
+
+退出码：`0=全健康 / 1=有故障 / 2=脚本异常`，适合 CI 健康门禁。
 
 ## 临时目录约定
 

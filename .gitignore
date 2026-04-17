@@ -40,6 +40,8 @@ Desktop.ini
 !.agent/skills/project-context/
 !.agent/skills/agent-branch-handoff/
 !.agent/skills/agent-branch-handoff/**
+!.agent/skills/system-diagnostics/
+!.agent/skills/system-diagnostics/**
 .claude/
 .kiro/
 .cursor/
